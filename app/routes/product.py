@@ -1,5 +1,5 @@
 
-product_py = '''# app/routes/product.py
+
 
 from flask import Blueprint, render_template
 from app.models.menu_item import MenuItem
@@ -20,9 +20,4 @@ def product_details(product_id):
                          item=item, 
                          related=related,
                          reviews=item.reviews)
-'''
 
-with open('/mnt/agents/output/product_routes.py', 'w', encoding='utf-8') as f:
-    f.write(product_py)
-
-print("✅ product_routes.py created successfully")

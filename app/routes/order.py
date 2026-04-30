@@ -1,5 +1,4 @@
 
-order_py = '''# app/routes/order.py
 
 from flask import Blueprint, render_template, flash
 from flask_login import login_required, current_user
@@ -18,9 +17,4 @@ def order_tracking(order_id):
         return redirect(url_for('customer.orders'))
     
     return render_template("orders/order_tracking.html", order=order)
-'''
 
-with open('/mnt/agents/output/order_routes.py', 'w', encoding='utf-8') as f:
-    f.write(order_py)
-
-print("✅ order_routes.py created successfully")
