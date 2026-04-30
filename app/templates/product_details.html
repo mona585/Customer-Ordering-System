@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.name }} - AURA{% endblock %}
+
+{% block content %}
+<style>
+/* Product Page Only */
+.bread{padding:16px 40px;font-size:12px;color:var(--cl)}
+.bread a{color:var(--cl)}
+.bread a:hover{color:var(--c1)}
+
+.wrap{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:0 40px 40px;max-width:1200px;margin:0 auto}
+
+/* Gallery */
+.gallery{display:flex;flex-direction:column;gap:12px}
+.main{aspect-ratio:4/3;background:#e8e8e8;border-radius:var(--r);overflow:hidden}
+.main img{width:100%;height:100%;object-fit:cover}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.thumb{aspect-ratio:1;background:#e8e8e8;border-radius:6px;overflow:hidden;cursor:pointer;border:2px solid transparent}
+.thumb.active{border-color:var(--c1)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+
+/* Info */
+.info{padding-top:12px}
+h1{font-size:24px;font-weight:700;margin-bottom:12px}
+.rating{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;color:var(--cg)}
+.price{display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.now{font-size:28px;font-weight:700}
+.was{font-size:16px;color:var(--cl);text-decoration:line-through}
+.badge{background:#ffe4e4;color:#d32f2f;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.stock{display:flex;align-items:center;gap:6px;margin-bottom:20px;font-size:12px;font-weight:600}
+.dot{width:6px;height:6px;background:#4caf50;border-radius:50%}
+.desc{color:#555;font-size:14px;line-height:1.7;margin-bottom:24px}
+
+.meta-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.meta-item{display:flex;align-items:center;gap:10px;padding:16px;background:#f8f8f8;border-radius:var(--r)}
+.meta-icon{width:36px;height:36px;background:var(--cw);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.meta-icon svg{width:16px;height:16px;stroke:var(--c1);fill:none;stroke-width:1.5}
+.meta-t{font-size:12px;font-weight:600}
+.meta-s{font-size:11px;color:var(--cl)}
+
+.quantity{margin-bottom:24px}
+.label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.qty-input{width:80px;padding:10px;border:1.5px solid var(--cb);border-radius:6px;font-size:14px;text-align:center}
+
+.btns{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.btn{padding:14px;border:none;border-radius:var(--r);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:var(--tr);width:100%}
+.btn-b{background:var(--c1);color:var(--cw)}
+.btn-b:hover{background:#333}
+.btn-p{background:var(--c2);color:var(--cw)}
+.btn-p:hover{background:#4f46e5}
+
+.special-requests{margin-bottom:24px}
+.special-requests textarea{width:100%;padding:12px;border:1.5px solid var(--cb);border-radius:6px;font-size:13px;resize:vertical;min-height:80px}
+
+.ingredients{background:#f8f8f8;padding:20px;border-radius:var(--r);margin-bottom:24px}
+.ingredients h3{font-size:14px;font-weight:600;margin-bottom:10px}
+.ingredients p{font-size:13px;color:#555;line-height:1.6}
+
+/* Reviews */
+.reviews{padding:0 40px 40px;max-width:1200px;margin:0 auto}
+.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.head h2{font-size:18px}
+.head a{font-size:13px;color:var(--c1);text-decoration:underline}
+.r-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.r-card{background:var(--cw);padding:24px;border-radius:var(--r);border:1px solid #f0f0f0}
+.r-user{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.r-avatar{width:40px;height:40px;border-radius:50%;background:var(--c2);color:var(--cw);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+.r-name{font-size:13px;font-weight:600}
+.r-stars{display:flex;gap:2px;margin-top:4px}
+.r-stars svg{width:12px;height:12px;fill:var(--c1)}
+.r-text{font-size:13px;color:#555;line-height:1.6;font-style:italic}
+.no-reviews{text-align:center;padding:40px;color:var(--cl)}
+
+/* Recommendations */
+.rec{padding:0 40px 60px;max-width:1200px;margin:0 auto}
+.rec h2{font-size:18px;margin-bottom:24px}
+.rec-g{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.rec-c{cursor:pointer;text-decoration:none;color:inherit}
+.rec-c:hover .rec-n{color:var(--c2)}
+.rec-img{aspect-ratio:4/3;background:#e8e8e8;border-radius:var(--r);overflow:hidden;margin-bottom:10px}
+.rec-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.rec-c:hover .rec-img img{transform:scale(1.05)}
+.rec-n{font-size:13px;font-weight:600;margin-bottom:4px;transition:var(--tr)}
+.rec-p{font-size:13px;color:var(--cg)}
+
+@media(max-width:900px){
+  .wrap{grid-template-columns:1fr}
+  .r-grid,.rec-g{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:500px){
+  .r-grid,.rec-g{grid-template-columns:1fr}
+  .wrap,.reviews,.rec{padding:0 20px 20px}
+}
+</style>
+
+<div class="bread">
+  <a href="{{ url_for('customer.menu') }}">Menu</a> › <a href="{{ url_for('customer.menu', category=item.category.value.lower().replace(' ', '_')) }}">{{ item.category.value }}</a> › {{ item.name }}
+</div>
+
+<main class="wrap">
+  <div class="gallery">
+    <div class="main">
+      {% if item.image_url %}
+        <img src="{{ item.image_url }}" alt="{{ item.name }}">
+      {% else %}
+        <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=450&fit=crop" alt="{{ item.name }}">
+      {% endif %}
+    </div>
+    <div class="thumbs">
+      <div class="thumb active"><img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=150&h=150&fit=crop" alt=""></div>
+      <div class="thumb"><img src="https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=150&h=150&fit=crop" alt=""></div>
+      <div class="thumb"><img src="https://images.unsplash.com/photo-1550547660-d9450f859349?w=150&h=150&fit=crop" alt=""></div>
+      <div class="thumb"><img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=150&h=150&fit=crop" alt=""></div>
+    </div>
+  </div>
+
+  <div class="info">
+    <h1>{{ item.name }}</h1>
+    
+    <div class="rating">
+      <div class="stars">
+        {% set avg_rating = item.average_rating %}
+        {% for i in range(5) %}
+          {% if i < avg_rating|int %}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--c1)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          {% else %}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#ddd"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          {% endif %}
+        {% endfor %}
+      </div>
+      ({{ item.reviews|length }} Reviews)
+    </div>
+
+    <div class="price">
+      <span class="now">${{ "%.2f"|format(item.price|float) }}</span>
+    </div>
+
+    <div class="stock">
+      <span class="dot"></span> 
+      {% if item.is_available %}IN STOCK & READY{% else %}OUT OF STOCK{% endif %}
+    </div>
+
+    <p class="desc">{{ item.description or 'Delicious food crafted with passion and the finest ingredients.' }}</p>
+
+    <div class="meta-info">
+      <div class="meta-item">
+        <div class="meta-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>
+          <div class="meta-t">Prep Time</div>
+          <div class="meta-s">{{ item.preparation_time }} Minutes</div>
+        </div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <div>
+          <div class="meta-t">Calories</div>
+          <div class="meta-s">{{ item.calories or 'N/A' }} kcal</div>
+        </div>
+      </div>
+    </div>
+
+    {% if item.ingredients %}
+    <div class="ingredients">
+      <h3>Ingredients</h3>
+      <p>{{ item.ingredients }}</p>
+    </div>
+    {% endif %}
+
+    <form action="{{ url_for('customer.add_to_cart') }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="item_id" value="{{ item.id }}">
+      
+      <div class="quantity">
+        <div class="label">Quantity</div>
+        <input type="number" name="quantity" class="qty-input" value="1" min="1" max="10">
+      </div>
+      
+      <div class="special-requests">
+        <div class="label">Special Requests</div>
+        <textarea name="special_requests" placeholder="e.g., No onions, Extra cheese, Spicy..."></textarea>
+      </div>
+
+      <div class="btns">
+        <button type="submit" class="btn btn-b">Add to Cart</button>
+        <a href="{{ url_for('customer.checkout') }}" class="btn btn-p" style="text-align:center;display:block;text-decoration:none;">Buy Now</a>
+      </div>
+    </form>
+  </div>
+</main>
+
+<section class="reviews">
+  <div class="head">
+    <div>
+      <h2>Customer Reviews</h2>
+    </div>
+    {% if current_user.is_authenticated %}
+      <a href="#">Write a Review</a>
+    {% endif %}
+  </div>
+  
+  {% if reviews %}
+  <div class="r-grid">
+    {% for review in reviews %}
+    <div class="r-card">
+      <div class="r-user">
+        <div class="r-avatar">{{ review.customer.username[0]|upper }}</div>
+        <div>
+          <div class="r-name">{{ review.customer.username }}</div>
+          <div class="r-stars">
+            {% for i in range(5) %}
+              {% if i < review.rating %}
+                <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              {% else %}
+                <svg viewBox="0 0 24 24" fill="#ddd"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <p class="r-text">"{{ review.comment or 'Great food!' }}"</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="no-reviews">
+    <p>No reviews yet. Be the first to review!</p>
+  </div>
+  {% endif %}
+</section>
+
+{% if related %}
+<section class="rec">
+  <h2>You May Also Like</h2>
+  <div class="rec-g">
+    {% for rel in related %}
+    <a href="{{ url_for('customer.product_details', id=rel.id) }}" class="rec-c">
+      <div class="rec-img">
+        {% if rel.image_url %}
+          <img src="{{ rel.image_url }}" alt="{{ rel.name }}">
+        {% else %}
+          <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&h=225&fit=crop" alt="{{ rel.name }}">
+        {% endif %}
+      </div>
+      <div class="rec-n">{{ rel.name }}</div>
+      <div class="rec-p">${{ "%.2f"|format(rel.price|float) }}</div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

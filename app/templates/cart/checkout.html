@@ -1,0 +1,135 @@
+
+{% extends "base.html" %}
+
+{% block title %}Checkout - AURA{% endblock %}
+
+{% block content %}
+<style>
+.checkout-container{max-width:800px;margin:0 auto;padding:40px}
+.checkout-title{font-size:28px;font-weight:700;margin-bottom:32px}
+
+.checkout-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+
+.checkout-form h2{font-size:18px;margin-bottom:20px}
+.form-group{margin-bottom:20px}
+.form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.form-group input,.form-group textarea{width:100%;padding:12px;border:1.5px solid var(--cb);border-radius:6px;font-size:14px;transition:var(--tr)}
+.form-group input:focus,.form-group textarea:focus{outline:none;border-color:var(--c1)}
+.form-group textarea{resize:vertical;min-height:80px}
+
+.order-summary{background:var(--cw);padding:24px;border-radius:var(--r);border:1px solid #f0f0f0;height:fit-content;position:sticky;top:100px}
+.order-summary h2{font-size:18px;margin-bottom:20px}
+
+.order-item{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f0f0;font-size:14px}
+.order-item:last-child{border-bottom:none}
+.item-name{font-weight:600}
+.item-qty{color:var(--cg);font-size:12px}
+
+.summary-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f0f0}
+.summary-row:last-child{border-bottom:none;font-size:20px;font-weight:700;margin-top:12px;padding-top:12px;border-top:2px solid var(--c1)}
+
+.place-order-btn{display:block;width:100%;padding:16px;background:var(--c2);color:var(--cw);border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;margin-top:20px;transition:var(--tr)}
+.place-order-btn:hover{background:#4f46e5}
+
+.payment-methods{display:flex;gap:12px;margin-bottom:20px}
+.payment-method{flex:1;padding:16px;border:2px solid var(--cb);border-radius:var(--r);cursor:pointer;text-align:center;transition:var(--tr)}
+.payment-method:hover{border-color:var(--c1)}
+.payment-method.selected{border-color:var(--c2);background:#f0f0ff}
+.payment-method svg{width:32px;height:32px;margin-bottom:8px}
+.payment-method-name{font-size:13px;font-weight:600}
+
+@media(max-width:768px){
+  .checkout-grid{grid-template-columns:1fr}
+  .order-summary{position:static}
+}
+</style>
+
+<div class="checkout-container">
+  <h1 class="checkout-title">Checkout</h1>
+  
+  {% if items %}
+  <div class="checkout-grid">
+    <div class="checkout-form">
+      <h2>Delivery Information</h2>
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-group">
+          <label>Delivery Address</label>
+          <textarea name="delivery_address" placeholder="Enter your full address..." required>{{ current_user.address or '' }}</textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" name="phone" value="{{ current_user.phone or '' }}" placeholder="Your phone number" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Special Instructions</label>
+          <textarea name="special_instructions" placeholder="Any special requests for your order..."></textarea>
+        </div>
+        
+        <h2 style="margin-top:32px;margin-bottom:20px">Payment Method</h2>
+        <div class="payment-methods">
+          <div class="payment-method selected" onclick="selectPayment(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <div class="payment-method-name">Credit Card</div>
+          </div>
+          <div class="payment-method" onclick="selectPayment(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <div class="payment-method-name">Cash on Delivery</div>
+          </div>
+        </div>
+        
+        <button type="submit" class="place-order-btn">Place Order</button>
+      </form>
+    </div>
+    
+    <div class="order-summary">
+      <h2>Order Summary</h2>
+      
+      {% for item in items %}
+      <div class="order-item">
+        <div>
+          <div class="item-name">{{ item.menu_item.name }}</div>
+          <div class="item-qty">Qty: {{ item.quantity }}</div>
+        </div>
+        <div>${{ "%.2f"|format(item.subtotal) }}</div>
+      </div>
+      {% endfor %}
+      
+      <div class="summary-row">
+        <span>Subtotal</span>
+        <span>${{ "%.2f"|format(total) }}</span>
+      </div>
+      <div class="summary-row">
+        <span>Delivery Fee</span>
+        <span>$5.00</span>
+      </div>
+      <div class="summary-row">
+        <span>Tax</span>
+        <span>${{ "%.2f"|format(total * 0.08) }}</span>
+      </div>
+      <div class="summary-row">
+        <span>Total</span>
+        <span>${{ "%.2f"|format(total + 5.00 + (total * 0.08)) }}</span>
+      </div>
+    </div>
+  </div>
+  
+  {% else %}
+  <div style="text-align:center;padding:60px">
+    <h2 style="color:var(--cg);margin-bottom:16px">Your cart is empty</h2>
+    <p style="color:var(--cl);margin-bottom:24px">Add some items before checking out.</p>
+    <a href="{{ url_for('customer.menu') }}" style="display:inline-block;padding:12px 24px;background:var(--c2);color:var(--cw);border-radius:var(--r);text-decoration:none;font-weight:600">Browse Menu</a>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function selectPayment(el) {
+  document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
+  el.classList.add('selected');
+}
+</script>
+{% endblock %}

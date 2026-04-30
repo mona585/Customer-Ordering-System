@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}AURA{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% block navbar %}
+<nav class="nav">
+  <div class="logo">AURA</div>
+  <ul class="links">
+    <li><a href="{{ url_for('customer.menu') }}" class="{% if request.endpoint == 'customer.menu' %}active{% endif %}">Menu</a></li>
+    <li><a href="{{ url_for('customer.cart') }}">Cart</a></li>
+    <li><a href="{{ url_for('customer.orders') }}">Orders</a></li>
+    {% if current_user.is_authenticated %}
+      <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+    {% else %}
+      <li><a href="{{ url_for('auth.login') }}">Login</a></li>
+    {% endif %}
+  </ul>
+  <div class="icons">
+    <a href="{{ url_for('customer.menu') }}">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </a>
+    <a href="{{ url_for('customer.cart') }}">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+    </a>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}{% endblock %}
+
+{% block footer %}
+<footer class="footer">
+  <div class="f-grid">
+    <div>
+      <div class="f-brand">AURA</div>
+      <p class="f-desc">Elevated dining experience. Fresh ingredients, crafted with passion.</p>
+    </div>
+    <div>
+      <div class="f-title">Menu</div>
+      <ul class="f-links">
+        <li><a href="{{ url_for('customer.menu') }}">All Items</a></li>
+        <li><a href="{{ url_for('customer.menu', category='main_course') }}">Main Course</a></li>
+        <li><a href="{{ url_for('customer.menu', category='desserts') }}">Desserts</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="f-title">Support</div>
+      <ul class="f-links">
+        <li><a href="#">Shipping & Returns</a></li>
+        <li><a href="#">Contact Us</a></li>
+        <li><a href="#">FAQ</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="f-title">Legal</div>
+      <ul class="f-links">
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Terms of Service</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="f-copy">© 2024 AURA Restaurant. ALL RIGHTS RESERVED.</div>
+</footer>
+{% endblock %}
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

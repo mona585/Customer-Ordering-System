@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AURA - Menu</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+/* Menu Page Styles */
+.menu-nav{background:var(--cw);padding:16px 40px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;position:sticky;top:0;z-index:100}
+.menu-logo{font-size:20px;font-weight:700;letter-spacing:3px}
+.menu-links{display:flex;gap:24px;list-style:none}
+.menu-links a{color:var(--cg);font-size:13px;font-weight:500;transition:var(--tr)}
+.menu-links a:hover,.menu-links a.active{color:var(--c1)}
+.menu-icons{display:flex;gap:16px;align-items:center}
+.menu-icons a,.menu-icons button{background:none;border:none;cursor:pointer}
+.menu-icons svg{width:20px;height:20px;stroke:var(--c1);fill:none;stroke-width:1.5}
+
+/* Hero */
+.hero{background:linear-gradient(135deg,#1a1a1a 0%,#333 100%);color:var(--cw);padding:60px 40px;text-align:center}
+.hero h1{font-size:36px;font-weight:700;margin-bottom:12px}
+.hero p{font-size:16px;opacity:.8}
+
+/* Category Filter */
+.cat-filter{display:flex;justify-content:center;gap:12px;padding:24px 40px;background:var(--cw);border-bottom:1px solid #f0f0f0;flex-wrap:wrap}
+.cat-btn{padding:10px 24px;border:1.5px solid var(--cb);background:var(--cw);border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:var(--tr)}
+.cat-btn:hover,.cat-btn.on{background:var(--c1);color:var(--cw);border-color:var(--c1)}
+
+/* Menu Grid */
+.menu-section{padding:40px}
+.menu-title{font-size:24px;font-weight:700;margin-bottom:24px;text-transform:uppercase;letter-spacing:1px}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px}
+
+/* Food Card */
+.food-card{background:var(--cw);border-radius:var(--r);overflow:hidden;transition:var(--tr);border:1px solid #f0f0f0}
+.food-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+.food-img{aspect-ratio:4/3;background:#e8e8e8;position:relative;overflow:hidden}
+.food-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.food-card:hover .food-img img{transform:scale(1.05)}
+.food-badge{position:absolute;top:12px;left:12px;padding:4px 12px;background:var(--c2);color:var(--cw);font-size:11px;font-weight:700;border-radius:12px;text-transform:uppercase}
+.food-time{position:absolute;top:12px;right:12px;padding:4px 10px;background:rgba(0,0,0,.7);color:var(--cw);font-size:11px;border-radius:8px}
+.food-info{padding:20px}
+.food-name{font-size:16px;font-weight:700;margin-bottom:6px}
+.food-desc{font-size:13px;color:var(--cg);margin-bottom:12px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.food-bottom{display:flex;justify-content:space-between;align-items:center}
+.food-price{font-size:20px;font-weight:700}
+.food-cal{font-size:12px;color:var(--cl)}
+.add-btn{width:40px;height:40px;background:var(--c1);color:var(--cw);border:none;border-radius:50%;font-size:20px;cursor:pointer;transition:var(--tr)}
+.add-btn:hover{background:var(--c2)}
+
+/* Footer */
+.menu-footer{background:var(--c1);color:var(--cw);padding:40px;text-align:center;margin-top:40px}
+.menu-footer p{font-size:13px;opacity:.7}
+
+@media(max-width:768px){
+  .menu-grid{grid-template-columns:1fr}
+  .hero h1{font-size:28px}
+  .cat-filter{padding:16px 20px}
+  .menu-section{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<nav class="menu-nav">
+  <div class="menu-logo">AURA</div>
+  <ul class="menu-links">
+    <li><a href="{{ url_for('customer.menu') }}" class="active">Menu</a></li>
+    <li><a href="#">Cart</a></li>
+    <li><a href="#">Orders</a></li>
+    {% if current_user.is_authenticated %}
+      <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+    {% else %}
+      <li><a href="{{ url_for('auth.login') }}">Login</a></li>
+    {% endif %}
+  </ul>
+  <div class="menu-icons">
+    <a href="#">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </a>
+    <a href="#">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+    </a>
+  </div>
+</nav>
+
+<section class="hero">
+  <h1>Our Menu</h1>
+  <p>Fresh ingredients, crafted with passion</p>
+</section>
+
+<div class="cat-filter">
+  <a href="{{ url_for('customer.menu') }}" class="cat-btn {% if active_category == 'all' %}on{% endif %}">All</a>
+  <a href="{{ url_for('customer.menu', category='appetizers') }}" class="cat-btn {% if active_category == 'appetizers' %}on{% endif %}">Appetizers</a>
+  <a href="{{ url_for('customer.menu', category='main_course') }}" class="cat-btn {% if active_category == 'main_course' %}on{% endif %}">Main Course</a>
+  <a href="{{ url_for('customer.menu', category='desserts') }}" class="cat-btn {% if active_category == 'desserts' %}on{% endif %}">Desserts</a>
+  <a href="{{ url_for('customer.menu', category='beverages') }}" class="cat-btn {% if active_category == 'beverages' %}on{% endif %}">Beverages</a>
+  <a href="{{ url_for('customer.menu', category='sides') }}" class="cat-btn {% if active_category == 'sides' %}on{% endif %}">Sides</a>
+</div>
+
+{% for category_name, items in categories.items() %}
+{% if items %}
+<section class="menu-section">
+  <h2 class="menu-title">{{ category_name }}</h2>
+  <div class="menu-grid">
+    {% for item in items %}
+    <article class="food-card">
+      <div class="food-img">
+        {% if item.image_url %}
+          <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop" alt="{{ item.name }}">
+        {% else %}
+          <img src="https://via.placeholder.com/400x300?text={{ item.name }}" alt="{{ item.name }}">
+        {% endif %}
+        <span class="food-badge">{{ item.category.value }}</span>
+        <span class="food-time">{{ item.preparation_time }} min</span>
+      </div>
+      <div class="food-info">
+        <h3 class="food-name">{{ item.name }}</h3>
+        <p class="food-desc">{{ item.description }}</p>
+        <div class="food-bottom">
+          <div>
+            <span class="food-price">${{ "%.2f"|format(item.price|float) }}</span>
+            <span class="food-cal">{{ item.calories }} cal</span>
+          </div>
+          <form action="{{ url_for('customer.add_to_cart') }}" method="POST">
+            <input type="hidden" name="item_id" value="{{ item.id }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="add-btn">+</button>
+          </form>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endfor %}
+
+<footer class="menu-footer">
+  <p>© 2024 AURA Restaurant. All rights reserved.</p>
+</footer>
+
+</body>
+</html>

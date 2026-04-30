@@ -1,0 +1,111 @@
+
+{% extends "base.html" %}
+
+{% block title %}Shopping Cart - AURA{% endblock %}
+
+{% block content %}
+<style>
+.cart-container{max-width:1000px;margin:0 auto;padding:40px}
+.cart-title{font-size:28px;font-weight:700;margin-bottom:32px}
+
+.cart-empty{text-align:center;padding:60px 20px}
+.cart-empty h2{font-size:24px;margin-bottom:16px;color:var(--cg)}
+.cart-empty p{color:var(--cl);margin-bottom:24px}
+
+.cart-items{display:flex;flex-direction:column;gap:16px;margin-bottom:32px}
+.cart-item{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:20px;align-items:center;padding:20px;background:var(--cw);border-radius:var(--r);border:1px solid #f0f0f0}
+.cart-item-img{width:80px;height:80px;background:#e8e8e8;border-radius:8px;overflow:hidden}
+.cart-item-img img{width:100%;height:100%;object-fit:cover}
+.cart-item-info h3{font-size:16px;font-weight:600;margin-bottom:4px}
+.cart-item-info p{font-size:13px;color:var(--cg)}
+.qty-form{display:flex;align-items:center;gap:8px}
+.qty-form input{width:50px;padding:8px;border:1.5px solid var(--cb);border-radius:6px;text-align:center;font-size:14px}
+.qty-form button{padding:8px 12px;background:var(--c1);color:var(--cw);border:none;border-radius:6px;cursor:pointer;font-size:12px}
+.cart-item-price{font-size:18px;font-weight:700;min-width:80px;text-align:right}
+.remove-btn{background:none;border:none;color:#d32f2f;cursor:pointer;font-size:13px;padding:8px}
+.remove-btn:hover{text-decoration:underline}
+
+.cart-summary{background:var(--cw);padding:24px;border-radius:var(--r);border:1px solid #f0f0f0}
+.summary-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f0f0}
+.summary-row:last-child{border-bottom:none;font-size:20px;font-weight:700}
+.summary-label{color:var(--cg)}
+
+.checkout-btn{display:block;width:100%;padding:16px;background:var(--c2);color:var(--cw);border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;margin-top:20px;transition:var(--tr)}
+.checkout-btn:hover{background:#4f46e5}
+.continue-btn{display:inline-block;padding:12px 24px;background:var(--cw);color:var(--c1);border:1.5px solid var(--cb);border-radius:var(--r);font-size:14px;font-weight:600;text-decoration:none;transition:var(--tr)}
+.continue-btn:hover{border-color:var(--c1)}
+
+@media(max-width:768px){
+  .cart-item{grid-template-columns:1fr;gap:12px;text-align:center}
+  .cart-item-img{margin:0 auto}
+  .cart-item-price{text-align:center}
+}
+</style>
+
+<div class="cart-container">
+  <h1 class="cart-title">Shopping Cart</h1>
+  
+  {% if items %}
+  <div class="cart-items">
+    {% for item in items %}
+    <div class="cart-item">
+      <div class="cart-item-img">
+        {% if item.menu_item.image_url %}
+          <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}">
+        {% else %}
+          <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=80&h=80&fit=crop" alt="{{ item.menu_item.name }}">
+        {% endif %}
+      </div>
+      <div class="cart-item-info">
+        <h3>{{ item.menu_item.name }}</h3>
+        <p>{{ item.menu_item.category.value }}</p>
+        {% if item.special_requests %}
+          <p style="color:var(--c2);font-size:12px;">Note: {{ item.special_requests }}</p>
+        {% endif %}
+      </div>
+      <form action="{{ url_for('customer.update_cart', item_id=item.menu_item.id) }}" method="POST" class="qty-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="10">
+        <button type="submit">Update</button>
+      </form>
+      <div class="cart-item-price">${{ "%.2f"|format(item.subtotal) }}</div>
+      <form action="{{ url_for('customer.remove_from_cart', item_id=item.menu_item.id) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="remove-btn">Remove</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  
+  <div class="cart-summary">
+    <div class="summary-row">
+      <span class="summary-label">Subtotal</span>
+      <span>${{ "%.2f"|format(total) }}</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Delivery Fee</span>
+      <span>$5.00</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Tax</span>
+      <span>${{ "%.2f"|format(total * 0.08) }}</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Total</span>
+      <span>${{ "%.2f"|format(total + 5.00 + (total * 0.08)) }}</span>
+    </div>
+    <a href="{{ url_for('customer.checkout') }}" class="checkout-btn">Proceed to Checkout</a>
+    <div style="text-align:center;margin-top:16px">
+      <a href="{{ url_for('customer.menu') }}" class="continue-btn">Continue Shopping</a>
+    </div>
+  </div>
+  
+  {% else %}
+  <div class="cart-empty">
+    <h2>Your cart is empty</h2>
+    <p>Looks like you haven't added any items yet.</p>
+    <a href="{{ url_for('customer.menu') }}" class="continue-btn">Browse Menu</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
