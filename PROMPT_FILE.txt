@@ -1,0 +1,172 @@
+# PROMPT FILE — Cart System
+# CSE323 Software Engineering · Spring 2026
+# Name: Mariam Gamal Elsayed  ID:120230012 | Feature: Cart System
+# This file documents all AI-assisted prompts used during development,
+# as required by the AI Disclosure policy.
+# All code and documents generated with AI assistance are disclosed here.
+# ──────────────────────────────────────────────────────────────────────
+
+## PROMPT 1 — Project Architecture Understanding
+Used to: Understand the MVC + Repository pattern and how to structure the Cart System
+
+"We are building a Customer Ordering System using Python + Flask + SQLite.
+I am responsible for the Cart System feature. The architecture uses MVC + Repository Pattern.
+Explain what files I need to create and what each file's responsibility should be,
+following vertical slice architecture where I own UI + Logic + Backend + DB + Tests."
+
+---
+
+## PROMPT 2 — Cart Model Design
+Used to: Design the CartItem and Cart dataclasses
+
+"Design a Python dataclass for a CartItem that stores: id, user_id, product_id,
+product_name, product_price, quantity, image_url. Include a line_total() method
+and a to_dict() method for JSON serialization. Also create a Cart dataclass
+that holds a list of CartItems with grand_total(), item_count(), and is_empty() methods."
+
+---
+
+## PROMPT 3 — SQLite Schema
+Used to: Design the cart_items table schema
+
+"Design a SQLite CREATE TABLE statement for a cart_items table.
+Requirements:
+- Fields: id (PK), user_id (FK), product_id, product_name, product_price, quantity, image_url
+- Enforce that quantity >= 1 and price >= 0 using CHECK constraints
+- Prevent duplicate products for the same user using a UNIQUE constraint
+- Enable foreign key enforcement"
+
+---
+
+## PROMPT 4 — Repository Pattern Implementation
+Used to: Write all database operations in cart_repository.py
+
+"Implement a Python cart repository for SQLite with these functions:
+- get_cart(user_id) → returns Cart object
+- get_cart_item(user_id, product_id) → returns CartItem or None
+- add_item(user_id, product_id, ...) → adds item or increments quantity if exists
+- update_quantity(user_id, product_id, new_quantity) → returns True/False
+- remove_item(user_id, product_id) → returns True/False
+- clear_cart(user_id) → returns count of deleted rows
+All functions should raise ValueError for invalid inputs. No SQL should appear outside this file."
+
+---
+
+## PROMPT 5 — Flask Routes / Controller
+Used to: Write the Flask Blueprint with all cart API endpoints
+
+"Create a Flask Blueprint for the Cart System with URL prefix /cart.
+Include these routes:
+- GET /cart/ → render cart.html template
+- GET /cart/api → return cart JSON
+- POST /cart/add → validate and add item (validate: product_id is int, name not empty, price >= 0, qty in [1,99])
+- POST /cart/update → update quantity
+- POST /cart/remove → remove item
+- POST /cart/clear → clear all items
+All routes must check session.user_id and return 401 if not logged in.
+Return appropriate HTTP status codes (400 for validation, 404 for not found)."
+
+---
+
+## PROMPT 6 — Frontend HTML + CSS + JavaScript
+Used to: Build the cart page UI
+
+"Create an HTML cart page with:
+- A table showing product name, unit price, quantity controls (+/- buttons), line total, and a remove button
+- A summary section showing total items and grand total
+- A 'Clear Cart' button and 'Proceed to Checkout' link
+- An empty state message when cart is empty
+
+Create accompanying CSS for a clean, modern look with a dark navy (#1a1a2e) header color scheme.
+
+Create JavaScript using fetch() to:
+- Call /cart/update when quantity changes (no page reload)
+- Call /cart/remove when remove is clicked (animate row removal)
+- Call /cart/clear with confirmation dialog
+- Update DOM totals dynamically after each operation
+- Show a toast notification for success/error"
+
+---
+
+## PROMPT 7 — Unit Tests (TDD Approach)
+Used to: Write tests BEFORE implementing some functions (TDP evidence)
+
+"Write pytest unit tests for a cart system following TDD principles.
+Tests should be written for:
+1. CartItem.line_total() method — including floating point edge case
+2. Cart.grand_total() — empty cart, multiple items
+3. Repository: add_item() including duplicate product merge behavior
+4. Repository: update_quantity() — success, not found, zero qty error
+5. Repository: clear_cart() — should only affect the target user_id
+Use a pytest fixture that redirects SQLite to a temp DB for test isolation."
+
+---
+
+## PROMPT 8 — Integration Tests
+Used to: Test Flask routes end-to-end
+
+"Write Flask integration tests using app.test_client().
+Test these scenarios:
+- Successful add, update, remove, clear
+- 400 for invalid inputs (negative price, empty name, qty=0, qty=100)
+- 401 when no session is set
+- 404 when removing non-existent item
+Use a session fixture that sets user_id=1 to simulate logged-in state."
+
+---
+
+## PROMPT 9 — Playwright E2E Tests with Page Object Model
+Used to: Write E2E browser tests
+
+"Create Playwright E2E tests for a cart page with:
+1. A CartPage class (Page Object Model) with locators for: table, empty message,
+   grand total, cart count, qty controls per product_id, remove buttons
+2. Test scenarios matching these Gherkin scripts:
+   - Empty cart shows empty state
+   - Populated cart shows items and correct total
+   - + button increments quantity and updates total
+   - Remove button removes the row
+   - Clear cart empties everything
+   - Decrementing qty from 1 removes the item
+Use beforeEach to clear the cart via API for test isolation."
+
+---
+
+## PROMPT 10 — Requirements Report (D2)
+Used to: Generate the D2 Requirements Report document
+
+"Write a requirements report for the Cart System feature of a customer ordering system.
+Include:
+1. Introduction explaining the feature scope
+2. Actor classification table: Primary (Customer), Supporting (Product System, Auth System, Order System), Offstage (DB, Manager)
+3. Functional requirements table (FR-01 to FR-14) with ID, description, priority, actor
+4. Non-functional requirements (performance: <200ms API, <1s page; security: session auth, user isolation; maintainability: no SQL in controller)
+5. Requirements traceability heatmap mapping each FR to implementation files
+6. Persona discovery — 6 edge cases uncovered via user avatar: floating point, qty limits, concurrent adds, session expiry, persistence, cross-user isolation"
+
+---
+
+## PROMPT 11 — Design Specification (D3)
+Used to: Generate the D3 Design Specification document
+
+"Write a design specification for the Cart System including:
+1. Gherkin scripts for: add item (happy path), add duplicate (increment), update qty, remove, clear, reject invalid inputs (Scenario Outline), reject unauthenticated
+2. System Sequence Diagrams (text-based) for: happy add path, failure unauthenticated path
+3. Activity diagram for the Add to Cart flow with all decision points
+4. API contracts table (method, endpoint, request body, success response, error responses)
+5. QA refinement audit log: replacing vague terms like 'fast', 'valid', 'secure', 'smooth' with measurable technical metrics"
+
+---
+
+## PROMPT 12 — Validation Report (D4)
+Used to: Generate the D4 Validation Report document
+
+"Write a validation report for the Cart System including:
+1. Verification vs Validation statement clearly distinguishing: verification = code matches spec (unit/integration tests), validation = cart solves real user need (E2E tests)
+2. Testing pyramid breakdown: 70% unit (model + repository tests), 20% integration (route tests), 10% E2E (Playwright)
+3. Complete test results table with all 34 test names and PASS/FAIL status
+4. Playwright E2E results linked to Gherkin scenarios with POM class references
+5. TDP evidence showing failing-test-first cycle for add_item()
+6. Edge case padlock table: threshold (qty 1-99), type (price >= 0), boundary (float rounding), isolation (user data), presence (name not empty), identity (product_id integer)"
+
+---

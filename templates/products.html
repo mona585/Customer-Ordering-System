@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shop — Customer Ordering System</title>
+  <link rel="stylesheet" href="/static/css/main.css"/>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="nav-brand">🛍️ ShopCart</div>
+    <a href="/cart/" class="nav-cart-btn">
+      🛒 Cart <span class="cart-badge" id="nav-count">0</span>
+    </a>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <h1>Our Products</h1>
+    <p>Fresh items, added to your cart in one click</p>
+  </div>
+
+  <div class="products-grid" id="products-grid">
+
+    <div class="product-card">
+      <div class="product-emoji">🍔</div>
+      <div class="product-info">
+        <h3>Classic Burger</h3>
+        <p>Juicy beef patty with fresh vegetables</p>
+        <div class="product-footer">
+          <span class="price">$9.99</span>
+          <button class="add-btn" onclick="addToCart(1, 'Classic Burger', 9.99, this)">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-emoji">🍕</div>
+      <div class="product-info">
+        <h3>Pepperoni Pizza</h3>
+        <p>Wood-fired with extra cheese</p>
+        <div class="product-footer">
+          <span class="price">$14.99</span>
+          <button class="add-btn" onclick="addToCart(2, 'Pepperoni Pizza', 14.99, this)">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-emoji">🌮</div>
+      <div class="product-info">
+        <h3>Chicken Tacos</h3>
+        <p>Grilled chicken with salsa & guacamole</p>
+        <div class="product-footer">
+          <span class="price">$8.50</span>
+          <button class="add-btn" onclick="addToCart(3, 'Chicken Tacos', 8.50, this)">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-emoji">🍜</div>
+      <div class="product-info">
+        <h3>Ramen Bowl</h3>
+        <p>Rich broth with noodles and soft egg</p>
+        <div class="product-footer">
+          <span class="price">$12.00</span>
+          <button class="add-btn" onclick="addToCart(4, 'Ramen Bowl', 12.00, this)">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-emoji">🥗</div>
+      <div class="product-info">
+        <h3>Caesar Salad</h3>
+        <p>Crisp romaine with parmesan & croutons</p>
+        <div class="product-footer">
+          <span class="price">$7.50</span>
+          <button class="add-btn" onclick="addToCart(5, 'Caesar Salad', 7.50, this)">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-emoji">🧃</div>
+      <div class="product-info">
+        <h3>Fresh Juice</h3>
+        <p>Cold-pressed orange & mango blend</p>
+        <div class="product-footer">
+          <span class="price">$3.99</span>
+          <button class="add-btn" onclick="addToCart(6, 'Fresh Juice', 3.99, this)">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-emoji">🍰</div>
+      <div class="product-info">
+        <h3>Cheesecake</h3>
+        <p>New York style with strawberry topping</p>
+        <div class="product-footer">
+          <span class="price">$6.00</span>
+          <button class="add-btn" onclick="addToCart(7, 'Cheesecake', 6.00, this)">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-emoji">☕</div>
+      <div class="product-info">
+        <h3>Iced Coffee</h3>
+        <p>Cold brew with oat milk & vanilla</p>
+        <div class="product-footer">
+          <span class="price">$4.50</span>
+          <button class="add-btn" onclick="addToCart(8, 'Iced Coffee', 4.50, this)">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>
