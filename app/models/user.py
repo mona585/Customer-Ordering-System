@@ -15,9 +15,8 @@ class User(db.Model):
     address = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationships
-    orders = db.relationship('Order', backref='customer', lazy=True, cascade='all, delete-orphan')
-    reviews = db.relationship('Review', backref='customer', lazy=True, cascade='all, delete-orphan')
+    orders = db.relationship('Order', back_populates='customer', lazy=True, cascade='all, delete-orphan')
+    reviews = db.relationship('Review', back_populates='customer', lazy=True, cascade='all, delete-orphan')
     
     # Flask-Login required methods
     def is_authenticated(self):

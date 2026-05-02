@@ -1,4 +1,4 @@
-# 13. SEED DATA FILE (seed_data.py) - Fixed
+# app/utils/seed_data.py
 
 from app.extensions import db
 from app.models.user import User
@@ -27,151 +27,187 @@ def seed_menu_items():
         return
     
     items = [
-        # Appetizers
+        # ==================== APPETIZERS ====================
         {
-            'name': 'Truffle Arancini',
-            'description': 'Crispy risotto balls infused with black truffle, served with garlic aioli.',
+            'name': 'Mozzarella Sticks',
+            'description': 'Golden fried mozzarella sticks served with marinara sauce.',
+            'price': 10.00,
+            'category': Category.APPETIZERS,
+            'image_url': 'static/images/Mozzarella Sticks.jpg',
+            'stock_quantity': 25,
+            'preparation_time': 12,
+            'calories': 450,
+            'ingredients': 'Mozzarella cheese, breadcrumbs, marinara sauce, herbs'
+        },
+        {
+            'name': 'Buffalo Wings',
+            'description': 'Crispy chicken wings tossed in spicy buffalo sauce, served with blue cheese dip.',
             'price': 14.00,
             'category': Category.APPETIZERS,
-            'image_url': 'https://images.unsplash.com/photo-1541529086526-db283c563270?w=400&h=300&fit=crop',
+            'image_url': 'static/images/Buffalo Wings.jpg',
+            'stock_quantity': 20,
             'preparation_time': 15,
-            'calories': 380,
-            'ingredients': 'Arborio rice, black truffle, parmesan, breadcrumbs, garlic aioli'
+            'calories': 520,
+            'ingredients': 'Chicken wings, buffalo sauce, blue cheese, celery'
         },
         {
-            'name': 'Burrata & Heirloom Tomato',
-            'description': 'Creamy burrata cheese with fresh heirloom tomatoes, basil oil, and balsamic glaze.',
-            'price': 16.00,
+            'name': 'Loaded Nachos',
+            'description': 'Tortilla chips topped with melted cheese, jalapeños, sour cream, and guacamole.',
+            'price': 12.00,
             'category': Category.APPETIZERS,
-            'image_url': 'https://images.unsplash.com/photo-1529312266912-b33cf6227e2f?w=400&h=300&fit=crop',
+            'image_url': 'static/images/Loaded Nachos.jpg',
+            'stock_quantity': 18,
             'preparation_time': 10,
-            'calories': 320,
-            'ingredients': 'Burrata, heirloom tomatoes, basil, balsamic glaze, olive oil'
-        },
-        {
-            'name': 'Wagyu Beef Carpaccio',
-            'description': 'Thinly sliced wagyu beef with truffle oil, capers, and shaved parmesan.',
-            'price': 22.00,
-            'category': Category.APPETIZERS,
-            'image_url': 'https://images.unsplash.com/photo-1544025162-d76690b60944?w=400&h=300&fit=crop',
-            'preparation_time': 12,
-            'calories': 280,
-            'ingredients': 'Wagyu beef, truffle oil, capers, parmesan, arugula'
-        },
-        
-        # Main Course
-        {
-            'name': 'Pan-Seared Salmon',
-            'description': 'Atlantic salmon with lemon butter sauce, asparagus, and herb roasted potatoes.',
-            'price': 28.00,
-            'category': Category.MAIN_COURSE,
-            'image_url': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop',
-            'preparation_time': 25,
-            'calories': 580,
-            'ingredients': 'Atlantic salmon, lemon, butter, asparagus, potatoes, herbs'
-        },
-        {
-            'name': 'Truffle Mushroom Risotto',
-            'description': 'Creamy arborio rice with wild mushrooms, truffle oil, and aged parmesan.',
-            'price': 24.00,
-            'category': Category.MAIN_COURSE,
-            'image_url': 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=300&fit=crop',
-            'preparation_time': 30,
-            'calories': 620,
-            'ingredients': 'Arborio rice, wild mushrooms, truffle oil, parmesan, white wine'
-        },
-        {
-            'name': 'Ribeye Steak',
-            'description': 'Prime ribeye with red wine reduction, garlic mashed potatoes, and grilled vegetables.',
-            'price': 42.00,
-            'category': Category.MAIN_COURSE,
-            'image_url': 'https://images.unsplash.com/photo-1546833998-877b37c2e5c6?w=400&h=300&fit=crop',
-            'preparation_time': 35,
-            'calories': 750,
-            'ingredients': 'Ribeye beef, red wine, garlic, potatoes, seasonal vegetables'
-        },
-        {
-            'name': 'Lobster Linguine',
-            'description': 'Fresh pasta with lobster meat, cherry tomatoes, and white wine cream sauce.',
-            'price': 36.00,
-            'category': Category.MAIN_COURSE,
-            'image_url': 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=400&h=300&fit=crop',
-            'preparation_time': 28,
             'calories': 680,
-            'ingredients': 'Linguine, lobster, cherry tomatoes, cream, white wine, garlic'
+            'ingredients': 'Tortilla chips, cheese, jalapeños, sour cream, guacamole'
         },
         
-        # Desserts
+        # ==================== MAIN COURSE ====================
+        {
+            'name': 'Classic Cheeseburger',
+            'description': 'Juicy beef patty with cheddar cheese, lettuce, tomato, and special sauce on a brioche bun.',
+            'price': 16.00,
+            'category': Category.MAIN_COURSE,
+            'image_url': 'static/images/Classic Cheeseburger.jpg',
+            'stock_quantity': 30,
+            'preparation_time': 20,
+            'calories': 850,
+            'ingredients': 'Beef patty, cheddar cheese, lettuce, tomato, brioche bun'
+        },
+        {
+            'name': 'Grilled Chicken Sandwich',
+            'description': 'Marinated grilled chicken breast with avocado, bacon, and chipotle mayo.',
+            'price': 15.00,
+            'category': Category.MAIN_COURSE,
+            'image_url': 'static/images/Grilled Chicken Sandwich.jpg',
+            'stock_quantity': 22,
+            'preparation_time': 18,
+            'calories': 720,
+            'ingredients': 'Chicken breast, avocado, bacon, chipotle mayo, ciabatta'
+        },
+        {
+            'name': 'Margherita Pizza',
+            'description': 'Classic pizza with fresh mozzarella, tomato sauce, and basil on a thin crust.',
+            'price': 14.00,
+            'category': Category.MAIN_COURSE,
+            'image_url': 'static/images/Margherita Pizza.jpg',
+            'stock_quantity': 20,
+            'preparation_time': 25,
+            'calories': 780,
+            'ingredients': 'Mozzarella, tomato sauce, basil, olive oil, thin crust'
+        },
+        {
+            'name': 'Pasta Carbonara',
+            'description': 'Creamy Italian pasta with pancetta, egg yolk, and parmesan cheese.',
+            'price': 18.00,
+            'category': Category.MAIN_COURSE,
+            'image_url': 'static/images/Pasta Carbonara.jpg',
+            'stock_quantity': 15,
+            'preparation_time': 22,
+            'calories': 920,
+            'ingredients': 'Spaghetti, pancetta, egg yolk, parmesan, black pepper'
+        },
+        {
+            'name': 'Fish & Chips',
+            'description': 'Beer-battered cod served with crispy fries and tartar sauce.',
+            'price': 17.00,
+            'category': Category.MAIN_COURSE,
+            'image_url': 'static/images/Fish & Chips.jpg',
+            'stock_quantity': 12,
+            'preparation_time': 20,
+            'calories': 980,
+            'ingredients': 'Cod, beer batter, potatoes, tartar sauce, lemon'
+        },
+        {
+            'name': 'Steak Frites',
+            'description': 'Grilled sirloin steak with herb butter and crispy French fries.',
+            'price': 26.00,
+            'category': Category.MAIN_COURSE,
+            'image_url': 'static/images/Steak Frites.jpg',
+            'stock_quantity': 10,
+            'preparation_time': 25,
+            'calories': 1100,
+            'ingredients': 'Sirloin steak, herb butter, potatoes, parsley'
+        },
+        
+        # ==================== DESSERTS ====================
         {
             'name': 'Tiramisu',
             'description': 'Classic Italian dessert with espresso-soaked ladyfingers and mascarpone cream.',
-            'price': 12.00,
+            'price': 9.00,
             'category': Category.DESSERTS,
-            'image_url': 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=400&h=300&fit=crop',
+            'image_url': 'static/images/Tiramisu.jpg',
+            'stock_quantity': 20,
             'preparation_time': 10,
             'calories': 420,
-            'ingredients': 'Ladyfingers, espresso, mascarpone, cocoa powder, marsala wine'
+            'ingredients': 'Ladyfingers, espresso, mascarpone, cocoa powder'
         },
         {
             'name': 'Chocolate Lava Cake',
-            'description': 'Warm chocolate cake with a molten center, served with vanilla bean ice cream.',
-            'price': 14.00,
+            'description': 'Warm chocolate cake with a molten center, served with vanilla ice cream.',
+            'price': 11.00,
             'category': Category.DESSERTS,
-            'image_url': 'https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=400&h=300&fit=crop',
-            'preparation_time': 20,
-            'calories': 520,
+            'image_url': 'static/images/Chocolate Lava Cake.jpg',
+            'stock_quantity': 15,
+            'preparation_time': 15,
+            'calories': 580,
             'ingredients': 'Dark chocolate, butter, eggs, flour, vanilla ice cream'
         },
         {
-            'name': 'Crème Brûlée',
-            'description': 'Rich vanilla custard with a caramelized sugar crust and fresh berries.',
-            'price': 11.00,
+            'name': 'New York Cheesecake',
+            'description': 'Rich and creamy cheesecake with a graham cracker crust and strawberry topping.',
+            'price': 10.00,
             'category': Category.DESSERTS,
-            'image_url': 'https://images.unsplash.com/photo-1470324161839-ce2bb6fa6bc3?w=400&h=300&fit=crop',
-            'preparation_time': 15,
-            'calories': 380,
-            'ingredients': 'Cream, eggs, vanilla, sugar, mixed berries'
+            'image_url': 'static/images/New York Cheesecake.jpg',
+            'stock_quantity': 18,
+            'preparation_time': 12,
+            'calories': 520,
+            'ingredients': 'Cream cheese, graham crackers, strawberries, sugar'
         },
         
-        # Beverages
+        # ==================== BEVERAGES ====================
         {
-            'name': 'Signature Mojito',
-            'description': 'Fresh mint, lime, and premium rum with a splash of soda.',
-            'price': 14.00,
+            'name': 'Fresh Lemonade',
+            'description': 'Refreshing homemade lemonade with fresh mint and a hint of honey.',
+            'price': 5.00,
             'category': Category.BEVERAGES,
-            'image_url': 'https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=400&h=300&fit=crop',
+            'image_url': 'static/images/Fresh Lemonade.jpg',
+            'stock_quantity': 50,
             'preparation_time': 5,
-            'calories': 180,
-            'ingredients': 'White rum, fresh mint, lime, sugar, soda water'
+            'calories': 120,
+            'ingredients': 'Lemons, mint, honey, water, ice'
         },
         {
-            'name': 'Artisan Cold Brew',
-            'description': '24-hour steeped cold brew coffee with oat milk and vanilla syrup.',
+            'name': 'Iced Caramel Latte',
+            'description': 'Smooth espresso with caramel syrup and cold milk over ice.',
+            'price': 6.00,
+            'category': Category.BEVERAGES,
+            'image_url': 'static/images/Iced Caramel Latte.jpg',
+            'stock_quantity': 45,
+            'preparation_time': 5,
+            'calories': 250,
+            'ingredients': 'Espresso, caramel syrup, milk, ice'
+        },
+        {
+            'name': 'Mango Smoothie',
+            'description': 'Tropical mango smoothie with yogurt and a touch of honey.',
             'price': 7.00,
             'category': Category.BEVERAGES,
-            'image_url': 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=300&fit=crop',
-            'preparation_time': 3,
-            'calories': 120,
-            'ingredients': 'Cold brew coffee, oat milk, vanilla syrup, ice'
-        },
-        {
-            'name': 'Fresh Green Juice',
-            'description': 'Kale, spinach, apple, ginger, and lemon cold-pressed juice.',
-            'price': 9.00,
-            'category': Category.BEVERAGES,
-            'image_url': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop',
+            'image_url': 'static/images/Mango Smoothie.jpg',
+            'stock_quantity': 40,
             'preparation_time': 5,
-            'calories': 140,
-            'ingredients': 'Kale, spinach, green apple, ginger, lemon'
+            'calories': 280,
+            'ingredients': 'Mango, yogurt, honey, ice'
         },
         
-        # Sides
+        # ==================== SIDES ====================
         {
             'name': 'Truffle Fries',
             'description': 'Crispy hand-cut fries tossed with truffle oil and parmesan.',
-            'price': 10.00,
+            'price': 8.00,
             'category': Category.SIDES,
-            'image_url': 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&h=300&fit=crop',
+            'image_url': 'static/images/Truffle Fries.jpg',
+            'stock_quantity': 35,
             'preparation_time': 15,
             'calories': 450,
             'ingredients': 'Potatoes, truffle oil, parmesan, parsley, sea salt'
@@ -179,22 +215,35 @@ def seed_menu_items():
         {
             'name': 'Garlic Bread',
             'description': 'Sourdough with roasted garlic butter and fresh herbs.',
-            'price': 8.00,
+            'price': 6.00,
             'category': Category.SIDES,
-            'image_url': 'https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?w=400&h=300&fit=crop',
+            'image_url': 'static/images/Garlic Bread.jpg',
+            'stock_quantity': 30,
             'preparation_time': 10,
             'calories': 320,
             'ingredients': 'Sourdough, garlic, butter, parsley, olive oil'
         },
         {
-            'name': 'Seasonal Salad',
-            'description': 'Mixed greens with cherry tomatoes, cucumber, and lemon vinaigrette.',
+            'name': 'Classic Caesar Salad',
+            'description': 'Crisp romaine lettuce with Caesar dressing, croutons, and parmesan.',
             'price': 9.00,
             'category': Category.SIDES,
-            'image_url': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
+            'image_url': 'static/images/Classic Caesar Salad.jpg',
+            'stock_quantity': 20,
             'preparation_time': 8,
-            'calories': 180,
-            'ingredients': 'Mixed greens, cherry tomatoes, cucumber, lemon vinaigrette'
+            'calories': 280,
+            'ingredients': 'Romaine lettuce, Caesar dressing, croutons, parmesan'
+        },
+        {
+            'name': 'Onion Rings',
+            'description': 'Crispy battered onion rings served with spicy dipping sauce.',
+            'price': 7.00,
+            'category': Category.SIDES,
+            'image_url': 'static/images/Onion Rings.jpg',
+            'stock_quantity': 25,
+            'preparation_time': 12,
+            'calories': 380,
+            'ingredients': 'Onions, batter, spices, dipping sauce'
         }
     ]
     
@@ -203,4 +252,4 @@ def seed_menu_items():
         db.session.add(item)
     
     db.session.commit()
-    print(f"✅ Seeded {len(items)} menu items")
+    print(f"✅ Seeded {len(items)} menu items with stock quantities")

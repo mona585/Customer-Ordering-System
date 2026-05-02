@@ -46,6 +46,9 @@ def create_app(config_name='development'):
             seed_test_user()
             print("✅ Database seeded")
     
+    from app.routes.main import main_bp
+    app.register_blueprint(main_bp)
+
     return app
 
 

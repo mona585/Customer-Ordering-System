@@ -1,5 +1,3 @@
-# app/models/menu_item.py
-
 from enum import Enum
 from app.extensions import db
 
@@ -22,7 +20,8 @@ class MenuItem(db.Model):
     category = db.Column(db.Enum(Category), nullable=False)
     image_url = db.Column(db.String(255))
     is_available = db.Column(db.Boolean, default=True)
-    preparation_time = db.Column(db.Integer, default=15)  # minutes
+    stock_quantity = db.Column(db.Integer, default=10)  # ← NEW: Available stock
+    preparation_time = db.Column(db.Integer, default=15)
     calories = db.Column(db.Integer)
     ingredients = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
@@ -34,6 +33,22 @@ class MenuItem(db.Model):
     def __repr__(self):
         return f'<MenuItem {self.name}>'
     
+    @property
+    def available_stock(self):
+        """Calculate actual available stock (total - pending)"""
+        from app.models.orders import Order, OrderStatus
+        from app.models.order_item import OrderItem
+        
+        # Get pending quantities (in carts or pending orders)
+        pending = db.session.query(db.func.sum(OrderItem.quantity)).join(
+            Order, OrderItem.order_id == Order.id
+        ).filter(
+            OrderItem.menu_item_id == self.id,
+            Order.status.in_([OrderStatus.PENDING, OrderStatus.CONFIRMED])
+        ).scalar() or 0
+        
+        return max(0, self.stock_quantity - pending)
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -43,6 +58,8 @@ class MenuItem(db.Model):
             'category': self.category.value,
             'image_url': self.image_url,
             'is_available': self.is_available,
+            'stock_quantity': self.stock_quantity,
+            'available_stock': self.available_stock,
             'preparation_time': self.preparation_time,
             'calories': self.calories,
             'ingredients': self.ingredients,
