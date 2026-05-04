@@ -15,18 +15,24 @@ def menu():
 
     category = request.args.get('category', 'all')
 
+<<<<<<< HEAD
+=======
+    all_items = MenuItem.query.filter_by(is_available=True).all()
+
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
     if category != 'all':
         try:
-            cat_enum = Category(category.upper().replace('_', ' '))
-            items = MenuItem.query.filter_by(
-                category=cat_enum,
-                is_available=True
-            ).all()
-        except ValueError:
-            items = MenuItem.query.filter_by(is_available=True).all()
+            cat_enum = Category[category.upper()]
+            items = [item for item in all_items if item.category == cat_enum]
+        except (ValueError, KeyError):
+            items = all_items
             category = 'all'
     else:
+<<<<<<< HEAD
         items = MenuItem.query.filter_by(is_available=True).all()
+=======
+        items = all_items
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
 
     categories = {
         'Appetizers': [],
@@ -97,8 +103,12 @@ def cart():
             quantity = item_data.get('quantity', 1)
             available = menu_item.available_stock
 
+<<<<<<< HEAD
             # Check if still available
             if quantity > available + quantity:  # If we have it in cart, add back to check
+=======
+            if quantity > available + quantity:
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
                 stock_errors.append(f"{menu_item.name}: Only {available} available")
                 quantity = min(quantity, available)
 
@@ -144,10 +154,15 @@ def add_to_cart():
         flash('Item not found', 'danger')
         return redirect(url_for('customer.menu'))
 
+<<<<<<< HEAD
     # Check stock availability
     available = menu_item.available_stock
 
     # Get current cart quantity for this item
+=======
+    available = menu_item.available_stock
+
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
     cart = session.get('cart', {})
     current_qty = cart.get(str(item_id), {}).get('quantity', 0)
     total_requested = current_qty + quantity
@@ -156,11 +171,17 @@ def add_to_cart():
         flash(f'Sorry, only {available} of {menu_item.name} available. You have {current_qty} in cart.', 'warning')
         return redirect(request.referrer or url_for('customer.menu'))
 
+<<<<<<< HEAD
     # Initialize cart if not exists
     if 'cart' not in session:
         session['cart'] = {}
 
     # Add or update item
+=======
+    if 'cart' not in session:
+        session['cart'] = {}
+
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
     if str(item_id) in cart:
         cart[str(item_id)]['quantity'] += quantity
         if special_requests:
@@ -285,6 +306,10 @@ def api_product_details(item_id):
 def update_cart(item_id):
     """Update cart item quantity with stock check"""
     from app.models.menu_item import MenuItem
+<<<<<<< HEAD
+=======
+    import copy
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
 
     quantity = request.form.get('quantity', 0, type=int)
 
@@ -293,6 +318,7 @@ def update_cart(item_id):
         flash('Item not found', 'danger')
         return redirect(url_for('customer.cart'))
 
+<<<<<<< HEAD
     if 'cart' in session:
         cart = session['cart']
         str_id = str(item_id)
@@ -317,6 +343,38 @@ def update_cart(item_id):
 
             session['cart'] = cart
             session.modified = True
+=======
+    if 'cart' not in session:
+        flash('Cart is empty', 'warning')
+        return redirect(url_for('customer.cart'))
+
+    # Create a deep copy to ensure Flask detects changes
+    cart = copy.deepcopy(dict(session['cart']))
+    str_id = str(item_id)
+
+    if str_id not in cart:
+        flash('Item not in cart', 'warning')
+        return redirect(url_for('customer.cart'))
+
+    available = menu_item.available_stock
+
+    if quantity > cart[str_id]['quantity']:
+        extra_needed = quantity - cart[str_id]['quantity']
+        if extra_needed > available:
+            flash(f'Only {available + cart[str_id]["quantity"]} total available', 'warning')
+            return redirect(url_for('customer.cart'))
+
+    if quantity <= 0:
+        del cart[str_id]
+        flash('Item removed from cart', 'info')
+    else:
+        cart[str_id]['quantity'] = quantity
+        flash('Cart updated', 'success')
+
+    # Reassign the entire cart to ensure Flask detects the change
+    session['cart'] = cart
+    session.modified = True
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
 
     return redirect(url_for('customer.cart'))
 
@@ -325,6 +383,7 @@ def update_cart(item_id):
 @login_required
 def remove_from_cart(item_id):
     """Remove item from cart - release stock"""
+<<<<<<< HEAD
     if 'cart' in session:
         cart = session['cart']
         str_id = str(item_id)
@@ -334,6 +393,24 @@ def remove_from_cart(item_id):
             session['cart'] = cart
             session.modified = True
             flash('Item removed from cart', 'info')
+=======
+    import copy
+
+    if 'cart' not in session:
+        flash('Cart is empty', 'warning')
+        return redirect(url_for('customer.cart'))
+
+    cart = copy.deepcopy(dict(session['cart']))
+    str_id = str(item_id)
+
+    if str_id in cart:
+        del cart[str_id]
+        session['cart'] = cart
+        session.modified = True
+        flash('Item removed from cart', 'info')
+    else:
+        flash('Item not found in cart', 'warning')
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
 
     return redirect(url_for('customer.cart'))
 
@@ -342,12 +419,15 @@ def remove_from_cart(item_id):
 @login_required
 def checkout():
     """Checkout page with stock validation"""
-    from app.models.order import Order, OrderStatus
+    from app.models.orders import Order, OrderStatus
     from app.models.order_item import OrderItem
     from app.models.payment import Payment, PaymentMethod, PaymentStatus
     from app.models.menu_item import MenuItem
 
+<<<<<<< HEAD
     # Get cart items
+=======
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
     cart_data = session.get('cart', {})
 
     if not cart_data:
@@ -364,7 +444,10 @@ def checkout():
             quantity = item_data.get('quantity', 1)
             available = menu_item.available_stock
 
+<<<<<<< HEAD
             # Validate stock before checkout
+=======
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
             if quantity > available:
                 stock_errors.append(f"{menu_item.name}: Only {available} available (you have {quantity})")
                 continue
@@ -381,16 +464,23 @@ def checkout():
                 'special_requests': item_data.get('special_requests', '')
             })
 
+<<<<<<< HEAD
     # If stock errors, redirect back to cart
+=======
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
     if stock_errors:
         for error in stock_errors:
             flash(error, 'danger')
         return redirect(url_for('customer.cart'))
 
     if request.method == 'POST':
-        address = request.form.get('address', '')
+        address = request.form.get('delivery_address', '')
         special_instructions = request.form.get('special_instructions', '')
+<<<<<<< HEAD
         payment_method = request.form.get('payment_method', 'credit_card')
+=======
+        payment_method = request.form.get('payment_method', 'CREDIT_CARD')
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
 
         try:
             # Final stock check before creating order
@@ -408,7 +498,11 @@ def checkout():
                 special_instructions=special_instructions
             )
             db.session.add(order)
+<<<<<<< HEAD
             db.session.flush()
+=======
+            db.session.flush()  # Get order.id without committing
+>>>>>>> 2c2dcb0fb9934c6313ce1ebf307a8963108522e5
 
             # Create order items
             for cart_item in cart_items:
@@ -425,19 +519,17 @@ def checkout():
             payment = Payment(
                 order_id=order.id,
                 amount=cart_total,
-                method=PaymentMethod(payment_method.upper().replace('_', ' ')),
+                method=PaymentMethod[payment_method],
                 status=PaymentStatus.PENDING
             )
             db.session.add(payment)
-
-            db.session.commit()
 
             # Clear cart
             session.pop('cart', None)
             session.modified = True
 
             flash('Order placed successfully!', 'success')
-            return redirect(url_for('customer.order_tracking', order_id=order.id))
+
 
         except Exception as e:
             db.session.rollback()
@@ -445,19 +537,21 @@ def checkout():
             return redirect(url_for('customer.checkout'))
 
     return render_template('cart/checkout.html',
-                         cart_items=cart_items,
-                         cart_total=cart_total)
+                         items=cart_items,
+                         total=cart_total)
 
 
 @customer_bp.route('/orders')
 @login_required
 def orders():
     """Display order history"""
-    from app.models.order import Order
+
+
+    from app.models.orders import Order
 
     user_orders = Order.query.filter_by(customer_id=current_user.id).order_by(Order.created_at.desc()).all()
 
-    return render_template('orders/order_tracking.html', orders=user_orders)
+    return render_template('orders/orders_list.html', orders=user_orders)
 
 
 @customer_bp.route('/product/<int:id>')
@@ -467,24 +561,26 @@ def product_details(id):
 
     item = MenuItem.query.get_or_404(id)
 
-    # Get related items (same category)
+
     related = MenuItem.query.filter_by(
         category=item.category,
         is_available=True
     ).filter(MenuItem.id != id).limit(4).all()
 
-    # Get reviews ordered by newest
+
     reviews = item.reviews.order_by(Review.created_at.desc()).all() if hasattr(item.reviews, 'order_by') else item.reviews
 
     return render_template('products/product_details.html',
                          item=item,
                          related=related,
                          reviews=reviews)
+
 @customer_bp.route('/order/cancel/<int:order_id>', methods=['POST'])
 @login_required
 def cancel_order(order_id):
     """Cancel order and release stock"""
-    from app.models.order import Order, OrderStatus
+
+    from app.models.orders import Order, OrderStatus
 
     order = Order.query.filter_by(id=order_id, customer_id=current_user.id).first_or_404()
 
@@ -496,6 +592,7 @@ def cancel_order(order_id):
         flash('Cannot cancel this order', 'warning')
 
     return redirect(url_for('customer.orders'))
+
 @customer_bp.route('/product/<int:item_id>/review', methods=['POST'])
 @login_required
 def add_review(item_id):
@@ -505,7 +602,7 @@ def add_review(item_id):
 
     menu_item = MenuItem.query.get_or_404(item_id)
 
-    # Check if user already reviewed this item
+
     existing = Review.query.filter_by(
         menu_item_id=item_id,
         customer_id=current_user.id
@@ -515,16 +612,15 @@ def add_review(item_id):
         flash('You already reviewed this item!', 'warning')
         return redirect(url_for('customer.product_details', id=item_id))
 
-    # Get form data
+
     rating = request.form.get('rating', type=int)
     comment = request.form.get('comment', '').strip()
 
-    # Validate
     if not rating or rating < 1 or rating > 5:
         flash('Please select a rating (1-5 stars)', 'danger')
         return redirect(url_for('customer.product_details', id=item_id))
 
-    # Create review
+
     review = Review(
         menu_item_id=item_id,
         customer_id=current_user.id,

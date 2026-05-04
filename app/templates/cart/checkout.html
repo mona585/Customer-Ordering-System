@@ -53,6 +53,7 @@
       <h2>Delivery Information</h2>
       <form method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="payment_method" id="payment_method_input" value="CREDIT_CARD">
         
         <div class="form-group">
           <label>Delivery Address</label>
@@ -130,6 +131,9 @@
 function selectPayment(el) {
   document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
   el.classList.add('selected');
+  var methodText = el.querySelector('.payment-method-name').textContent.trim();
+  var methodValue = methodText === 'Cash on Delivery' ? 'CASH' : 'CREDIT_CARD';
+  document.getElementById('payment_method_input').value = methodValue;
 }
 </script>
 {% endblock %}

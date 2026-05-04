@@ -10,7 +10,6 @@
 
 .wrap{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:0 40px 40px;max-width:1200px;margin:0 auto}
 
-/* Single Image */
 .main{aspect-ratio:4/3;background:#e8e8e8;border-radius:var(--r);overflow:hidden}
 .main img{width:100%;height:100%;object-fit:cover}
 
@@ -20,7 +19,6 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
 .price{display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .now{font-size:28px;font-weight:700}
 
-/* Stock Status */
 .stock{display:flex;align-items:center;gap:6px;margin-bottom:20px;font-size:12px;font-weight:600}
 .stock.in-stock{color:#4caf50}
 .stock.low-stock{color:#ff9800}
@@ -43,7 +41,6 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
 .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
 .qty-input{width:80px;padding:10px;border:1.5px solid var(--cb);border-radius:6px;font-size:14px;text-align:center}
 
-/* Stock limit message */
 .stock-limit{color:#f44336;font-size:12px;margin-top:6px}
 
 .btns{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
@@ -61,7 +58,6 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
 .ingredients h3{font-size:14px;font-weight:600;margin-bottom:10px}
 .ingredients p{font-size:13px;color:#555;line-height:1.6}
 
-/* Recommendations */
 .rec{padding:0 40px 60px;max-width:1200px;margin:0 auto}
 .rec h2{font-size:18px;margin-bottom:24px}
 .rec-g{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
@@ -73,35 +69,23 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
 .rec-n{font-size:13px;font-weight:600;margin-bottom:4px;transition:var(--tr)}
 .rec-p{font-size:13px;color:var(--cg)}
 
-/* Reviews Section */
-.reviews{padding:40px;max-width:1200px;margin:0 auto}
-.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
-.head h2{font-size:20px;font-weight:700}
-.r-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.reviews{padding:0 40px 60px;max-width:1200px;margin:0 auto}
+.reviews .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.reviews h2{font-size:18px}
+.r-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
 .r-card{background:var(--cw);padding:20px;border-radius:var(--r);border:1px solid #f0f0f0}
 .r-user{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .r-avatar{width:40px;height:40px;background:var(--c1);color:var(--cw);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
 .r-name{font-size:14px;font-weight:600}
-.r-stars{display:flex;gap:2px;margin-top:4px}
+.r-stars{display:flex;gap:2px}
 .r-stars svg{width:14px;height:14px;fill:var(--c1)}
-.r-stars svg.empty{fill:#ddd}
-.r-text{font-size:13px;color:#555;line-height:1.6;font-style:italic}
-.no-reviews{text-align:center;padding:40px;background:#f8f8f8;border-radius:var(--r)}
-.no-reviews p{color:var(--cg);font-size:14px}
-
-.add-review-form{background:#f8f8f8;padding:24px;border-radius:var(--r);margin-bottom:24px}
-.add-review-form h3{font-size:16px;margin-bottom:16px}
-.rating-input{margin-bottom:16px}
-.rating-input label{display:block;font-size:12px;font-weight:600;margin-bottom:8px}
-.stars-select{display:flex;gap:8px}
-.stars-select label{cursor:pointer;font-size:24px;color:#ddd;transition:color 0.2s}
-.stars-select label:hover,
-.stars-select label.active{color:var(--c1)}
-.stars-select input{display:none}
+.r-text{font-size:13px;color:#555;line-height:1.6}
+.no-reviews{text-align:center;padding:40px;color:var(--cg)}
 
 @media(max-width:900px){
   .wrap{grid-template-columns:1fr}
   .rec-g{grid-template-columns:repeat(2,1fr)}
+  .r-grid{grid-template-columns:1fr}
 }
 @media(max-width:500px){
   .rec-g{grid-template-columns:1fr}
@@ -110,17 +94,21 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
 </style>
 
 <div class="bread">
-  <a href="{{ url_for('customer.menu') }}">Menu</a> › 
-  <a href="{{ url_for('customer.menu', category=item.category.value.lower().replace(' ', '_')) }}">{{ item.category.value }}</a> › 
+  <a href="{{ url_for('customer.menu') }}">Menu</a> &rsaquo; 
+  <a href="{{ url_for('customer.menu', category=item.category.value.lower().replace(' ', '_')) }}">{{ item.category.value }}</a> &rsaquo; 
   {{ item.name }}
 </div>
 
 <main class="wrap">
   <div class="main">
     {% if item.image_url %}
-      <img src="{{ item.image_url }}" alt="{{ item.name }}">
+      {% set img_path = item.image_url %}
+      {% if img_path.startswith('static/') %}
+        {% set img_path = img_path[7:] %}
+      {% endif %}
+      <img src="{{ url_for('static', filename=img_path) }}" alt="{{ item.name }}" onerror="this.src='https://via.placeholder.com/600x450?text={{ item.name | urlencode }}'">
     {% else %}
-      <img src="https://via.placeholder.com/600x450?text={{ item.name }}" alt="{{ item.name }}">
+      <img src="https://via.placeholder.com/600x450?text={{ item.name | urlencode }}" alt="{{ item.name }}">
     {% endif %}
   </div>
 
@@ -138,14 +126,13 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
           {% endif %}
         {% endfor %}
       </div>
-      <span>{{ item.average_rating }} / 5 ({{ item.reviews|length }} reviews)</span>
+      <span>{{ avg_rating }} / 5 ({{ item.reviews|length }} reviews)</span>
     </div>
 
     <div class="price">
       <span class="now">${{ "%.2f"|format(item.price|float) }}</span>
     </div>
 
-    <!-- Stock Status -->
     {% set available = item.available_stock %}
     {% if available > 5 %}
       <div class="stock in-stock">
@@ -228,7 +215,6 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
   </div>
 </main>
 
-<!-- Reviews Section -->
 <section class="reviews">
   <div class="head">
     <div>
@@ -241,30 +227,30 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
     </div>
   </div>
 
-  <!-- Add Review Form -->
   {% if current_user.is_authenticated %}
     {% set user_reviewed = item.reviews | selectattr('customer_id', 'equalto', current_user.id) | list | length > 0 %}
 
     {% if not user_reviewed %}
-    <div class="add-review-form">
-      <h3>Write a Review</h3>
+    <div class="add-review-form" style="background:#f8f8f8;padding:24px;border-radius:var(--r);margin-bottom:24px;">
+      <h3 style="font-size:16px;margin-bottom:16px;">Write a Review</h3>
       <form action="{{ url_for('customer.add_review', item_id=item.id) }}" method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        <!-- Star Rating -->
-        <div class="rating-input">
-          <label>Your Rating</label>
-          <div class="stars-select" id="starsSelect">
+        <div class="rating-input" style="margin-bottom:16px;">
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:8px;">Your Rating</label>
+          <div class="stars-select" style="display:flex;gap:8px;">
             {% for i in range(1, 6) %}
-            <label onclick="setRating({{ i }})" data-rating="{{ i }}">
+            <label style="cursor:pointer;font-size:24px;color:#ddd;transition:color 0.2s;" 
+                   onmouseover="highlightStars({{ i }})" 
+                   onmouseout="resetStars()"
+                   onclick="setRating({{ i }})">
               <input type="radio" name="rating" value="{{ i }}" style="display:none;" required>
-              ★
+              &#9733;
             </label>
             {% endfor %}
           </div>
         </div>
 
-        <!-- Comment -->
         <div style="margin-bottom:16px;">
           <label style="display:block;font-size:12px;font-weight:600;margin-bottom:8px;">Your Review</label>
           <textarea name="comment" placeholder="Tell us what you think..." 
@@ -276,25 +262,26 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
     </div>
 
     <script>
-      function setRating(n) {
-        const labels = document.querySelectorAll('#starsSelect label');
-        labels.forEach((label, index) => {
-          if (index < n) {
-            label.style.color = 'var(--c1)';
-            label.classList.add('active');
-          } else {
-            label.style.color = '#ddd';
-            label.classList.remove('active');
-          }
+      function highlightStars(n) {
+        const stars = document.querySelectorAll('.stars-select label');
+        stars.forEach((star, index) => {
+          star.style.color = index < n ? 'var(--c1)' : '#ddd';
         });
-        // Check the radio input
+      }
+      function resetStars() {
+        const selected = document.querySelector('input[name="rating"]:checked');
+        const rating = selected ? selected.value : 0;
+        highlightStars(rating);
+      }
+      function setRating(n) {
         const inputs = document.querySelectorAll('input[name="rating"]');
-        if (inputs[n-1]) inputs[n-1].checked = true;
+        inputs[n-1].checked = true;
+        highlightStars(n);
       }
     </script>
     {% else %}
     <div style="background:#e8f5e9;padding:16px;border-radius:var(--r);margin-bottom:24px;color:#2e7d32;font-size:13px;">
-      ✓ You already reviewed this item
+      You already reviewed this item
     </div>
     {% endif %}
   {% else %}
@@ -303,7 +290,6 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
     </div>
   {% endif %}
 
-  <!-- Reviews List -->
   {% if item.reviews %}
   <div class="r-grid">
     {% for review in item.reviews %}
@@ -345,9 +331,13 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
     <a href="{{ url_for('customer.product_details', id=rel.id) }}" class="rec-c">
       <div class="rec-img">
         {% if rel.image_url %}
-          <img src="{{ rel.image_url }}" alt="{{ rel.name }}">
+          {% set img_path = rel.image_url %}
+          {% if img_path.startswith('static/') %}
+            {% set img_path = img_path[7:] %}
+          {% endif %}
+          <img src="{{ url_for('static', filename=img_path) }}" alt="{{ rel.name }}" onerror="this.src='https://via.placeholder.com/300x225?text={{ rel.name | urlencode }}'">
         {% else %}
-          <img src="https://via.placeholder.com/300x225?text={{ rel.name }}" alt="{{ rel.name }}">
+          <img src="https://via.placeholder.com/300x225?text={{ rel.name | urlencode }}" alt="{{ rel.name }}">
         {% endif %}
       </div>
       <div class="rec-n">{{ rel.name }}</div>
@@ -357,64 +347,4 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
   </div>
 </section>
 {% endif %}
-
-<script>
-function adjustDetailQty(delta) {
-    const input = document.getElementById('detailQty');
-    const newVal = parseInt(input.value) + delta;
-    const max = parseInt(input.max);
-    if (newVal >= 1 && newVal <= max) {
-        input.value = newVal;
-    }
-}
-
-function addToCartDetail(event) {
-    event.preventDefault();
-
-    const form = document.getElementById('addToCartForm');
-    const btn = document.getElementById('addToCartBtn');
-    const btnText = document.getElementById('btnText');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-
-    // Disable button and show loading
-    btn.disabled = true;
-    btnText.textContent = 'Adding...';
-
-    const formData = new FormData(form);
-    const data = {
-        item_id: parseInt(formData.get('item_id')),
-        quantity: parseInt(formData.get('quantity')),
-        special_requests: formData.get('special_requests') || ''
-    };
-
-    fetch('/customer/api/cart/add', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
-        },
-        body: JSON.stringify(data)
-    })
-    .then(res => res.json())
-    .then(data => {
-        btn.disabled = false;
-        btnText.textContent = 'Add to Cart';
-
-        if (data.success) {
-            showToast('success', 'Added to Cart!', `${data.item_name} (${data.cart_count} items in cart)`);
-            updateCartCounter();
-        } else {
-            showToast('warning', 'Oops', data.message);
-        }
-    })
-    .catch(err => {
-        btn.disabled = false;
-        btnText.textContent = 'Add to Cart';
-        console.error('Error:', err);
-        showToast('error', 'Error', 'Failed to add item to cart');
-    });
-
-    return false;
-}
-</script>
 {% endblock %}
