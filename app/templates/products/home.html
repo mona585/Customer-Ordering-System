@@ -111,7 +111,7 @@
 {% if search_query %}
 <div class="search-results">
   {% if categories %}
-    <h2>Search results for "{{ search_query }}" ({{ categories.values() | sum(attribute='length') }} items)</h2>
+    <h2>Search results for "{{ search_query }}" ({{ categories.values() | map("length") | sum }} items)</h2>
   {% else %}
     <h2>No results found for "{{ search_query }}"</h2>
     <a href="{{ url_for('customer.menu') }}" class="cat-btn">Back to Menu</a>
