@@ -182,13 +182,17 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
     {% endif %}
 
     {% if available > 0 %}
-    <form action="{{ url_for('customer.add_to_cart') }}" method="POST">
+    <form id="addToCartForm" onsubmit="return addToCartDetail(event)">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="item_id" value="{{ item.id }}">
 
       <div class="quantity">
         <div class="label">Quantity</div>
-        <input type="number" name="quantity" class="qty-input" value="1" min="1" max="{{ available }}" required>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <button type="button" onclick="adjustDetailQty(-1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;">-</button>
+            <input type="number" name="quantity" id="detailQty" class="qty-input" value="1" min="1" max="{{ available }}" required>
+            <button type="button" onclick="adjustDetailQty(1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;">+</button>
+        </div>
         <div class="stock-limit">Max: {{ available }} items</div>
       </div>
 
@@ -198,7 +202,9 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
       </div>
 
       <div class="btns">
-        <button type="submit" class="btn btn-b">Add to Cart</button>
+        <button type="submit" class="btn btn-b" id="addToCartBtn">
+            <span id="btnText">Add to Cart</span>
+        </button>
       </div>
     </form>
     {% else %}

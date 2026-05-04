@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required, current_user
 from app.extensions import db
 from datetime import datetime
+import copy
 
 from app.models.review import Review
 
@@ -14,7 +15,6 @@ def menu():
     from app.models.menu_item import MenuItem, Category
 
     category = request.args.get('category', 'all')
-
     all_items = MenuItem.query.filter_by(is_available=True).all()
 
     if category != 'all':
@@ -176,12 +176,118 @@ def add_to_cart():
     return redirect(url_for('customer.menu'))
 
 
+# ==================== AJAX API ENDPOINTS ====================
+
+@customer_bp.route('/api/cart/add', methods=['POST'])
+@login_required
+def api_add_to_cart():
+    """Ajax add to cart - returns JSON"""
+    from app.models.menu_item import MenuItem
+
+    # Handle both JSON and Form data
+    if request.is_json:
+        data = request.get_json()
+        item_id = data.get('item_id')
+        quantity = data.get('quantity', 1)
+        special_requests = data.get('special_requests', '')
+    else:
+        data = request.form
+        item_id = data.get('item_id', type=int)
+        quantity = data.get('quantity', 1, type=int)
+        special_requests = data.get('special_requests', '')
+
+    # Convert to int if string
+    if isinstance(item_id, str):
+        item_id = int(item_id)
+    if isinstance(quantity, str):
+        quantity = int(quantity)
+
+    if not item_id:
+        return jsonify({'success': False, 'message': 'Invalid item ID'}), 400
+
+    menu_item = MenuItem.query.get(item_id)
+    if not menu_item:
+        return jsonify({'success': False, 'message': 'Item not found'}), 404
+
+    available = menu_item.available_stock
+    cart = session.get('cart', {})
+    current_qty = cart.get(str(item_id), {}).get('quantity', 0)
+    total_requested = current_qty + quantity
+
+    if total_requested > available:
+        return jsonify({
+            'success': False, 
+            'message': f'Only {available} available. You have {current_qty} in cart.'
+        }), 400
+
+    if 'cart' not in session:
+        session['cart'] = {}
+
+    if str(item_id) in cart:
+        cart[str(item_id)]['quantity'] += quantity
+        if special_requests:
+            cart[str(item_id)]['special_requests'] = special_requests
+    else:
+        cart[str(item_id)] = {
+            'quantity': quantity,
+            'special_requests': special_requests
+        }
+
+    session['cart'] = cart
+    session.modified = True
+
+    # Calculate cart count
+    cart_count = sum(item['quantity'] for item in cart.values())
+
+    return jsonify({
+        'success': True,
+        'message': f'{menu_item.name} added to cart!',
+        'cart_count': cart_count,
+        'item_name': menu_item.name,
+        'item_price': float(menu_item.price)
+    })
+
+
+@customer_bp.route('/api/cart/count')
+@login_required
+def api_cart_count():
+    """Get current cart count"""
+    cart = session.get('cart', {})
+    count = sum(item['quantity'] for item in cart.values())
+    return jsonify({'count': count})
+
+
+@customer_bp.route('/api/product/<int:item_id>')
+def api_product_details(item_id):
+    """Get product details for quick view modal"""
+    from app.models.menu_item import MenuItem
+
+    item = MenuItem.query.get_or_404(item_id)
+
+    return jsonify({
+        'id': item.id,
+        'name': item.name,
+        'description': item.description,
+        'price': float(item.price),
+        'category': item.category.value,
+        'image_url': item.image_url,
+        'available_stock': item.available_stock,
+        'preparation_time': item.preparation_time,
+        'calories': item.calories,
+        'ingredients': item.ingredients,
+        'average_rating': item.average_rating,
+        'review_count': len(item.reviews)
+    })
+
+
+# ==================== END AJAX ENDPOINTS ====================
+
+
 @customer_bp.route('/cart/update/<int:item_id>', methods=['POST'])
 @login_required
 def update_cart(item_id):
     """Update cart item quantity with stock check"""
     from app.models.menu_item import MenuItem
-    import copy
 
     quantity = request.form.get('quantity', 0, type=int)
 
@@ -228,7 +334,6 @@ def update_cart(item_id):
 @login_required
 def remove_from_cart(item_id):
     """Remove item from cart - release stock"""
-    import copy
 
     if 'cart' not in session:
         flash('Cart is empty', 'warning')
@@ -337,15 +442,13 @@ def checkout():
             )
             db.session.add(payment)
 
-            # Commit everything
-            db.session.commit()
-
             # Clear cart
             session.pop('cart', None)
             session.modified = True
 
             flash('Order placed successfully!', 'success')
-            return redirect(url_for('order.order_tracking', order_id=order.id))
+
+            return redirect(url_for('customer.order_tracking', order_id=order.id))
 
         except Exception as e:
             db.session.rollback()
@@ -361,6 +464,7 @@ def checkout():
 @login_required
 def orders():
     """Display order history"""
+
     from app.models.orders import Order
 
     user_orders = Order.query.filter_by(customer_id=current_user.id).order_by(Order.created_at.desc()).all()
@@ -391,6 +495,7 @@ def product_details(id):
 @login_required
 def cancel_order(order_id):
     """Cancel order and release stock"""
+
     from app.models.orders import Order, OrderStatus
 
     order = Order.query.filter_by(id=order_id, customer_id=current_user.id).first_or_404()
