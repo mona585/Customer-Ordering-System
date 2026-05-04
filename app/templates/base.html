@@ -3,11 +3,61 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>{% block title %}AURA{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 {% block extra_css %}{% endblock %}
 <style>
-/* Cart Counter Badge */
+/* ===== CSS VARIABLES ===== */
+:root{
+  --c1:#1a1a1a;
+  --c2:#6366f1;
+  --cg:#666;
+  --cl:#888;
+  --cb:#e0e0e0;
+  --cw:#fff;
+  --bg:#f5f5f7;
+  --r:8px;
+  --tr:all .3s;
+  --shadow-lg:0 10px 40px rgba(0,0,0,0.1);
+  --card-bg:#fff;
+  --text-primary:#1a1a1a;
+  --text-secondary:#666;
+  --text-muted:#888;
+}
+
+/* ===== DARK MODE VARIABLES ===== */
+[data-theme="dark"] {
+  --c1: #f5f5f7;
+  --cg: #aaa;
+  --cl: #888;
+  --cb: #333;
+  --cw: #1a1a1a;
+  --bg: #0a0a0a;
+  --card-bg: #1a1a1a;
+  --text-primary: #f5f5f7;
+  --text-secondary: #aaa;
+  --text-muted: #888;
+}
+
+/* ===== RESET ===== */
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text-primary);line-height:1.6}
+a{text-decoration:none;color:inherit}
+img{max-width:100%;display:block}
+
+/* ===== NAVBAR ===== */
+.nav{display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:var(--cw);border-bottom:1px solid var(--cb);position:sticky;top:0;z-index:100}
+.logo{font-size:20px;font-weight:700;letter-spacing:3px;color:var(--text-primary)}
+.links{display:flex;gap:32px;list-style:none}
+.links a{color:var(--text-secondary);font-size:13px;font-weight:500;transition:var(--tr)}
+.links a:hover,.links a.active{color:var(--c1)}
+.nav-icons{display:flex;gap:16px;align-items:center}
+.nav-icons a,.nav-icons button{background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-primary)}
+.nav-icons svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5}
+
+/* Cart Icon with Counter */
+.cart-icon-wrap{position:relative;display:flex;align-items:center;justify-content:center}
 .cart-counter {
     position: absolute;
     top: -8px;
@@ -46,6 +96,10 @@
     padding: 8px;
     border-radius: 50%;
     transition: var(--tr);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
 }
 .theme-toggle:hover {
     background: var(--cb);
@@ -53,12 +107,12 @@
 .theme-toggle svg {
     width: 20px;
     height: 20px;
-    stroke: var(--c1);
+    stroke: currentColor;
     fill: none;
     stroke-width: 2;
 }
 
-/* Toast Notifications */
+/* ===== TOAST NOTIFICATIONS ===== */
 .toast-container {
     position: fixed;
     top: 80px;
@@ -99,13 +153,14 @@
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 2px;
+    color: var(--text-primary);
 }
 .toast-message {
     font-size: 13px;
-    color: var(--cg);
+    color: var(--text-secondary);
 }
 
-/* Quick View Modal */
+/* ===== QUICK VIEW MODAL ===== */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -161,12 +216,12 @@
 .modal-close svg {
     width: 20px;
     height: 20px;
-    stroke: var(--c1);
+    stroke: var(--text-primary);
     fill: none;
     stroke-width: 2;
 }
 
-/* Bottom Nav (Mobile) */
+/* ===== BOTTOM NAV (MOBILE) ===== */
 .bottom-nav {
     display: none;
     position: fixed;
@@ -184,7 +239,7 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    color: var(--cg);
+    color: var(--text-secondary);
     font-size: 11px;
     text-decoration: none;
     transition: var(--tr);
@@ -215,112 +270,47 @@
     .nav .links { display: none; }
 }
 
-/* Dark Mode Variables */
-[data-theme="dark"] {
-    --c1: #f5f5f7;
-    --cg: #aaa;
-    --cl: #888;
-    --cb: #333;
-    --cw: #1a1a1a;
-    --bg: #0a0a0a;
-}
+/* ===== FOOTER ===== */
+.footer{background:var(--c1);color:var(--cw);padding:40px}
+.f-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:32px;max-width:1200px;margin:0 auto}
+.f-brand{font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:12px}
+.f-desc{font-size:13px;color:var(--cl);line-height:1.6}
+.f-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px}
+.f-links{list-style:none}
+.f-links li{margin-bottom:10px}
+.f-links a{color:var(--cl);font-size:13px;transition:var(--tr)}
+.f-links a:hover{color:var(--cw)}
+.f-copy{text-align:center;padding-top:32px;margin-top:32px;border-top:1px solid #333;font-size:12px;color:var(--cl)}
+
+/* ===== DARK MODE OVERRIDES FOR CONTENT ===== */
 [data-theme="dark"] .nav,
 [data-theme="dark"] .bottom-nav {
     background: #1a1a1a;
     border-color: #333;
 }
-[data-theme="dark"] .food-card,
-[data-theme="dark"] .cart-item,
-[data-theme="dark"] .cart-summary,
-[data-theme="dark"] .order-summary,
-[data-theme="dark"] .timeline-content,
-[data-theme="dark"] .order-details,
-[data-theme="dark"] .items-list,
 [data-theme="dark"] .modal-content {
     background: #1a1a1a;
     border-color: #333;
 }
-[data-theme="dark"] .hero {
-    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-}
-[data-theme="dark"] .cat-filter {
+[data-theme="dark"] .toast {
     background: #1a1a1a;
     border-color: #333;
 }
-[data-theme="dark"] .cat-btn {
-    background: #1a1a1a;
-    border-color: #333;
-    color: var(--cg);
-}
-[data-theme="dark"] .cat-btn:hover,
-[data-theme="dark"] .cat-btn.on {
-    background: var(--c2);
-    color: white;
-    border-color: var(--c2);
-}
-[data-theme="dark"] .food-img,
-[data-theme="dark"] .main,
-[data-theme="dark"] .cart-item-img,
-[data-theme="dark"] .rec-img {
-    background: #333;
-}
-[data-theme="dark"] .meta-item,
-[data-theme="dark"] .ingredients,
-[data-theme="dark"] .add-review-form {
-    background: #252525;
+[data-theme="dark"] .footer {
+    background: #0a0a0a;
 }
 [data-theme="dark"] input,
 [data-theme="dark"] textarea,
 [data-theme="dark"] select {
     background: #252525;
-    color: var(--c1);
+    color: var(--text-primary);
     border-color: #333;
 }
-[data-theme="dark"] .search-form input {
-    background: #252525;
-    border-color: #333;
-    color: var(--c1);
-}
-[data-theme="dark"] .menu-nav {
-    background: #1a1a1a;
-    border-color: #333;
-}
-[data-theme="dark"] .menu-footer {
-    background: #0a0a0a;
-}
-[data-theme="dark"] .auth-box {
-    background: #1a1a1a;
-}
-[data-theme="dark"] .auth-input {
-    background: #252525;
-    border-color: #333;
-    color: var(--c1);
-}
-[data-theme="dark"] .checkout-container,
-[data-theme="dark"] .cart-container,
-[data-theme="dark"] .track-page {
-    background: transparent;
-}
-[data-theme="dark"] .payment-method {
-    background: #1a1a1a;
-    border-color: #333;
-}
-[data-theme="dark"] .payment-method.selected {
-    background: #252525;
-}
-[data-theme="dark"] .r-card {
-    background: #1a1a1a;
-    border-color: #333;
-}
-[data-theme="dark"] .no-reviews {
-    background: #252525;
-}
-[data-theme="dark"] .stars-select label {
-    color: #444 !important;
-}
-[data-theme="dark"] .toast {
-    background: #1a1a1a;
-    border-color: #333;
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+    .nav,.footer{padding:16px 20px}
+    .f-grid{grid-template-columns:1fr}
 }
 </style>
 <base target="_blank">
@@ -336,15 +326,14 @@
         <button class="modal-close" onclick="closeModal()">
             <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
-        <div id="modalBody">
-            <!-- Content loaded dynamically -->
-        </div>
+        <div id="modalBody"></div>
     </div>
 </div>
 
-{% block navbar %}
+<!-- ===== NAVBAR ===== -->
 <nav class="nav">
   <div class="logo">AURA</div>
+
   <ul class="links">
     <li><a href="{{ url_for('customer.menu') }}" class="{% if request.endpoint == 'customer.menu' %}active{% endif %}">Menu</a></li>
     <li><a href="{{ url_for('customer.cart') }}">Cart</a></li>
@@ -355,22 +344,28 @@
       <li><a href="{{ url_for('auth.login') }}">Login</a></li>
     {% endif %}
   </ul>
-  <div class="icons">
+
+  <div class="nav-icons">
+    <!-- Dark Mode Toggle -->
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
         <svg class="sun-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         <svg class="moon-icon" viewBox="0 0 24 24" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
-    <a href="{{ url_for('customer.menu') }}">
+
+    <!-- Search -->
+    <a href="{{ url_for('customer.menu') }}" title="Search">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     </a>
-    <a href="{{ url_for('customer.cart') }}" style="position:relative;">
-      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+
+    <!-- Cart with Counter -->
+    <a href="{{ url_for('customer.cart') }}" class="cart-icon-wrap" title="Cart">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
       <span class="cart-counter" id="cartCounter">0</span>
     </a>
   </div>
 </nav>
 
-<!-- Bottom Navigation (Mobile) -->
+<!-- ===== BOTTOM NAV (MOBILE) ===== -->
 <nav class="bottom-nav">
     <a href="{{ url_for('customer.menu') }}" class="{% if request.endpoint == 'customer.menu' %}active{% endif %}">
         <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -381,7 +376,7 @@
         Search
     </a>
     <a href="{{ url_for('customer.cart') }}" style="position:relative;">
-        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         <span class="cart-counter" id="cartCounterMobile">0</span>
         Cart
     </a>
@@ -401,11 +396,11 @@
     </a>
     {% endif %}
 </nav>
-{% endblock %}
 
+<!-- ===== MAIN CONTENT ===== -->
 {% block content %}{% endblock %}
 
-{% block footer %}
+<!-- ===== FOOTER ===== -->
 <footer class="footer">
   <div class="f-grid">
     <div>
@@ -436,10 +431,10 @@
       </ul>
     </div>
   </div>
-  <div class="f-copy">© 2024 AURA Restaurant. ALL RIGHTS RESERVED.</div>
+  <div class="f-copy">&copy; 2024 AURA Restaurant. ALL RIGHTS RESERVED.</div>
 </footer>
-{% endblock %}
 
+<!-- ===== JAVASCRIPT ===== -->
 <script>
 // ==================== CART COUNTER ====================
 function updateCartCounter() {
@@ -463,7 +458,7 @@ function animateCartCounter() {
     const counters = document.querySelectorAll('.cart-counter');
     counters.forEach(counter => {
         counter.classList.remove('bounce');
-        void counter.offsetWidth; // Trigger reflow
+        void counter.offsetWidth;
         counter.classList.add('bounce');
     });
 }
@@ -484,7 +479,12 @@ function addToCart(itemId, quantity = 1, specialRequests = '') {
             special_requests: specialRequests
         })
     })
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) {
+            return res.json().then(data => { throw new Error(data.message || 'Failed to add'); });
+        }
+        return res.json();
+    })
     .then(data => {
         if (data.success) {
             showToast('success', 'Added to Cart', data.message);
@@ -496,7 +496,7 @@ function addToCart(itemId, quantity = 1, specialRequests = '') {
     })
     .catch(err => {
         console.error('Error adding to cart:', err);
-        showToast('error', 'Error', 'Failed to add item to cart');
+        showToast('error', 'Error', err.message || 'Failed to add item to cart');
     });
 }
 
@@ -515,57 +515,59 @@ function openQuickView(itemId) {
             const available = item.available_stock;
             let stockHtml = '';
             if (available > 5) {
-                stockHtml = `<div class="stock in-stock"><span class="dot in-stock"></span> IN STOCK (${available} available)</div>`;
+                stockHtml = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;font-size:12px;font-weight:600;color:#4caf50;"><span style="width:8px;height:8px;border-radius:50%;background:#4caf50;"></span> IN STOCK (${available} available)</div>`;
             } else if (available > 0) {
-                stockHtml = `<div class="stock low-stock"><span class="dot low-stock"></span> LOW STOCK - Only ${available} left!</div>`;
+                stockHtml = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;font-size:12px;font-weight:600;color:#ff9800;"><span style="width:8px;height:8px;border-radius:50%;background:#ff9800;"></span> LOW STOCK - Only ${available} left!</div>`;
             } else {
-                stockHtml = `<div class="stock out-of-stock"><span class="dot out-of-stock"></span> OUT OF STOCK</div>`;
+                stockHtml = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;font-size:12px;font-weight:600;color:#f44336;"><span style="width:8px;height:8px;border-radius:50%;background:#f44336;"></span> OUT OF STOCK</div>`;
             }
 
-            const imageUrl = item.image_url || `https://via.placeholder.com/600x450?text=${encodeURIComponent(item.name)}`;
+            const imageUrl = item.image_url ? 
+                (item.image_url.startsWith('static/') ? '/' + item.image_url : item.image_url) 
+                : `https://via.placeholder.com/600x450?text=${encodeURIComponent(item.name)}`;
 
             modalBody.innerHTML = `
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
                     <div style="aspect-ratio:4/3;background:#e8e8e8;overflow:hidden;">
-                        <img src="${imageUrl}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;">
+                        <img src="${imageUrl}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;" onerror="this.src='https://via.placeholder.com/600x450?text=${encodeURIComponent(item.name)}'">
                     </div>
                     <div style="padding:32px;">
-                        <h1 style="font-size:24px;font-weight:700;margin-bottom:12px;">${item.name}</h1>
-                        <div class="rating" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;color:var(--cg);">
-                            <span style="color:var(--c1);font-weight:700;">★ ${item.average_rating}</span>
+                        <h1 style="font-size:24px;font-weight:700;margin-bottom:12px;color:var(--text-primary);">${item.name}</h1>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;color:var(--text-secondary);">
+                            <span style="color:var(--c2);font-weight:700;">★ ${item.average_rating}</span>
                             <span>(${item.review_count} reviews)</span>
                         </div>
-                        <div class="price" style="margin-bottom:16px;">
-                            <span style="font-size:28px;font-weight:700;">$${item.price.toFixed(2)}</span>
+                        <div style="margin-bottom:16px;">
+                            <span style="font-size:28px;font-weight:700;color:var(--text-primary);">$${item.price.toFixed(2)}</span>
                         </div>
                         ${stockHtml}
-                        <p style="color:#555;font-size:14px;line-height:1.7;margin:16px 0;">${item.description || 'Delicious food crafted with passion.'}</p>
-                        <div style="display:flex;gap:12px;margin-bottom:16px;font-size:12px;color:var(--cg);">
+                        <p style="color:var(--text-secondary);font-size:14px;line-height:1.7;margin:16px 0;">${item.description || 'Delicious food crafted with passion.'}</p>
+                        <div style="display:flex;gap:12px;margin-bottom:16px;font-size:12px;color:var(--text-muted);">
                             <span>⏱ ${item.preparation_time} min</span>
                             <span>🔥 ${item.calories || 'N/A'} kcal</span>
                         </div>
-                        ${item.ingredients ? `<div style="background:#f8f8f8;padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px;"><strong>Ingredients:</strong> ${item.ingredients}</div>` : ''}
+                        ${item.ingredients ? `<div style="background:var(--bg);padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px;color:var(--text-secondary);"><strong style="color:var(--text-primary);">Ingredients:</strong> ${item.ingredients}</div>` : ''}
 
                         ${available > 0 ? `
                         <div style="display:flex;gap:12px;align-items:center;">
-                            <div class="quantity" style="display:flex;align-items:center;gap:8px;">
-                                <button onclick="adjustQty(-1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;">-</button>
-                                <input type="number" id="modalQty" value="1" min="1" max="${available}" style="width:50px;text-align:center;padding:6px;border:1.5px solid var(--cb);border-radius:6px;">
-                                <button onclick="adjustQty(1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;">+</button>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <button onclick="adjustModalQty(-1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;color:var(--text-primary);">-</button>
+                                <input type="number" id="modalQty" value="1" min="1" max="${available}" style="width:50px;text-align:center;padding:6px;border:1.5px solid var(--cb);border-radius:6px;background:var(--cw);color:var(--text-primary);">
+                                <button onclick="adjustModalQty(1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;color:var(--text-primary);">+</button>
                             </div>
-                            <button onclick="addToCartFromModal(${item.id})" class="btn btn-b" style="flex:1;padding:12px;background:var(--c1);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Add to Cart</button>
+                            <button onclick="addToCartFromModal(${item.id})" style="flex:1;padding:12px;background:var(--c2);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;transition:all 0.3s;">Add to Cart</button>
                         </div>
                         <div style="margin-top:12px;">
-                            <a href="/customer/product/${item.id}" style="color:var(--c2);font-size:13px;font-weight:600;">View Full Details →</a>
+                            <a href="/customer/product/${item.id}" style="color:var(--c2);font-size:13px;font-weight:600;">View Full Details &rarr;</a>
                         </div>
-                        ` : `<button class="btn btn-b" disabled style="width:100%;padding:12px;background:#ccc;color:white;border:none;border-radius:8px;font-weight:700;cursor:not-allowed;">Out of Stock</button>`}
+                        ` : `<button disabled style="width:100%;padding:12px;background:#ccc;color:white;border:none;border-radius:8px;font-weight:700;cursor:not-allowed;">Out of Stock</button>`}
                     </div>
                 </div>
             `;
         })
         .catch(err => {
             console.error('Error loading product:', err);
-            modalBody.innerHTML = '<div style="padding:40px;text-align:center;"><p>Error loading product details</p></div>';
+            modalBody.innerHTML = '<div style="padding:40px;text-align:center;"><p style="color:#f44336;">Error loading product details. Please try again.</p></div>';
         });
 }
 
@@ -575,8 +577,9 @@ function closeModal() {
     document.body.style.overflow = '';
 }
 
-function adjustQty(delta) {
+function adjustModalQty(delta) {
     const input = document.getElementById('modalQty');
+    if (!input) return;
     const newVal = parseInt(input.value) + delta;
     const max = parseInt(input.max);
     if (newVal >= 1 && newVal <= max) {
@@ -585,13 +588,14 @@ function adjustQty(delta) {
 }
 
 function addToCartFromModal(itemId) {
-    const qty = parseInt(document.getElementById('modalQty').value) || 1;
+    const qtyInput = document.getElementById('modalQty');
+    const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
     addToCart(itemId, qty);
     closeModal();
 }
 
 // Close modal on overlay click
- document.getElementById('quickViewModal').addEventListener('click', function(e) {
+document.getElementById('quickViewModal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
 });
 
@@ -621,11 +625,7 @@ function showToast(type, title, message) {
     `;
 
     container.appendChild(toast);
-
-    // Trigger animation
     setTimeout(() => toast.classList.add('show'), 10);
-
-    // Remove after 3 seconds
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
@@ -641,16 +641,10 @@ function toggleTheme() {
     html.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
 
-    // Toggle icons
     const sunIcon = document.querySelector('.sun-icon');
     const moonIcon = document.querySelector('.moon-icon');
-    if (newTheme === 'dark') {
-        sunIcon.style.display = 'none';
-        moonIcon.style.display = 'block';
-    } else {
-        sunIcon.style.display = 'block';
-        moonIcon.style.display = 'none';
-    }
+    if (sunIcon) sunIcon.style.display = newTheme === 'dark' ? 'none' : 'block';
+    if (moonIcon) moonIcon.style.display = newTheme === 'dark' ? 'block' : 'none';
 }
 
 // Load saved theme
