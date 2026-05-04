@@ -43,16 +43,20 @@
 
 <div class="cart-container">
   <h1 class="cart-title">Shopping Cart</h1>
-  
-  {% if cart_items %}  <!-- ← غيّري هنا -->
+
+  {% if cart_items %}
   <div class="cart-items">
-    {% for item in cart_items %}  <!-- ← و هنا -->
+    {% for item in cart_items %}
     <div class="cart-item">
       <div class="cart-item-img">
         {% if item.menu_item.image_url %}
-          <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}">
+          {% set img_path = item.menu_item.image_url %}
+          {% if img_path.startswith('static/') %}
+            {% set img_path = img_path[7:] %}
+          {% endif %}
+          <img src="{{ url_for('static', filename=img_path) }}" alt="{{ item.menu_item.name }}" onerror="this.src='https://via.placeholder.com/80x80?text={{ item.menu_item.name | urlencode }}'">
         {% else %}
-          <img src="https://via.placeholder.com/80x80?text={{ item.menu_item.name }}" alt="{{ item.menu_item.name }}">
+          <img src="https://via.placeholder.com/80x80?text={{ item.menu_item.name | urlencode }}" alt="{{ item.menu_item.name }}">
         {% endif %}
       </div>
       <div class="cart-item-info">
@@ -75,11 +79,11 @@
     </div>
     {% endfor %}
   </div>
-  
+
   <div class="cart-summary">
     <div class="summary-row">
       <span class="summary-label">Subtotal</span>
-      <span>${{ "%.2f"|format(cart_total) }}</span>  <!-- ← و هنا -->
+      <span>${{ "%.2f"|format(cart_total) }}</span>
     </div>
     <div class="summary-row">
       <span class="summary-label">Delivery Fee</span>
@@ -87,18 +91,18 @@
     </div>
     <div class="summary-row">
       <span class="summary-label">Tax</span>
-      <span>${{ "%.2f"|format(cart_total * 0.08) }}</span>  <!-- ← و هنا -->
+      <span>${{ "%.2f"|format(cart_total * 0.08) }}</span>
     </div>
     <div class="summary-row">
       <span class="summary-label">Total</span>
-      <span>${{ "%.2f"|format(cart_total + 5.00 + (cart_total * 0.08)) }}</span>  <!-- ← و هنا -->
+      <span>${{ "%.2f"|format(cart_total + 5.00 + (cart_total * 0.08)) }}</span>
     </div>
     <a href="{{ url_for('customer.checkout') }}" class="checkout-btn">Proceed to Checkout</a>
     <div style="text-align:center;margin-top:16px">
       <a href="{{ url_for('customer.menu') }}" class="continue-btn">Continue Shopping</a>
     </div>
   </div>
-  
+
   {% else %}
   <div class="cart-empty">
     <h2>Your cart is empty</h2>
