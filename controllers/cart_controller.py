@@ -101,8 +101,7 @@ def add_to_cart():
         return jsonify({"error": "product_price must be a non-negative number"}), 400
     if not isinstance(quantity, int) or quantity < 1:
         return jsonify({"error": "quantity must be a positive integer"}), 400
-    if quantity > 99:
-        return jsonify({"error": "quantity cannot exceed 99 per item"}), 400
+   
 
     try:
         item = repo.add_item(
@@ -148,8 +147,7 @@ def update_cart():
         return jsonify({"error": "product_id must be a positive integer"}), 400
     if not isinstance(quantity, int) or quantity < 1:
         return jsonify({"error": "quantity must be a positive integer >= 1"}), 400
-    if quantity > 99:
-        return jsonify({"error": "quantity cannot exceed 99 per item"}), 400
+  
 
     try:
         updated = repo.update_quantity(user_id, product_id, quantity)

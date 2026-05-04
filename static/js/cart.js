@@ -1,8 +1,5 @@
 /**
  * cart.js — Frontend logic for the Cart page.
- *
- * Communicates with the Flask backend via fetch() API calls.
- * All functions update the DOM without a full page reload.
  */
 
 // ─────────────────────────────────────────────
@@ -16,16 +13,11 @@ function showToast(msg, type = "success") {
 }
 
 // ─────────────────────────────────────────────
-//  Change Quantity
+//  Change Quantity — Unlimited, − removes 1 at a time
 // ─────────────────────────────────────────────
 async function changeQty(productId, newQty) {
   if (newQty < 1) {
-    // Removing the item entirely when user clicks − on qty=1
     return removeItem(productId);
-  }
-  if (newQty > 99) {
-    showToast("Max 99 per item", "error");
-    return;
   }
 
   try {
@@ -41,10 +33,17 @@ async function changeQty(productId, newQty) {
       return;
     }
 
-    // Update quantity display
+   
     document.getElementById(`qty-${productId}`).textContent = newQty;
 
-    // Recalculate line total (we need the price; get it from the refreshed cart)
+    const row = document.getElementById(`row-${productId}`);
+    if (row) {
+      const minusBtn = row.querySelector(".qty-btn:first-child");
+      const plusBtn  = row.querySelector(".qty-btn:last-child");
+      if (minusBtn) minusBtn.setAttribute("onclick", `changeQty(${productId}, ${newQty - 1})`);
+      if (plusBtn)  plusBtn.setAttribute("onclick",  `changeQty(${productId}, ${newQty + 1})`);
+    }
+
     await refreshCartSummary(data);
     showToast("Quantity updated");
   } catch {
@@ -53,7 +52,7 @@ async function changeQty(productId, newQty) {
 }
 
 // ─────────────────────────────────────────────
-//  Remove Item
+//  Remove Item 
 // ─────────────────────────────────────────────
 async function removeItem(productId) {
   try {
@@ -69,7 +68,6 @@ async function removeItem(productId) {
       return;
     }
 
-    // Animate row removal
     const row = document.getElementById(`row-${productId}`);
     if (row) {
       row.style.transition = "opacity 0.3s";
@@ -80,7 +78,6 @@ async function removeItem(productId) {
     await refreshCartSummary(data);
     showToast("Item removed");
 
-    // Show empty state if nothing left
     if (data.cart_count === 0) {
       setTimeout(() => location.reload(), 400);
     }
@@ -116,10 +113,9 @@ async function clearCart() {
 }
 
 // ─────────────────────────────────────────────
-//  Refresh summary section (count + total)
+//  Refresh summary
 // ─────────────────────────────────────────────
 async function refreshCartSummary(data) {
-  // Backend returns cart_total and cart_count directly on update/remove
   const totalEl = document.getElementById("grand-total");
   const countEl = document.getElementById("cart-count");
 
@@ -130,7 +126,6 @@ async function refreshCartSummary(data) {
     countEl.textContent = data.cart_count;
   }
 
-  // Refresh per-line totals from the API
   const res = await fetch("/cart/api");
   const cartData = await res.json();
   if (cartData.cart && cartData.cart.items) {
@@ -141,11 +136,6 @@ async function refreshCartSummary(data) {
   }
 }
 
-/**
- * PUBLIC function — can be called from the Product page's "Add to Cart" button.
- * Example usage on product page:
- *   CartAPI.addItem({ product_id: 5, product_name: "Burger", product_price: 8.99, quantity: 1 });
- */
 const CartAPI = {
   async addItem(product) {
     const res = await fetch("/cart/add", {
