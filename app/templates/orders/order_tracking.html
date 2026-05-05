@@ -4,42 +4,64 @@
 
 {% block extra_css %}
 <style>
-.track-page{padding:40px;max-width:800px;margin:0 auto}
-.track-page h1{font-size:28px;font-weight:700;margin-bottom:8px}
-.track-page .subtitle{color:var(--cg);margin-bottom:32px}
+.track-page{padding:40px 20px;max-width:900px;margin:0 auto}
+.track-page h1{font-size:32px;font-weight:700;margin-bottom:8px;letter-spacing:-0.5px}
+.track-page .subtitle{color:var(--cg);margin-bottom:40px;font-size:15px;display:flex;align-items:center;gap:8px}
+.track-page .subtitle svg{width:16px;height:16px;stroke:var(--cl);fill:none;stroke-width:2}
 
 /* Status Timeline */
-.timeline{position:relative;padding:20px 0}
-.timeline::before{content:'';position:absolute;left:24px;top:0;bottom:0;width:2px;background:var(--cb)}
-.timeline-item{position:relative;padding-left:60px;margin-bottom:32px}
+.timeline{position:relative;padding:20px 0;margin-bottom:40px}
+.timeline::before{content:'';position:absolute;left:28px;top:0;bottom:0;width:3px;background:var(--cb);border-radius:3px}
+.timeline-item{position:relative;padding-left:72px;margin-bottom:36px}
 .timeline-item:last-child{margin-bottom:0}
-.timeline-dot{position:absolute;left:15px;top:4px;width:20px;height:20px;background:var(--cb);border-radius:50%;border:3px solid var(--cw);box-shadow:0 0 0 2px var(--cb);z-index:2}
-.timeline-item.completed .timeline-dot{background:var(--c2);box-shadow:0 0 0 2px var(--c2)}
-.timeline-item.active .timeline-dot{background:var(--c1);box-shadow:0 0 0 2px var(--c1);animation:pulse 2s infinite}
-.timeline-content{background:var(--cw);padding:20px;border-radius:var(--r);border:1px solid #f0f0f0}
-.timeline-content h4{font-size:14px;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
-.timeline-content p{font-size:13px;color:var(--cg);margin:0}
-.timeline-time{font-size:12px;color:var(--cl);margin-top:8px}
+.timeline-dot{position:absolute;left:18px;top:4px;width:22px;height:22px;background:var(--cb);border-radius:50%;border:4px solid var(--cw);box-shadow:0 0 0 3px var(--cb);z-index:2;transition:all 0.3s ease}
+.timeline-item.completed .timeline-dot{background:var(--c2);box-shadow:0 0 0 3px var(--c2)}
+.timeline-item.active .timeline-dot{background:var(--c1);box-shadow:0 0 0 3px var(--c1);animation:pulse 2s infinite}
+.timeline-content{background:var(--card-bg);padding:24px;border-radius:16px;border:1px solid var(--cb);transition:var(--tr)}
+.timeline-content h4{font-size:14px;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;color:var(--text-primary)}
+.timeline-content p{font-size:14px;color:var(--cg);margin:0}
+.timeline-time{font-size:12px;color:var(--cl);margin-top:8px;display:flex;align-items:center;gap:4px}
+.timeline-time svg{width:12px;height:12px;stroke:var(--cl);fill:none;stroke-width:2}
 
 /* Order Details */
-.order-details{background:var(--cw);padding:24px;border-radius:var(--r);border:1px solid #f0f0f0;margin-bottom:24px}
-.order-details h3{font-size:16px;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px}
-.detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:14px}
-.detail-row:last-child{border-bottom:none;font-weight:700;font-size:16px;margin-top:8px;padding-top:16px}
+.order-details{background:var(--card-bg);padding:28px;border-radius:16px;border:1px solid var(--cb);margin-bottom:24px}
+.order-details h3{font-size:16px;font-weight:700;margin-bottom:20px;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+.order-details h3 svg{width:20px;height:20px;stroke:var(--c1);fill:none;stroke-width:2}
+.detail-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--cb);font-size:15px;align-items:center}
+.detail-row:last-child{border-bottom:none;font-weight:700;font-size:18px;margin-top:8px;padding-top:16px}
+.detail-row .label{color:var(--cg);font-weight:500}
+.detail-row .value{color:var(--text-primary);font-weight:600}
+.detail-row .value.status{color:var(--c2)}
 
 /* Items List */
-.items-list{background:var(--cw);padding:24px;border-radius:var(--r);border:1px solid #f0f0f0}
-.items-list h3{font-size:16px;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px}
-.item-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f0f0f0}
+.items-list{background:var(--card-bg);padding:28px;border-radius:16px;border:1px solid var(--cb)}
+.items-list h3{font-size:16px;font-weight:700;margin-bottom:20px;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+.items-list h3 svg{width:20px;height:20px;stroke:var(--c1);fill:none;stroke-width:2}
+.item-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--cb)}
 .item-row:last-child{border-bottom:none}
-.item-info h4{font-size:14px;font-weight:700;margin-bottom:2px}
-.item-info p{font-size:12px;color:var(--cg)}
-.item-price{font-size:14px;font-weight:700}
+.item-info h4{font-size:15px;font-weight:600;margin-bottom:4px;color:var(--text-primary)}
+.item-info p{font-size:13px;color:var(--cg)}
+.item-price{font-size:15px;font-weight:700;color:var(--text-primary)}
 
-@keyframes pulse{0%{box-shadow:0 0 0 2px var(--c1)}50%{box-shadow:0 0 0 6px rgba(99,102,241,.2)}100%{box-shadow:0 0 0 2px var(--c1)}}
+/* Cancelled banner */
+.cancelled-banner{background:#ffebee;color:#c62828;padding:16px 24px;border-radius:12px;margin-bottom:24px;font-weight:600;font-size:14px;display:flex;align-items:center;gap:10px}
+.cancelled-banner svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* Action buttons */
+.action-btns{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap}
+.btn{padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s ease;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:var(--c2);color:#fff}
+.btn-primary:hover{background:#4f46e5;transform:translateY(-1px)}
+.btn-outline{background:transparent;color:var(--text-primary);border:1.5px solid var(--cb)}
+.btn-outline:hover{border-color:var(--c1);background:var(--bg)}
+
+@keyframes pulse{0%{box-shadow:0 0 0 3px var(--c1)}50%{box-shadow:0 0 0 8px rgba(99,102,241,.15)}100%{box-shadow:0 0 0 3px var(--c1)}}
 
 @media(max-width:768px){
   .track-page{padding:20px}
+  .timeline::before{left:20px}
+  .timeline-item{padding-left:56px}
+  .timeline-dot{left:10px;width:18px;height:18px;border-width:3px}
 }
 </style>
 {% endblock %}
@@ -48,14 +70,24 @@
 
 <div class="track-page">
   <h1>Order #{{ order.id }}</h1>
-  <p class="subtitle">Placed on {{ order.created_at.strftime('%B %d, %Y at %I:%M %p') if order.created_at else 'N/A' }}</p>
-  
+  <p class="subtitle">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Placed on {{ order.created_at.strftime('%B %d, %Y at %I:%M %p') if order.created_at else 'N/A' }}
+  </p>
+
+  {% if order.status.value == 'Cancelled' %}
+  <div class="cancelled-banner">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    This order has been cancelled
+  </div>
+  {% endif %}
+
   <!-- Status Timeline -->
   <div class="timeline">
     {% set status_order = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED'] %}
     {% set current_status = order.status.value %}
     {% set current_index = status_order.index(current_status) if current_status in status_order else -1 %}
-    
+
     {% for status in status_order %}
       {% set status_index = loop.index0 %}
       {% if status_index < current_index %}
@@ -67,7 +99,7 @@
       {% endif %}
         <div class="timeline-dot"></div>
         <div class="timeline-content">
-          <h4>{{ status }}</h4>
+          <h4>{{ status.replace('_', ' ') }}</h4>
           <p>
             {% if status == 'PENDING' %}Waiting for confirmation{% endif %}
             {% if status == 'CONFIRMED' %}Your order has been confirmed{% endif %}
@@ -76,46 +108,72 @@
             {% if status == 'DELIVERED' %}Enjoy your meal!{% endif %}
           </p>
           {% if status_index <= current_index %}
-            <div class="timeline-time">{{ order.updated_at.strftime('%I:%M %p') if order.updated_at else '' }}</div>
+            <div class="timeline-time">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              {{ order.updated_at.strftime('%I:%M %p') if order.updated_at else '' }}
+            </div>
           {% endif %}
         </div>
       </div>
     {% endfor %}
   </div>
-  
+
   <!-- Order Details -->
   <div class="order-details">
-    <h3>Order Details</h3>
+    <h3>
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Order Details
+    </h3>
     <div class="detail-row">
-      <span>Status</span>
-      <span style="font-weight:700;color:var(--c2)">{{ order.status.value }}</span>
+      <span class="label">Status</span>
+      <span class="value status">{{ order.status.value }}</span>
     </div>
     <div class="detail-row">
-      <span>Delivery Address</span>
-      <span>{{ order.delivery_address or 'Pickup' }}</span>
+      <span class="label">Delivery Address</span>
+      <span class="value">{{ order.delivery_address or 'Pickup' }}</span>
     </div>
     <div class="detail-row">
-      <span>Payment Method</span>
-      <span>{{ order.payment.method.value if order.payment else 'N/A' }}</span>
+      <span class="label">Payment Method</span>
+      <span class="value">{{ order.payment.method.value if order.payment else 'N/A' }}</span>
     </div>
     <div class="detail-row">
-      <span>Total Amount</span>
-      <span>${{ "%.2f"|format(order.total_amount|float) }}</span>
+      <span class="label">Total Amount</span>
+      <span class="value">${{ "%.2f"|format(order.total_amount|float) }}</span>
     </div>
   </div>
-  
+
   <!-- Items -->
   <div class="items-list">
-    <h3>Items Ordered</h3>
+    <h3>
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+      Items Ordered
+    </h3>
     {% for item in order.items %}
     <div class="item-row">
       <div class="item-info">
         <h4>{{ item.menu_item.name }}</h4>
         <p>Qty: {{ item.quantity }}{% if item.special_requests %} | {{ item.special_requests }}{% endif %}</p>
       </div>
-      <div class="item-price">${{ "%.2f"|format(item.subtotal) }}</div>
+      <div class="item-price">${{ "%.2f"|format(item.quantity * item.unit_price|float) }}</div>
     </div>
     {% endfor %}
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-btns">
+    <a href="{{ url_for('customer.orders') }}" class="btn btn-outline">
+      <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Orders
+    </a>
+    {% if order.status.value in ['PENDING', 'CONFIRMED'] %}
+    <form action="{{ url_for('customer.cancel_order', order_id=order.id) }}" method="POST" style="display:inline" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline" style="color:#d32f2f;border-color:#ffcdd2">
+        <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Cancel Order
+      </button>
+    </form>
+    {% endif %}
   </div>
 </div>
 

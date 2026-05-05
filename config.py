@@ -1,5 +1,4 @@
 # config.py
-
 import os
 
 class Config:
@@ -7,7 +6,11 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Order constraints (Padlocks)
+    # ✅ ADD THIS: WTF CSRF settings
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_SECRET_KEY = os.environ.get('WTF_CSRF_SECRET_KEY') or 'csrf-secret-key'
+    
+    # Order constraints
     MIN_ORDER_AMOUNT = 1.00
     MAX_ORDER_AMOUNT = 10000.00
     MAX_ITEMS_PER_ORDER = 100
