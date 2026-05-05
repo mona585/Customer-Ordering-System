@@ -76,8 +76,6 @@ def search():
                          search_query=query)
 
 
-
-
 @customer_bp.route('/cart')
 @login_required
 def cart():
@@ -184,7 +182,6 @@ def api_add_to_cart():
     """Ajax add to cart - returns JSON"""
     from app.models.menu_item import MenuItem
 
-    # Handle both JSON and Form data
     if request.is_json:
         data = request.get_json()
         item_id = data.get('item_id')
@@ -196,7 +193,6 @@ def api_add_to_cart():
         quantity = data.get('quantity', 1, type=int)
         special_requests = data.get('special_requests', '')
 
-    # Convert to int if string
     if isinstance(item_id, str):
         item_id = int(item_id)
     if isinstance(quantity, str):
@@ -236,7 +232,6 @@ def api_add_to_cart():
     session['cart'] = cart
     session.modified = True
 
-    # Calculate cart count
     cart_count = sum(item['quantity'] for item in cart.values())
 
     return jsonify({
@@ -300,7 +295,6 @@ def update_cart(item_id):
         flash('Cart is empty', 'warning')
         return redirect(url_for('customer.cart'))
 
-    # Create a deep copy to ensure Flask detects changes
     cart = copy.deepcopy(dict(session['cart']))
     str_id = str(item_id)
 
@@ -323,7 +317,6 @@ def update_cart(item_id):
         cart[str_id]['quantity'] = quantity
         flash('Cart updated', 'success')
 
-    # Reassign the entire cart to ensure Flask detects the change
     session['cart'] = cart
     session.modified = True
 
@@ -420,7 +413,7 @@ def checkout():
                 special_instructions=special_instructions
             )
             db.session.add(order)
-            db.session.flush()  # Get order.id without committing
+            db.session.flush()
 
             # Create order items
             for cart_item in cart_items:
@@ -442,13 +435,17 @@ def checkout():
             )
             db.session.add(payment)
 
+            # COMMIT HERE - Save everything to database
+            db.session.commit()
+
             # Clear cart
             session.pop('cart', None)
             session.modified = True
 
             flash('Order placed successfully!', 'success')
 
-            return redirect(url_for('customer.order_tracking', order_id=order.id))
+            # Use correct blueprint name 'order' not 'customer'
+            return redirect(url_for('order.order_tracking', order_id=order.id))
 
         except Exception as e:
             db.session.rollback()
@@ -491,23 +488,25 @@ def product_details(id):
                          related=related,
                          reviews=reviews)
 
+
 @customer_bp.route('/order/cancel/<int:order_id>', methods=['POST'])
 @login_required
 def cancel_order(order_id):
-    """Cancel order and release stock"""
-
+    """Cancel order - only if status is PENDING or CONFIRMED"""
     from app.models.orders import Order, OrderStatus
 
     order = Order.query.filter_by(id=order_id, customer_id=current_user.id).first_or_404()
 
+    # Only allow cancellation for PENDING and CONFIRMED orders
     if order.status in [OrderStatus.PENDING, OrderStatus.CONFIRMED]:
         order.status = OrderStatus.CANCELLED
         db.session.commit()
         flash('Order cancelled successfully', 'success')
     else:
-        flash('Cannot cancel this order', 'warning')
+        flash('Cannot cancel this order - it is already being prepared or delivered', 'warning')
 
     return redirect(url_for('customer.orders'))
+
 
 @customer_bp.route('/product/<int:item_id>/review', methods=['POST'])
 @login_required
