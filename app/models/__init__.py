@@ -7,6 +7,8 @@ from .orders import Order, OrderStatus
 from .order_item import OrderItem
 from .payment import Payment, PaymentStatus, PaymentMethod
 from .review import Review
+from .wishlist import Wishlist
+from .order_status_history import OrderStatusHistory
 
 # List all models for Flask-Migrate
 __all__ = [
@@ -15,5 +17,7 @@ __all__ = [
     'Order', 'OrderStatus',
     'OrderItem',
     'Payment', 'PaymentStatus', 'PaymentMethod',
-    'Review'
+    'Review',
+    'Wishlist',
+    'OrderStatusHistory'
 ]
