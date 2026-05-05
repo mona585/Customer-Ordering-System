@@ -17,9 +17,14 @@
 .cart-item-img img{width:100%;height:100%;object-fit:cover}
 .cart-item-info h3{font-size:16px;font-weight:600;margin-bottom:4px}
 .cart-item-info p{font-size:13px;color:var(--cg)}
-.qty-form{display:flex;align-items:center;gap:8px}
-.qty-form input{width:50px;padding:8px;border:1.5px solid var(--cb);border-radius:6px;text-align:center;font-size:14px}
-.qty-form button{padding:8px 12px;background:var(--c1);color:var(--cw);border:none;border-radius:6px;cursor:pointer;font-size:12px}
+
+/* Quantity Controls */
+.qty-controls{display:flex;align-items:center;gap:4px;background:#f8f8f8;border-radius:6px;padding:4px}
+.qty-btn{width:32px;height:32px;border:none;background:var(--c1);color:var(--cw);border-radius:4px;font-size:18px;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;justify-content:center}
+.qty-btn:hover{background:var(--c2)}
+.qty-btn:disabled{background:#ccc;cursor:not-allowed}
+.qty-value{min-width:36px;text-align:center;font-size:14px;font-weight:700;padding:0 8px}
+
 .cart-item-price{font-size:18px;font-weight:700;min-width:80px;text-align:right}
 .remove-btn{background:none;border:none;color:#d32f2f;cursor:pointer;font-size:13px;padding:8px}
 .remove-btn:hover{text-decoration:underline}
@@ -29,7 +34,7 @@
 .summary-row:last-child{border-bottom:none;font-size:20px;font-weight:700}
 .summary-label{color:var(--cg)}
 
-.checkout-btn{display:block;width:100%;padding:16px;background:var(--c2);color:var(--cw);border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;margin-top:20px;transition:var(--tr)}
+.checkout-btn{display:block;width:100%;padding:16px;background:var(--c2);color:var(--cw);border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;margin-top:20px;transition:var(--tr);text-align:center;text-decoration:none}
 .checkout-btn:hover{background:#4f46e5}
 .continue-btn{display:inline-block;padding:12px 24px;background:var(--cw);color:var(--c1);border:1.5px solid var(--cb);border-radius:var(--r);font-size:14px;font-weight:600;text-decoration:none;transition:var(--tr)}
 .continue-btn:hover{border-color:var(--c1)}
@@ -43,16 +48,20 @@
 
 <div class="cart-container">
   <h1 class="cart-title">Shopping Cart</h1>
-  
-  {% if cart_items %}  <!-- ← غيّري هنا -->
+
+  {% if cart_items %}
   <div class="cart-items">
-    {% for item in cart_items %}  <!-- ← و هنا -->
+    {% for item in cart_items %}
     <div class="cart-item">
       <div class="cart-item-img">
         {% if item.menu_item.image_url %}
-          <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}">
+          {% set img_path = item.menu_item.image_url %}
+          {% if img_path.startswith('static/') %}
+            {% set img_path = img_path[7:] %}
+          {% endif %}
+          <img src="{{ url_for('static', filename=img_path) }}" alt="{{ item.menu_item.name }}" onerror="this.src='https://via.placeholder.com/80x80?text={{ item.menu_item.name | urlencode }}'">
         {% else %}
-          <img src="https://via.placeholder.com/80x80?text={{ item.menu_item.name }}" alt="{{ item.menu_item.name }}">
+          <img src="https://via.placeholder.com/80x80?text={{ item.menu_item.name | urlencode }}" alt="{{ item.menu_item.name }}">
         {% endif %}
       </div>
       <div class="cart-item-info">
@@ -62,11 +71,22 @@
           <p style="color:var(--c2);font-size:12px;">Note: {{ item.special_requests }}</p>
         {% endif %}
       </div>
-      <form action="{{ url_for('customer.update_cart', item_id=item.menu_item.id) }}" method="POST" class="qty-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{{ item.available_stock }}">
-        <button type="submit">Update</button>
-      </form>
+
+      <!-- Quantity Controls with +/- buttons -->
+      <div class="qty-controls">
+        <form action="{{ url_for('customer.update_cart', item_id=item.menu_item.id) }}" method="POST" style="display:inline;margin:0;padding:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="quantity" value="{{ item.quantity - 1 }}">
+          <button type="submit" class="qty-btn" {% if item.quantity <= 1 %}disabled{% endif %}>-</button>
+        </form>
+        <span class="qty-value">{{ item.quantity }}</span>
+        <form action="{{ url_for('customer.update_cart', item_id=item.menu_item.id) }}" method="POST" style="display:inline;margin:0;padding:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="quantity" value="{{ item.quantity + 1 }}">
+          <button type="submit" class="qty-btn" {% if item.quantity >= item.available_stock %}disabled{% endif %}>+</button>
+        </form>
+      </div>
+
       <div class="cart-item-price">${{ "%.2f"|format(item.subtotal) }}</div>
       <form action="{{ url_for('customer.remove_from_cart', item_id=item.menu_item.id) }}" method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -75,11 +95,11 @@
     </div>
     {% endfor %}
   </div>
-  
+
   <div class="cart-summary">
     <div class="summary-row">
       <span class="summary-label">Subtotal</span>
-      <span>${{ "%.2f"|format(cart_total) }}</span>  <!-- ← و هنا -->
+      <span>${{ "%.2f"|format(cart_total) }}</span>
     </div>
     <div class="summary-row">
       <span class="summary-label">Delivery Fee</span>
@@ -87,18 +107,18 @@
     </div>
     <div class="summary-row">
       <span class="summary-label">Tax</span>
-      <span>${{ "%.2f"|format(cart_total * 0.08) }}</span>  <!-- ← و هنا -->
+      <span>${{ "%.2f"|format(cart_total * 0.08) }}</span>
     </div>
     <div class="summary-row">
       <span class="summary-label">Total</span>
-      <span>${{ "%.2f"|format(cart_total + 5.00 + (cart_total * 0.08)) }}</span>  <!-- ← و هنا -->
+      <span>${{ "%.2f"|format(cart_total + 5.00 + (cart_total * 0.08)) }}</span>
     </div>
     <a href="{{ url_for('customer.checkout') }}" class="checkout-btn">Proceed to Checkout</a>
     <div style="text-align:center;margin-top:16px">
       <a href="{{ url_for('customer.menu') }}" class="continue-btn">Continue Shopping</a>
     </div>
   </div>
-  
+
   {% else %}
   <div class="cart-empty">
     <h2>Your cart is empty</h2>
