@@ -1,61 +1,64 @@
-# wsgi.py
-import os
-from flask import Flask
 
-# Import extensions
-from app.extensions import db, login_manager, migrate
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
+from flask import Flask
+from app.extensions import db, migrate, login_manager, csrf
+
 
 def create_app(config_name='development'):
-    app = Flask(__name__, 
+    app = Flask(__name__,
                 template_folder='app/templates',
                 static_folder='app/static')
     
-    # Load config
     from config import config
     app.config.from_object(config[config_name])
     
-    # Initialize extensions with app
+    # Initialize extensions
     db.init_app(app)
-    login_manager.init_app(app)
     migrate.init_app(app, db)
-    
-    # ✅ ADD THIS: Initialize Flask-WTF CSRF
-    from flask_wtf.csrf import CSRFProtect
-    csrf = CSRFProtect()
+    login_manager.init_app(app)
     csrf.init_app(app)
     
+    # Login settings
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
-    login_manager.login_message_category = 'info'
+    login_manager.login_message_category = 'warning'
     
     # Register blueprints
     from app.routes.auth import auth_bp
-    from app.routes.main import main_bp
     from app.routes.customer import customer_bp
-    from app.routes.order import order_bp
-    from app.routes.product import product_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(main_bp, url_prefix='/')
     app.register_blueprint(customer_bp, url_prefix='/customer')
-    app.register_blueprint(order_bp, url_prefix='/order')
-    app.register_blueprint(product_bp, url_prefix='/product')
     
-    # User loader
-    from app.models.user import User
-    
-    @login_manager.user_loader
-    def load_user(user_id):
-        return User.query.get(int(user_id))
-    
-    # Create tables if they don't exist
+    # Create tables and seed data
     with app.app_context():
         db.create_all()
+        
+        # Seed data if empty
+        from app.models.menu_item import MenuItem, Category
+        if not MenuItem.query.first():
+            from app.utils.seed_data import seed_menu_items, seed_test_user
+            seed_menu_items()
+            seed_test_user()
+            print("✅ Database seeded")
     
+    from app.routes.main import main_bp
+    app.register_blueprint(main_bp)
+
     return app
 
-# Create app instance
-app = create_app()
 
+@login_manager.user_loader
+def load_user(user_id):
+    from app.models.user import User
+    return User.query.get(int(user_id))
+
+
+# Run the app
 if __name__ == '__main__':
-    app.run(debug=True)
+    app = create_app('development')
+    app.run(debug=True, host='0.0.0.0', port=5000)
