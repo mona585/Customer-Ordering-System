@@ -45,24 +45,47 @@ def menu():
 
 @customer_bp.route('/search')
 def search():
-    """Advanced search in name, description, and ingredients"""
-    from app.models.menu_item import MenuItem
+    """Advanced search in name, description, ingredients, AND categories"""
+    from app.models.menu_item import MenuItem, Category
 
     query = request.args.get('q', '').strip()
 
-    if query:
-        search_term = f'%{query}%'
-        items = MenuItem.query.filter(
-            db.or_(
-                MenuItem.name.ilike(search_term),
-                MenuItem.description.ilike(search_term),
-                MenuItem.ingredients.ilike(search_term)
-            ),
-            MenuItem.is_available == True
-        ).all()
-    else:
-        items = []
+    if not query:
+        flash('Please enter a search term', 'info')
+        return redirect(url_for('customer.menu'))
 
+    search_term = f'%{query}%'
+
+    # Check if query matches a category name (case-insensitive)
+    matched_category = None
+    query_upper = query.upper()
+    for cat in Category:
+        if query_upper == cat.name or query_upper == cat.value.upper():
+            matched_category = cat
+            break
+
+    # Build the base query
+    base_query = MenuItem.query.filter_by(is_available=True)
+
+    # Search in name, description, and ingredients
+    text_filter = db.or_(
+        MenuItem.name.ilike(search_term),
+        MenuItem.description.ilike(search_term),
+        MenuItem.ingredients.ilike(search_term)
+    )
+
+    # If query matches a category, include items from that category too
+    if matched_category:
+        final_filter = db.or_(
+            text_filter,
+            MenuItem.category == matched_category
+        )
+    else:
+        final_filter = text_filter
+
+    items = base_query.filter(final_filter).all()
+
+    # Organize by categories for display
     categories = {}
     for item in items:
         cat_name = item.category.value
