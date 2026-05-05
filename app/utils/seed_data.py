@@ -23,8 +23,7 @@ def seed_test_user():
 
 def seed_menu_items():
     """Seed menu items if table is empty"""
-    if MenuItem.query.first():
-        return
+    
     
     items = [
         # ==================== APPETIZERS ====================
@@ -248,8 +247,11 @@ def seed_menu_items():
     ]
     
     for item_data in items:
+        existing = MenuItem.query.filter_by(name=item_data['name']).first()
+        if existing:
+            print(f"⏭️  Skipped (already exists): {item_data['name']}")
+            continue
         item = MenuItem(**item_data)
         db.session.add(item)
-    
+        print(f"✅ Added: {item_data['name']}")
     db.session.commit()
-    print(f"✅ Seeded {len(items)} menu items with stock quantities")

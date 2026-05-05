@@ -1,3 +1,4 @@
+# app/__init__.py
 from flask import Flask
 from app.extensions import db, migrate, login_manager, csrf
 
