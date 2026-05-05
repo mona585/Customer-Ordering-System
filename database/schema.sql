@@ -1,5 +1,5 @@
-
-schema_sql = '''-- AURA Restaurant Database Schema
+'''
+ AURA Restaurant Database Schema
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
@@ -90,8 +90,3 @@ CREATE TABLE IF NOT EXISTS order_status_history (
     FOREIGN KEY (order_id) REFERENCES orders (id)
 );
 '''
-
-with open('/mnt/agents/output/schema.sql', 'w', encoding='utf-8') as f:
-    f.write(schema_sql)
-
-print("✅ schema.sql created successfully")
