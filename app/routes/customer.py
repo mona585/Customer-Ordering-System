@@ -1,195 +1,115 @@
+# app/routes/customer.py
+"""Customer routes - THIN controllers, all logic moved to services"""
+
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, session
 from flask_login import login_required, current_user
-from app.extensions import db
-from datetime import datetime
-import copy
-
-from app.models.review import Review
+from app.services.menu_service import MenuService
+from app.services.cart_service import CartService
+from app.services.order_service import OrderService
+from app.services.review_service import ReviewService
 
 customer_bp = Blueprint('customer', __name__)
 
 
+# ==================== MENU ====================
+
 @customer_bp.route('/menu')
 def menu():
     """Display menu with all categories"""
-    from app.models.menu_item import MenuItem, Category
-
     category = request.args.get('category', 'all')
-    all_items = MenuItem.query.filter_by(is_available=True).all()
 
     if category != 'all':
-        try:
-            cat_enum = Category[category.upper()]
-            items = [item for item in all_items if item.category == cat_enum]
-        except (ValueError, KeyError):
-            items = all_items
-            category = 'all'
+        result = MenuService.get_category_items(category)
+        if not result.success:
+            flash(result.error, 'warning')
+            return redirect(url_for('customer.menu'))
+
+        items = result.data
+        categories = {}
+        for item in items:
+            cat_name = item.category.value
+            if cat_name not in categories:
+                categories[cat_name] = []
+            categories[cat_name].append(item)
     else:
-        items = all_items
+        result = MenuService.get_all_categories()
+        categories = result.data
 
-    categories = {
-        'Appetizers': [],
-        'Main Course': [],
-        'Desserts': [],
-        'Beverages': [],
-        'Sides': []
-    }
-
-    for item in items:
-        categories[item.category.value].append(item)
-
-    return render_template('products/home.html', 
+    return render_template('products/home.html',
                          categories=categories,
                          active_category=category)
 
 
 @customer_bp.route('/search')
 def search():
-    """Advanced search in name, description, ingredients, AND categories"""
-    from app.models.menu_item import MenuItem, Category
-
+    """Advanced search"""
     query = request.args.get('q', '').strip()
 
-    if not query:
-        flash('Please enter a search term', 'info')
+    result = MenuService.search_items(query)
+
+    if not result.success:
+        flash(result.error, 'info')
         return redirect(url_for('customer.menu'))
 
-    search_term = f'%{query}%'
-
-    # Check if query matches a category name (case-insensitive)
-    matched_category = None
-    query_upper = query.upper()
-    for cat in Category:
-        if query_upper == cat.name or query_upper == cat.value.upper():
-            matched_category = cat
-            break
-
-    # Build the base query
-    base_query = MenuItem.query.filter_by(is_available=True)
-
-    # Search in name, description, and ingredients
-    text_filter = db.or_(
-        MenuItem.name.ilike(search_term),
-        MenuItem.description.ilike(search_term),
-        MenuItem.ingredients.ilike(search_term)
-    )
-
-    # If query matches a category, include items from that category too
-    if matched_category:
-        final_filter = db.or_(
-            text_filter,
-            MenuItem.category == matched_category
-        )
-    else:
-        final_filter = text_filter
-
-    items = base_query.filter(final_filter).all()
-
-    # Organize by categories for display
-    categories = {}
-    for item in items:
-        cat_name = item.category.value
-        if cat_name not in categories:
-            categories[cat_name] = []
-        categories[cat_name].append(item)
-
-    return render_template('products/home.html', 
-                         categories=categories,
+    return render_template('products/home.html',
+                         categories=result.data,
                          active_category='all',
                          search_query=query)
 
+
+@customer_bp.route('/product/<int:id>')
+def product_details(id):
+    """Display product details page"""
+    result = MenuService.get_product_details(id)
+
+    if not result.success:
+        flash(result.error, 'danger')
+        return redirect(url_for('customer.menu'))
+
+    data = result.data
+    reviews_result = ReviewService.get_product_reviews(id)
+
+    return render_template('products/product_details.html',
+                         item=data['item'],
+                         related=data['related'],
+                         reviews=reviews_result.data['reviews'] if reviews_result.success else [])
+
+
+# ==================== CART ====================
 
 @customer_bp.route('/cart')
 @login_required
 def cart():
     """Display shopping cart"""
-    from app.models.menu_item import MenuItem
-
     cart_data = session.get('cart', {})
+    result = CartService.get_cart_items(cart_data)
 
-    cart_items = []
-    cart_total = 0
-    stock_errors = []
-
-    for item_id, item_data in cart_data.items():
-        menu_item = MenuItem.query.get(int(item_id))
-        if menu_item:
-            quantity = item_data.get('quantity', 1)
-            available = menu_item.available_stock
-
-            if quantity > available + quantity:
-                stock_errors.append(f"{menu_item.name}: Only {available} available")
-                quantity = min(quantity, available)
-
-            unit_price = float(menu_item.price)
-            subtotal = unit_price * quantity
-            cart_total += subtotal
-
-            cart_items.append({
-                'id': f"temp_{item_id}",
-                'menu_item': menu_item,
-                'quantity': quantity,
-                'unit_price': unit_price,
-                'subtotal': subtotal,
-                'special_requests': item_data.get('special_requests', ''),
-                'available_stock': available
-            })
-
-    if stock_errors:
-        for error in stock_errors:
+    if result.data and result.data.get('errors'):
+        for error in result.data['errors']:
             flash(error, 'warning')
 
-    return render_template('cart/cart.html', 
-                         cart_items=cart_items,
-                         cart_total=cart_total)
+    return render_template('cart/cart.html',
+                         cart_items=result.data['items'],
+                         cart_total=result.data['total'])
 
 
 @customer_bp.route('/cart/add', methods=['POST'])
 @login_required
 def add_to_cart():
-    """Add item to cart with stock check"""
-    from app.models.menu_item import MenuItem
-
+    """Add item to cart"""
     item_id = request.form.get('item_id', type=int)
     quantity = request.form.get('quantity', 1, type=int)
     special_requests = request.form.get('special_requests', '')
 
-    if not item_id:
-        flash('Invalid item', 'danger')
-        return redirect(url_for('customer.menu'))
+    cart_data = session.get('cart', {})
+    result = CartService.add_to_cart(cart_data, item_id, quantity, special_requests)
 
-    menu_item = MenuItem.query.get(item_id)
-    if not menu_item:
-        flash('Item not found', 'danger')
-        return redirect(url_for('customer.menu'))
-
-    available = menu_item.available_stock
-
-    cart = session.get('cart', {})
-    current_qty = cart.get(str(item_id), {}).get('quantity', 0)
-    total_requested = current_qty + quantity
-
-    if total_requested > available:
-        flash(f'Sorry, only {available} of {menu_item.name} available. You have {current_qty} in cart.', 'warning')
-        return redirect(request.referrer or url_for('customer.menu'))
-
-    if 'cart' not in session:
-        session['cart'] = {}
-
-    if str(item_id) in cart:
-        cart[str(item_id)]['quantity'] += quantity
-        if special_requests:
-            cart[str(item_id)]['special_requests'] = special_requests
+    if result.success:
+        session['cart'] = result.data['cart']
+        session.modified = True
+        flash(result.message, 'success')
     else:
-        cart[str(item_id)] = {
-            'quantity': quantity,
-            'special_requests': special_requests
-        }
-
-    session['cart'] = cart
-    session.modified = True
-
-    flash(f'{menu_item.name} added to cart!', 'success')
+        flash(result.error, 'warning')
 
     next_page = request.args.get('next') or request.referrer
     if next_page and 'product' in next_page:
@@ -197,14 +117,48 @@ def add_to_cart():
     return redirect(url_for('customer.menu'))
 
 
-# ==================== AJAX API ENDPOINTS ====================
+@customer_bp.route('/cart/update/<int:item_id>', methods=['POST'])
+@login_required
+def update_cart(item_id):
+    """Update cart item quantity"""
+    quantity = request.form.get('quantity', 0, type=int)
+    cart_data = dict(session.get('cart', {}))
+
+    result = CartService.update_cart_item(cart_data, item_id, quantity)
+
+    if result.success:
+        session['cart'] = result.data['cart']
+        session.modified = True
+        flash(result.message, 'success' if not result.data.get('removed') else 'info')
+    else:
+        flash(result.error, 'warning')
+
+    return redirect(url_for('customer.cart'))
+
+
+@customer_bp.route('/cart/remove/<int:item_id>', methods=['POST'])
+@login_required
+def remove_from_cart(item_id):
+    """Remove item from cart"""
+    cart_data = dict(session.get('cart', {}))
+    result = CartService.remove_from_cart(cart_data, item_id)
+
+    if result.success:
+        session['cart'] = result.data['cart']
+        session.modified = True
+        flash(result.message, 'info')
+    else:
+        flash(result.error, 'warning')
+
+    return redirect(url_for('customer.cart'))
+
+
+# ==================== AJAX API ====================
 
 @customer_bp.route('/api/cart/add', methods=['POST'])
 @login_required
 def api_add_to_cart():
-    """Ajax add to cart - returns JSON"""
-    from app.models.menu_item import MenuItem
-
+    """Ajax add to cart"""
     if request.is_json:
         data = request.get_json()
         item_id = data.get('item_id')
@@ -221,350 +175,129 @@ def api_add_to_cart():
     if isinstance(quantity, str):
         quantity = int(quantity)
 
-    if not item_id:
-        return jsonify({'success': False, 'message': 'Invalid item ID'}), 400
+    cart_data = session.get('cart', {})
+    result = CartService.add_to_cart(cart_data, item_id, quantity, special_requests)
 
-    menu_item = MenuItem.query.get(item_id)
-    if not menu_item:
-        return jsonify({'success': False, 'message': 'Item not found'}), 404
-
-    available = menu_item.available_stock
-    cart = session.get('cart', {})
-    current_qty = cart.get(str(item_id), {}).get('quantity', 0)
-    total_requested = current_qty + quantity
-
-    if total_requested > available:
+    if result.success:
+        session['cart'] = result.data['cart']
+        session.modified = True
         return jsonify({
-            'success': False, 
-            'message': f'Only {available} available. You have {current_qty} in cart.'
-        }), 400
+            'success': True,
+            'message': result.message,
+            'cart_count': result.data['cart_count'],
+            'item_name': result.data['item_name'],
+            'item_price': result.data['item_price']
+        })
 
-    if 'cart' not in session:
-        session['cart'] = {}
-
-    if str(item_id) in cart:
-        cart[str(item_id)]['quantity'] += quantity
-        if special_requests:
-            cart[str(item_id)]['special_requests'] = special_requests
-    else:
-        cart[str(item_id)] = {
-            'quantity': quantity,
-            'special_requests': special_requests
-        }
-
-    session['cart'] = cart
-    session.modified = True
-
-    cart_count = sum(item['quantity'] for item in cart.values())
-
-    return jsonify({
-        'success': True,
-        'message': f'{menu_item.name} added to cart!',
-        'cart_count': cart_count,
-        'item_name': menu_item.name,
-        'item_price': float(menu_item.price)
-    })
+    return jsonify({'success': False, 'message': result.error}), 400
 
 
 @customer_bp.route('/api/cart/count')
 @login_required
 def api_cart_count():
     """Get current cart count"""
-    cart = session.get('cart', {})
-    count = sum(item['quantity'] for item in cart.values())
-    return jsonify({'count': count})
+    cart_data = session.get('cart', {})
+    result = CartService.get_cart_count(cart_data)
+    return jsonify(result.data)
 
 
 @customer_bp.route('/api/product/<int:item_id>')
 def api_product_details(item_id):
     """Get product details for quick view modal"""
-    from app.models.menu_item import MenuItem
+    result = MenuService.get_product_for_api(item_id)
 
-    item = MenuItem.query.get_or_404(item_id)
+    if not result.success:
+        return jsonify({'error': result.error}), 404
 
-    return jsonify({
-        'id': item.id,
-        'name': item.name,
-        'description': item.description,
-        'price': float(item.price),
-        'category': item.category.value,
-        'image_url': item.image_url,
-        'available_stock': item.available_stock,
-        'preparation_time': item.preparation_time,
-        'calories': item.calories,
-        'ingredients': item.ingredients,
-        'average_rating': item.average_rating,
-        'review_count': len(item.reviews)
-    })
+    return jsonify(result.data)
 
 
-# ==================== END AJAX ENDPOINTS ====================
-
-
-@customer_bp.route('/cart/update/<int:item_id>', methods=['POST'])
-@login_required
-def update_cart(item_id):
-    """Update cart item quantity with stock check"""
-    from app.models.menu_item import MenuItem
-
-    quantity = request.form.get('quantity', 0, type=int)
-
-    menu_item = MenuItem.query.get(item_id)
-    if not menu_item:
-        flash('Item not found', 'danger')
-        return redirect(url_for('customer.cart'))
-
-    if 'cart' not in session:
-        flash('Cart is empty', 'warning')
-        return redirect(url_for('customer.cart'))
-
-    cart = copy.deepcopy(dict(session['cart']))
-    str_id = str(item_id)
-
-    if str_id not in cart:
-        flash('Item not in cart', 'warning')
-        return redirect(url_for('customer.cart'))
-
-    available = menu_item.available_stock
-
-    if quantity > cart[str_id]['quantity']:
-        extra_needed = quantity - cart[str_id]['quantity']
-        if extra_needed > available:
-            flash(f'Only {available + cart[str_id]["quantity"]} total available', 'warning')
-            return redirect(url_for('customer.cart'))
-
-    if quantity <= 0:
-        del cart[str_id]
-        flash('Item removed from cart', 'info')
-    else:
-        cart[str_id]['quantity'] = quantity
-        flash('Cart updated', 'success')
-
-    session['cart'] = cart
-    session.modified = True
-
-    return redirect(url_for('customer.cart'))
-
-
-@customer_bp.route('/cart/remove/<int:item_id>', methods=['POST'])
-@login_required
-def remove_from_cart(item_id):
-    """Remove item from cart - release stock"""
-
-    if 'cart' not in session:
-        flash('Cart is empty', 'warning')
-        return redirect(url_for('customer.cart'))
-
-    cart = copy.deepcopy(dict(session['cart']))
-    str_id = str(item_id)
-
-    if str_id in cart:
-        del cart[str_id]
-        session['cart'] = cart
-        session.modified = True
-        flash('Item removed from cart', 'info')
-    else:
-        flash('Item not found in cart', 'warning')
-
-    return redirect(url_for('customer.cart'))
-
+# ==================== CHECKOUT ====================
 
 @customer_bp.route('/checkout', methods=['GET', 'POST'])
 @login_required
 def checkout():
     """Checkout page with stock validation"""
-    from app.models.orders import Order, OrderStatus
-    from app.models.order_item import OrderItem
-    from app.models.payment import Payment, PaymentMethod, PaymentStatus
-    from app.models.menu_item import MenuItem
-
     cart_data = session.get('cart', {})
 
-    if not cart_data:
-        flash('Your cart is empty', 'warning')
+    # Validate cart
+    result = OrderService.prepare_checkout(cart_data)
+    if not result.success:
+        flash(result.error, 'warning')
         return redirect(url_for('customer.menu'))
 
-    cart_items = []
-    cart_total = 0
-    stock_errors = []
-
-    for item_id, item_data in cart_data.items():
-        menu_item = MenuItem.query.get(int(item_id))
-        if menu_item:
-            quantity = item_data.get('quantity', 1)
-            available = menu_item.available_stock
-
-            if quantity > available:
-                stock_errors.append(f"{menu_item.name}: Only {available} available (you have {quantity})")
-                continue
-
-            unit_price = float(menu_item.price)
-            subtotal = unit_price * quantity
-            cart_total += subtotal
-
-            cart_items.append({
-                'menu_item': menu_item,
-                'quantity': quantity,
-                'unit_price': unit_price,
-                'subtotal': subtotal,
-                'special_requests': item_data.get('special_requests', '')
-            })
-
-    if stock_errors:
-        for error in stock_errors:
-            flash(error, 'danger')
-        return redirect(url_for('customer.cart'))
+    cart_result = result.data
 
     if request.method == 'POST':
         address = request.form.get('delivery_address', '')
         special_instructions = request.form.get('special_instructions', '')
         payment_method = request.form.get('payment_method', 'CREDIT_CARD')
 
-        try:
-            # Final stock check before creating order
-            for cart_item in cart_items:
-                menu_item = cart_item['menu_item']
-                if cart_item['quantity'] > menu_item.available_stock:
-                    raise ValueError(f"{menu_item.name} is no longer available in requested quantity")
+        result = OrderService.create_order(
+            customer_id=current_user.id,
+            cart_data=cart_data,
+            delivery_address=address,
+            special_instructions=special_instructions,
+            payment_method=payment_method
+        )
 
-            # Create order
-            order = Order(
-                customer_id=current_user.id,
-                total_amount=cart_total,
-                status=OrderStatus.PENDING,
-                delivery_address=address,
-                special_instructions=special_instructions
-            )
-            db.session.add(order)
-            db.session.flush()
-
-            # Create order items
-            for cart_item in cart_items:
-                order_item = OrderItem(
-                    order_id=order.id,
-                    menu_item_id=cart_item['menu_item'].id,
-                    quantity=cart_item['quantity'],
-                    unit_price=cart_item['unit_price'],
-                    special_requests=cart_item['special_requests']
-                )
-                db.session.add(order_item)
-
-            # Create payment
-            payment = Payment(
-                order_id=order.id,
-                amount=cart_total,
-                method=PaymentMethod[payment_method],
-                status=PaymentStatus.PENDING
-            )
-            db.session.add(payment)
-
-            # COMMIT HERE - Save everything to database
-            db.session.commit()
-
-            # Clear cart
+        if result.success:
             session.pop('cart', None)
             session.modified = True
-
-            flash('Order placed successfully!', 'success')
-
-            # Use correct blueprint name 'order' not 'customer'
-            return redirect(url_for('order.order_tracking', order_id=order.id))
-
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error processing order: {str(e)}', 'danger')
+            flash(result.message, 'success')
+            return redirect(url_for('order.order_tracking', order_id=result.data['order_id']))
+        else:
+            flash(result.error, 'danger')
             return redirect(url_for('customer.checkout'))
 
     return render_template('cart/checkout.html',
-                         items=cart_items,
-                         total=cart_total)
+                         items=cart_result['items'],
+                         total=cart_result['total'])
 
+
+# ==================== ORDERS ====================
 
 @customer_bp.route('/orders')
 @login_required
 def orders():
     """Display order history"""
-
-    from app.models.orders import Order
-
-    user_orders = Order.query.filter_by(customer_id=current_user.id).order_by(Order.created_at.desc()).all()
-
-    return render_template('orders/orders_list.html', orders=user_orders)
-
-
-@customer_bp.route('/product/<int:id>')
-def product_details(id):
-    """Display product details page"""
-    from app.models.menu_item import MenuItem
-
-    item = MenuItem.query.get_or_404(id)
-
-    related = MenuItem.query.filter_by(
-        category=item.category,
-        is_available=True
-    ).filter(MenuItem.id != id).limit(4).all()
-
-    reviews = item.reviews.order_by(Review.created_at.desc()).all() if hasattr(item.reviews, 'order_by') else item.reviews
-
-    return render_template('products/product_details.html',
-                         item=item,
-                         related=related,
-                         reviews=reviews)
+    result = OrderService.get_user_orders(current_user.id)
+    return render_template('orders/orders_list.html', orders=result.data['all'])
 
 
 @customer_bp.route('/order/cancel/<int:order_id>', methods=['POST'])
 @login_required
 def cancel_order(order_id):
-    """Cancel order - only if status is PENDING or CONFIRMED"""
-    from app.models.orders import Order, OrderStatus
+    """Cancel order"""
+    result = OrderService.cancel_order(order_id, current_user.id)
 
-    order = Order.query.filter_by(id=order_id, customer_id=current_user.id).first_or_404()
-
-    # Only allow cancellation for PENDING and CONFIRMED orders
-    if order.status in [OrderStatus.PENDING, OrderStatus.CONFIRMED]:
-        order.status = OrderStatus.CANCELLED
-        db.session.commit()
-        flash('Order cancelled successfully', 'success')
+    if result.success:
+        flash(result.message, 'success')
     else:
-        flash('Cannot cancel this order - it is already being prepared or delivered', 'warning')
+        flash(result.error, 'warning')
 
     return redirect(url_for('customer.orders'))
 
+
+# ==================== REVIEWS ====================
 
 @customer_bp.route('/product/<int:item_id>/review', methods=['POST'])
 @login_required
 def add_review(item_id):
     """Add a review for a product"""
-    from app.models.menu_item import MenuItem
-    from app.models.review import Review
-
-    menu_item = MenuItem.query.get_or_404(item_id)
-
-    existing = Review.query.filter_by(
-        menu_item_id=item_id,
-        customer_id=current_user.id
-    ).first()
-
-    if existing:
-        flash('You already reviewed this item!', 'warning')
-        return redirect(url_for('customer.product_details', id=item_id))
-
     rating = request.form.get('rating', type=int)
     comment = request.form.get('comment', '').strip()
 
-    if not rating or rating < 1 or rating > 5:
-        flash('Please select a rating (1-5 stars)', 'danger')
-        return redirect(url_for('customer.product_details', id=item_id))
-
-    review = Review(
-        menu_item_id=item_id,
+    result = ReviewService.add_review(
+        item_id=item_id,
         customer_id=current_user.id,
         rating=rating,
         comment=comment
     )
 
-    db.session.add(review)
-    db.session.commit()
+    if result.success:
+        flash(result.message, 'success')
+    else:
+        flash(result.error, 'warning' if 'already reviewed' in result.error else 'danger')
 
-    flash('Review added successfully!', 'success')
     return redirect(url_for('customer.product_details', id=item_id))

@@ -1,6 +1,6 @@
 # app/models/__init__.py
+"""Auto-import all models for Flask-Migrate and easy access"""
 
-# Import all models for easy access
 from .user import User
 from .menu_item import MenuItem, Category
 from .orders import Order, OrderStatus

@@ -1,0 +1,47 @@
+# app/repositories/menu_repository.py
+"""Menu/MenuItem data access layer"""
+
+from app.extensions import db
+from app.models.menu_item import MenuItem, Category
+
+
+class MenuRepository:
+    """Abstracts all MenuItem database operations"""
+
+    @staticmethod
+    def get_by_id(item_id):
+        return MenuItem.query.get(item_id)
+
+    @staticmethod
+    def get_all_available():
+        return MenuItem.query.filter_by(is_available=True).all()
+
+    @staticmethod
+    def get_by_category(category):
+        return MenuItem.query.filter_by(
+            category=category, 
+            is_available=True
+        ).all()
+
+    @staticmethod
+    def search(query_term, matched_category=None):
+        """Search in name, description, ingredients"""
+        text_filter = db.or_(
+            MenuItem.name.ilike(query_term),
+            MenuItem.description.ilike(query_term),
+            MenuItem.ingredients.ilike(query_term)
+        )
+
+        if matched_category:
+            final_filter = db.or_(text_filter, MenuItem.category == matched_category)
+        else:
+            final_filter = text_filter
+
+        return MenuItem.query.filter_by(is_available=True).filter(final_filter).all()
+
+    @staticmethod
+    def get_related_items(item, limit=4):
+        return MenuItem.query.filter_by(
+            category=item.category,
+            is_available=True
+        ).filter(MenuItem.id != item.id).limit(limit).all()
