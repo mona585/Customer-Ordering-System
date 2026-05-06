@@ -1,17 +1,24 @@
+# app/routes/order.py
+"""Order tracking routes - THIN controller"""
+
 from flask import Blueprint, render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
-from app.models.orders import Order
+from app.services.order_service import OrderService
 
 order_bp = Blueprint("order", __name__)
+
 
 @order_bp.route("/order/<int:order_id>/track")
 @login_required
 def order_tracking(order_id):
-    order = Order.query.get_or_404(order_id)
+    """Track order with timeline"""
+    result = OrderService.get_tracking_info(order_id, current_user.id)
 
-    # Security check - only owner can view
-    if order.customer_id != current_user.id:
-        flash('Access denied', 'danger')
+    if not result.success:
+        if result.data and result.data.get('forbidden'):
+            flash('Access denied', 'danger')
+        else:
+            flash(result.error, 'danger')
         return redirect(url_for('customer.orders'))
 
-    return render_template("orders/order_tracking.html", order=order)
+    return render_template("orders/order_tracking.html", order=result.data)

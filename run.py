@@ -1,6 +1,7 @@
 # run.py
+"""Development server entry point"""
 
-from wsgi import create_app
+from app import create_app
 
 app = create_app('development')
 
