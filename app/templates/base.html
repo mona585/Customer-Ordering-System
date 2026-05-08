@@ -259,8 +259,10 @@ img{max-width:100%;display:block}
       <div class="dropdown-menu">
         <div class="dropdown-header">My Account</div>
         <div class="dropdown-item" style="cursor:default">
+        <a href="{{ url_for('profile.view_profile') }}" class="dropdown-item">
           <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           {{ current_user.username }}
+        </a>
         </div>
         <div class="dropdown-divider"></div>
         <!-- Orders ONLY in dropdown -->
