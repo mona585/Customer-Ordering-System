@@ -1,36 +1,179 @@
 {% extends "base.html" %}
+{% block title %}Create Account — AURA{% endblock %}
 
-{% block title %}Register - AURA{% endblock %}
-
-{% block content %}
-<div class="auth-body">
-  <div class="auth-box">
-    <h2>AURA</h2>
-    
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="msg {{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    <form method="POST" action="{{ url_for('auth.register') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      
-      <input type="text" name="username" class="auth-input" placeholder="Username" required autofocus>
-      
-      <input type="email" name="email" class="auth-input" placeholder="Email Address" required>
-      
-      <input type="password" name="password" class="auth-input" placeholder="Password" required>
-      
-      <button type="submit" class="auth-btn">Create Account</button>
-    </form>
-    
-    <div class="auth-link">
-      Already have an account? <a href="{{ url_for('auth.login') }}">Login</a>
-    </div>
-  </div>
-</div>
+{% block extra_css %}
+<style>
+    .auth-container { display:flex; align-items:center; justify-content:center; padding:60px 20px; min-height:calc(100vh - 200px); }
+    .auth-box       { background:var(--cw); padding:40px; border-radius:var(--r); width:100%; max-width:450px; border:1px solid var(--cb); }
+    .auth-title     { font-size:24px; font-weight:700; margin-bottom:25px; text-align:center; letter-spacing:2px; }
+    .form-group     { margin-bottom:15px; }
+    .form-group label { display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--cg); }
+    .field-wrap     { position:relative; }
+    .auth-input     { width:100%; padding:10px 14px; border:1.5px solid var(--cb); border-radius:8px; background:transparent; color:var(--c1); outline:none; }
+    .auth-input:focus { border-color:var(--c2); }
+    .eye-btn        { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:var(--cg); }
+    .auth-btn       { width:100%; padding:14px; background:var(--c1); color:var(--cw); border:none; border-radius:8px; font-weight:600; cursor:pointer; transition:var(--tr); margin-top:10px; }
+    .msg-banner     { padding:12px; margin-bottom:20px; border-radius:8px; text-align:center; font-size:14px; font-weight:500; }
+    .msg-banner.error   { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
+    .msg-banner.success { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+    .hint           { font-size:11px; color:var(--cl); margin-top:4px; }
+</style>
 {% endblock %}
 
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <h2 class="auth-title">JOIN AURA</h2>
+        <div id="message-handler"></div>
+
+        <form id="regForm" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group">
+                <label>USERNAME</label>
+                <input type="text" name="username" class="auth-input" required autofocus minlength="3">
+                <p class="hint">At least 3 characters.</p>
+            </div>
+
+            <div class="form-group">
+                <label>EMAIL ADDRESS</label>
+                <input type="email" name="email" class="auth-input" required>
+            </div>
+
+            <div class="form-group">
+                <label>PASSWORD</label>
+                <div class="field-wrap">
+                    <input type="password" name="password" id="regPassword" class="auth-input" required minlength="8">
+                    <button type="button" class="eye-btn" id="toggleRegPwd" aria-label="Show password">👁</button>
+                </div>
+                <p class="hint">At least 8 characters.</p>
+            </div>
+
+            <div class="form-group">
+                <label>PHONE (OPTIONAL)</label>
+                <div style="display: flex; gap: 8px;">
+                    <select id="country-code" class="auth-input" style="width: 110px; padding: 10px; cursor: pointer;">
+                        <option value="+20">🇪🇬 +20</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+966">🇸🇦 +966</option>
+                        <option value="+971">🇦🇪 +971</option>
+                    </select>
+                    
+                    <input type="tel" id="raw-phone" class="auth-input" placeholder="1012345678" style="flex: 1;">
+                    
+                    <input type="hidden" name="phone" id="final-phone">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>DELIVERY ADDRESS <span style="font-weight:400">(optional)</span></label>
+                <textarea name="address" class="auth-input" style="height:60px; resize:vertical;"></textarea>
+            </div>
+
+            <button type="submit" class="auth-btn" id="submitBtn">Create Account</button>
+        </form>
+
+        <div style="text-align:center; margin-top:25px; font-size:14px; color:var(--cg);">
+            Already a member? <a href="{{ url_for('auth.login') }}" style="color:var(--c2); font-weight:600;">Sign In</a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('toggleRegPwd').addEventListener('click', function () {
+    const pwd    = document.getElementById('regPassword');
+    const isHide = pwd.type === 'password';
+    pwd.type     = isHide ? 'text' : 'password';
+    this.textContent = isHide ? '🙈' : '👁';
+});
+
+document.getElementById('regForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const msgHandler = document.getElementById('message-handler');
+    const btn        = document.getElementById('submitBtn');
+    const formData   = new FormData(this);
+
+    // Client-side validation before hitting the server
+    const username = formData.get('username').trim();
+    const email    = formData.get('email').trim();
+    const password = formData.get('password');
+
+    if (!username || !email || !password) {
+        msgHandler.innerHTML = `<div class="msg-banner error">Username, email, and password are required.</div>`;
+        return;
+    }
+    if (username.length < 3) {
+        msgHandler.innerHTML = `<div class="msg-banner error">Username must be at least 3 characters.</div>`;
+        return;
+    }
+    if (password.length < 8) {
+        msgHandler.innerHTML = `<div class="msg-banner error">Password must be at least 8 characters.</div>`;
+        return;
+    }
+// 2. --- PHONE VALIDATION ---
+    const countryCode     = document.getElementById('country-code').value;
+    const rawPhone        = document.getElementById('raw-phone').value.trim();
+    const finalPhoneInput = document.getElementById('final-phone');
+
+    if (rawPhone) {
+        let digits = rawPhone.replace(/\D/g, ''); 
+
+        if (countryCode === '+20') {
+            if (digits.startsWith('0')) digits = digits.substring(1);
+            
+            const egyptRegex = /^1[0125][0-9]{8}$/;
+            if (!egyptRegex.test(digits)) {
+                msgHandler.innerHTML = `<div class="msg-banner error">Invalid Egyptian number. Try dropping the leading 0 (e.g., 1012345678).</div>`;
+                return;
+            }
+        } 
+        else if (countryCode === '+1') {
+            if (digits.length !== 10) {
+                msgHandler.innerHTML = `<div class="msg-banner error">US/CA numbers must be exactly 10 digits.</div>`;
+                return;
+            }
+        }
+        else {
+            if (digits.length < 7 || digits.length > 15) {
+                msgHandler.innerHTML = `<div class="msg-banner error">Invalid phone length for this region.</div>`;
+                return;
+            }
+        }
+
+        finalPhoneInput.value = countryCode + digits;
+        formData.set('phone', finalPhoneInput.value); 
+    } else {
+        finalPhoneInput.value = '';
+        formData.set('phone', '');
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Processing…';
+
+    try {
+        const response = await fetch("{{ url_for('auth.register') }}", {
+            method:  'POST',
+            body:    formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            msgHandler.innerHTML = `<div class="msg-banner success">${data.message}</div>`;
+            setTimeout(() => { window.location.href = data.redirect; }, 1500);
+        } else {
+            msgHandler.innerHTML = `<div class="msg-banner error">${data.message}</div>`;
+            btn.disabled    = false;
+            btn.textContent = 'Create Account';
+        }
+    } catch {
+        msgHandler.innerHTML = `<div class="msg-banner error">Connection error. Please try again.</div>`;
+        btn.disabled    = false;
+        btn.textContent = 'Create Account';
+    }
+});
+</script>
+{% endblock %}
