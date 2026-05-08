@@ -10,7 +10,8 @@ class MenuRepository:
 
     @staticmethod
     def get_by_id(item_id):
-        return MenuItem.query.get(item_id)
+        # .query.get() removed in SQLAlchemy 2.x
+        return db.session.get(MenuItem, item_id)
 
     @staticmethod
     def get_all_available():
@@ -19,7 +20,7 @@ class MenuRepository:
     @staticmethod
     def get_by_category(category):
         return MenuItem.query.filter_by(
-            category=category, 
+            category=category,
             is_available=True
         ).all()
 

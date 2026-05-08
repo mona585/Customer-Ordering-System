@@ -15,15 +15,21 @@ class WishlistService(BaseService):
         """Get all wishlist items for a user"""
         wishlist_items = WishlistRepository.get_by_customer(customer_id)
 
+        print(f"[DEBUG] WishlistService.get_user_wishlist: Found {len(wishlist_items)} raw entries for customer_id={customer_id}")
+
         items = []
         for entry in wishlist_items:
+            print(f"[DEBUG] Processing entry id={entry.id}, menu_item_id={entry.menu_item_id}, menu_item={entry.menu_item}")
             if entry.menu_item:
                 items.append({
                     'id': entry.id,
                     'menu_item': entry.menu_item,
                     'added_at': entry.created_at
                 })
+            else:
+                print(f"[DEBUG] WARNING: entry.menu_item is None for wishlist_id={entry.id}")
 
+        print(f"[DEBUG] Returning {len(items)} valid wishlist items")
         return ServiceResult.ok(data=items)
 
     @staticmethod
@@ -46,12 +52,15 @@ class WishlistService(BaseService):
             )
             WishlistRepository.create(wishlist)
 
+            print(f"[DEBUG] Added wishlist entry: id={wishlist.id}, customer_id={customer_id}, menu_item_id={item_id}")
+
             return ServiceResult.ok(
                 data={'wishlist_id': wishlist.id},
                 message=f"{menu_item.name} added to wishlist"
             )
 
         except Exception as e:
+            print(f"[DEBUG] ERROR adding to wishlist: {e}")
             return ServiceResult.fail(f"Error adding to wishlist: {str(e)}")
 
     @staticmethod

@@ -91,7 +91,53 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
   .rec-g{grid-template-columns:1fr}
   .wrap,.rec,.reviews{padding:0 20px 20px}
 }
+
+/* Wishlist Button */
+.wishlist-detail-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px;
+    border: 1.5px solid var(--cb);
+    border-radius: var(--r);
+    background: var(--cw);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: var(--tr);
+    width: 100%;
+}
+.wishlist-detail-btn:hover {
+    border-color: #e91e63;
+    background: #ffebee;
+    color: #e91e63;
+}
+.wishlist-detail-btn.active {
+    background: #ffebee;
+    border-color: #e91e63;
+    color: #e91e63;
+}
+.wishlist-detail-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+}
+.wishlist-detail-btn.active svg {
+    fill: #e91e63;
+}
 </style>
+
+{# ── CSRF meta tag – required for the wishlist AJAX call ── #}
+{# If your base.html already has this tag, remove it from here #}
+{% if not csrf_meta_rendered is defined %}
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+{% endif %}
 
 <div class="bread">
   <a href="{{ url_for('customer.menu') }}">Menu</a> &rsaquo; 
@@ -205,11 +251,31 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
         <button type="submit" class="btn btn-b" id="addToCartBtn">
             <span id="btnText">Add to Cart</span>
         </button>
+
+        {% if current_user.is_authenticated %}
+        <button type="button" class="wishlist-detail-btn {% if is_wishlisted %}active{% endif %}" 
+                id="wishlistBtn" onclick="toggleWishlistDetail({{ item.id }})">
+            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span id="wishlistBtnText">{% if is_wishlisted %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}</span>
+        </button>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="wishlist-detail-btn">
+            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span>Login to Wishlist</span>
+        </a>
+        {% endif %}
       </div>
     </form>
     {% else %}
     <div class="btns">
       <button class="btn btn-b" disabled>Out of Stock</button>
+      {% if current_user.is_authenticated %}
+      <button type="button" class="wishlist-detail-btn {% if is_wishlisted %}active{% endif %}"
+              id="wishlistBtn" onclick="toggleWishlistDetail({{ item.id }})">
+          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span id="wishlistBtnText">{% if is_wishlisted %}Remove from Wishlist{% else %}Save to Wishlist{% endif %}</span>
+      </button>
+      {% endif %}
     </div>
     {% endif %}
   </div>
@@ -347,4 +413,121 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
   </div>
 </section>
 {% endif %}
+
+<script>
+// ── Quantity adjuster ──────────────────────────────────────────
+function adjustDetailQty(delta) {
+    const input = document.getElementById('detailQty');
+    if (!input) return;
+    const newVal = Math.max(1, Math.min(parseInt(input.max) || 99, parseInt(input.value) + delta));
+    input.value = newVal;
+}
+
+// ── Add to cart (AJAX) ─────────────────────────────────────────
+function addToCartDetail(e) {
+    e.preventDefault();
+    const form = document.getElementById('addToCartForm');
+    const btn  = document.getElementById('addToCartBtn');
+    const text = document.getElementById('btnText');
+    const data = new FormData(form);
+
+    btn.disabled = true;
+    text.textContent = 'Adding...';
+
+    fetch('{{ url_for("customer.api_add_to_cart") }}', {
+        method: 'POST',
+        body: data
+    })
+    .then(r => r.json())
+    .then(d => {
+        btn.disabled = false;
+        if (d.success) {
+            text.textContent = 'Added!';
+            setTimeout(() => { text.textContent = 'Add to Cart'; }, 2000);
+            if (typeof showToast === 'function') {
+                showToast('success', 'Added to Cart', d.message);
+            }
+            // Update cart badge if it exists
+            const badge = document.getElementById('cartCount');
+            if (badge && d.cart_count !== undefined) {
+                badge.textContent = d.cart_count;
+            }
+        } else {
+            text.textContent = 'Add to Cart';
+            if (typeof showToast === 'function') {
+                showToast('warning', 'Oops', d.message);
+            }
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        text.textContent = 'Add to Cart';
+        console.error('Cart error:', err);
+    });
+    return false;
+}
+
+// ── Toggle Wishlist (AJAX) ─────────────────────────────────────
+function toggleWishlistDetail(itemId) {
+    const btn     = document.getElementById('wishlistBtn');
+    const btnText = document.getElementById('wishlistBtnText');
+
+    // Get CSRF token — try meta tag first, then hidden input in any form on the page
+    let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
+                 || document.querySelector('input[name="csrf_token"]')?.value
+                 || '';
+
+    if (!csrfToken) {
+        if (typeof showToast === 'function') {
+            showToast('warning', 'Login Required', 'Please log in to use the wishlist');
+        }
+        window.location.href = '{{ url_for("auth.login") }}';
+        return;
+    }
+
+    if (btn) btn.disabled = true;
+
+    fetch(`/customer/api/wishlist/toggle/${itemId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(res => {
+        if (res.status === 401) {
+            // Not logged in — redirect to login
+            window.location.href = '{{ url_for("auth.login") }}';
+            return null;
+        }
+        if (!res.ok) {
+            return res.json().then(data => { throw new Error(data.message || 'Request failed'); });
+        }
+        return res.json();
+    })
+    .then(data => {
+        if (!data) return;
+        if (btn) btn.disabled = false;
+
+        if (data.success) {
+            if (data.action === 'added') {
+                if (typeof showToast === 'function') showToast('success', 'Saved!', data.message);
+                if (btn) btn.classList.add('active');
+                if (btnText) btnText.textContent = 'Remove from Wishlist';
+            } else {
+                if (typeof showToast === 'function') showToast('info', 'Removed', data.message);
+                if (btn) btn.classList.remove('active');
+                if (btnText) btnText.textContent = 'Add to Wishlist';
+            }
+        } else {
+            if (typeof showToast === 'function') showToast('warning', 'Oops', data.message);
+        }
+    })
+    .catch(err => {
+        if (btn) btn.disabled = false;
+        console.error('Wishlist error:', err);
+        if (typeof showToast === 'function') showToast('error', 'Error', err.message || 'Failed to update wishlist');
+    });
+}
+</script>
 {% endblock %}

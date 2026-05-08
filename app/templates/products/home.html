@@ -120,6 +120,49 @@
     padding: 8px 16px;
   }
 }
+
+/* Wishlist Heart Button */
+.wishlist-heart-btn {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    background: rgba(255,255,255,0.95);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.wishlist-heart-btn:hover {
+    transform: scale(1.15);
+    background: #ffebee;
+}
+.wishlist-heart-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: #e91e63;
+    fill: none;
+    stroke-width: 2;
+    transition: all 0.3s ease;
+}
+.wishlist-heart-btn.active svg {
+    fill: #e91e63;
+}
+.wishlist-heart-btn.pulse {
+    animation: heartPulse 0.4s ease;
+}
+@keyframes heartPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
 </style>
 {% endblock %}
 
@@ -171,13 +214,25 @@
         {% else %}
           <img src="https://via.placeholder.com/400x300?text={{ item.name | urlencode }}" alt="{{ item.name }}">
         {% endif %}
-        <span class="food-badge">{{ item.category.value }}</span>
+        
+
+<span class="food-badge">{{ item.category.value }}</span>
         <span class="food-time">⏱ {{ item.preparation_time }} min</span>
 
         <!-- Quick View Button -->
         <button class="quick-view-btn" onclick="event.stopPropagation(); openQuickView({{ item.id }})" title="Quick View">
             👁 Quick View
         </button>
+
+        <!-- Wishlist Heart Button (Bottom Right) -->
+        {% set is_wishlisted = item.id in wishlist_ids %}
+        {% if current_user.is_authenticated %}
+        <button class="wishlist-heart-btn {% if is_wishlisted %}active{% endif %}" 
+                onclick="event.stopPropagation(); toggleWishlistItem({{ item.id }}, this)" 
+                title="{% if is_wishlisted %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}">
+            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        {% endif %}
       </div>
       <div class="food-info" onclick="window.location.href='{{ url_for('customer.product_details', id=item.id) }}'">
         <h3 class="food-name">{{ item.name }}</h3>
@@ -276,6 +331,85 @@ function addToCartHome(itemId, quantity, btnElement) {
         }
         console.error('Error:', err);
         showToast('error', 'Error', err.message || 'Failed to add item');
+    });
+}
+</script>
+
+<script>
+// Toggle Wishlist - called when heart button is clicked
+function toggleWishlistItem(itemId, btnElement) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    if (!csrfToken) {
+        showToast('warning', 'Login Required', 'Please log in to use wishlist');
+        window.location.href = '/auth/login';
+        return;
+    }
+
+    // Save current state for rollback on error
+    const wasActive = btnElement && btnElement.classList.contains('active');
+
+    if (btnElement) {
+        btnElement.classList.add('pulse');
+        btnElement.disabled = true;
+    }
+
+    fetch(`/customer/api/wishlist/toggle/${itemId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(res => {
+        if (res.status === 401) {
+            window.location.href = '/auth/login';
+            throw new Error('Session expired. Please login again.');
+        }
+        if (!res.ok) {
+            return res.json().then(data => { throw new Error(data.message || 'Failed'); });
+        }
+        return res.json();
+    })
+    .then(data => {
+        if (btnElement) {
+            btnElement.classList.remove('pulse');
+            btnElement.disabled = false;
+        }
+
+        if (data.success) {
+            // ALWAYS trust server response, not local CSS state
+            if (data.action === 'added') {
+                showToast('success', 'Added to Wishlist', data.message);
+                if (btnElement) {
+                    btnElement.classList.add('active');
+                    btnElement.title = 'Remove from Wishlist';
+                }
+            } else if (data.action === 'removed') {
+                showToast('info', 'Removed from Wishlist', data.message);
+                if (btnElement) {
+                    btnElement.classList.remove('active');
+                    btnElement.title = 'Add to Wishlist';
+                }
+            }
+        } else {
+            showToast('warning', 'Oops', data.message);
+            // Revert to previous state on error
+            if (btnElement) {
+                if (wasActive) btnElement.classList.add('active');
+                else btnElement.classList.remove('active');
+            }
+        }
+    })
+    .catch(err => {
+        if (btnElement) {
+            btnElement.classList.remove('pulse');
+            btnElement.disabled = false;
+            if (wasActive) btnElement.classList.add('active');
+            else btnElement.classList.remove('active');
+        }
+        console.error('Error toggling wishlist:', err);
+        showToast('error', 'Error', err.message || 'Failed to update wishlist');
     });
 }
 </script>

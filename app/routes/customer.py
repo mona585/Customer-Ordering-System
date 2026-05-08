@@ -7,6 +7,8 @@ from app.services.menu_service import MenuService
 from app.services.cart_service import CartService
 from app.services.order_service import OrderService
 from app.services.review_service import ReviewService
+from app.services.wishlist_service import WishlistService
+from app.extensions import csrf
 
 customer_bp = Blueprint('customer', __name__)
 
@@ -35,9 +37,20 @@ def menu():
         result = MenuService.get_all_categories()
         categories = result.data
 
+    # Get wishlist status for each item if user is logged in
+    wishlist_ids = set()
+    if current_user.is_authenticated:
+        try:
+            wishlist_result = WishlistService.get_user_wishlist(current_user.id)
+            if wishlist_result.success:
+                wishlist_ids = {entry['menu_item'].id for entry in wishlist_result.data}
+        except Exception:
+            pass
+
     return render_template('products/home.html',
                          categories=categories,
-                         active_category=category)
+                         active_category=category,
+                         wishlist_ids=wishlist_ids)
 
 
 @customer_bp.route('/search')
@@ -51,10 +64,21 @@ def search():
         flash(result.error, 'info')
         return redirect(url_for('customer.menu'))
 
+    # Get wishlist status for each item if user is logged in
+    wishlist_ids = set()
+    if current_user.is_authenticated:
+        try:
+            wishlist_result = WishlistService.get_user_wishlist(current_user.id)
+            if wishlist_result.success:
+                wishlist_ids = {entry['menu_item'].id for entry in wishlist_result.data}
+        except Exception:
+            pass
+
     return render_template('products/home.html',
                          categories=result.data,
                          active_category='all',
-                         search_query=query)
+                         search_query=query,
+                         wishlist_ids=wishlist_ids)
 
 
 @customer_bp.route('/product/<int:id>')
@@ -69,10 +93,21 @@ def product_details(id):
     data = result.data
     reviews_result = ReviewService.get_product_reviews(id)
 
+    # Check if item is in user's wishlist
+    is_wishlisted = False
+    if current_user.is_authenticated:
+        try:
+            wishlist_result = WishlistService.is_in_wishlist(current_user.id, id)
+            if wishlist_result.success:
+                is_wishlisted = wishlist_result.data['is_wishlisted']
+        except Exception:
+            pass
+
     return render_template('products/product_details.html',
                          item=data['item'],
                          related=data['related'],
-                         reviews=reviews_result.data['reviews'] if reviews_result.success else [])
+                         reviews=reviews_result.data['reviews'] if reviews_result.success else [],
+                         is_wishlisted=is_wishlisted)
 
 
 # ==================== CART ====================
@@ -151,6 +186,74 @@ def remove_from_cart(item_id):
         flash(result.error, 'warning')
 
     return redirect(url_for('customer.cart'))
+
+
+# ==================== WISHLIST ====================
+
+@customer_bp.route('/wishlist')
+@login_required
+def wishlist():
+    """Display user's wishlist"""
+    try:
+        print(f"[DEBUG] Loading wishlist for user_id={current_user.id}, username={current_user.username}")
+        result = WishlistService.get_user_wishlist(current_user.id)
+        print(f"[DEBUG] WishlistService result: success={result.success}, data_count={len(result.data) if result.data else 0}")
+
+        if not result.success:
+            flash(result.error, 'warning')
+            return render_template('cart/wishlist.html', wishlist_items=[])
+
+        return render_template('cart/wishlist.html', wishlist_items=result.data)
+    except Exception as e:
+        import traceback
+        print(f"[DEBUG] WISHLIST ROUTE ERROR: {e}")
+        traceback.print_exc()
+        flash(f'Wishlist error: {str(e)}', 'danger')
+        return render_template('cart/wishlist.html', wishlist_items=[])
+
+
+@customer_bp.route('/wishlist/remove/<int:wishlist_id>', methods=['POST'])
+@login_required
+def remove_from_wishlist(wishlist_id):
+    """Remove item from wishlist via form submission"""
+    result = WishlistService.remove_from_wishlist(current_user.id, wishlist_id)
+
+    if result.success:
+        flash(result.message or 'Item removed from wishlist.', 'success')
+    else:
+        flash(result.error or 'Could not remove item.', 'warning')
+
+    return redirect(url_for('customer.wishlist'))
+
+
+@customer_bp.route('/api/wishlist/toggle/<int:item_id>', methods=['POST'])
+@csrf.exempt
+@login_required
+def api_toggle_wishlist(item_id):
+    """AJAX toggle wishlist item"""
+    try:
+        from app.repositories.wishlist_repository import WishlistRepository
+
+        # Single direct query — no ambiguity about current state
+        existing_entry = WishlistRepository.get_customer_item(current_user.id, item_id)
+
+        if existing_entry:
+            # Item IS in wishlist → remove it
+            result = WishlistService.remove_from_wishlist(current_user.id, existing_entry.id)
+            if result.success:
+                return jsonify({'success': True, 'action': 'removed', 'message': result.message})
+            return jsonify({'success': False, 'message': result.error}), 400
+        else:
+            # Item is NOT in wishlist → add it
+            result = WishlistService.add_to_wishlist(current_user.id, item_id)
+            if result.success:
+                return jsonify({'success': True, 'action': 'added', 'message': result.message})
+            return jsonify({'success': False, 'message': result.error}), 400
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 # ==================== AJAX API ====================

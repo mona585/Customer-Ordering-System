@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}My Wishlist - AURA{% endblock %}
+
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:40px 20px">
+  <h1 style="font-size:32px;font-weight:700;margin-bottom:8px">My Wishlist</h1>
+  <p style="color:#666;margin-bottom:40px">Your favorite items saved for later</p>
+
+  {% if wishlist_items %}
+    <p style="color:#555;margin-bottom:24px;font-size:15px">{{ wishlist_items|length }} item(s) saved</p>
+
+    {% for entry in wishlist_items %}
+    {% set mi = entry.menu_item %}
+    <div style="background:#fff;padding:20px;border-radius:12px;border:1px solid #e0e0e0;margin-bottom:16px;display:flex;gap:20px;align-items:center">
+
+      <div style="width:80px;height:80px;background:#e8e8e8;border-radius:8px;overflow:hidden;flex-shrink:0">
+        {% if mi %}
+          {% if mi.image_url %}
+            <img src="{{ url_for('static', filename=mi.image_url.replace('static/', '')) }}"
+                 alt="{{ mi.name }}"
+                 style="width:100%;height:100%;object-fit:cover"
+                 onerror="this.src='https://via.placeholder.com/80x80?text=Food'">
+          {% else %}
+            <img src="https://via.placeholder.com/80x80?text={{ mi.name | urlencode }}" style="width:100%;height:100%;object-fit:cover">
+          {% endif %}
+        {% else %}
+          <img src="https://via.placeholder.com/80x80?text=Unavailable" style="width:100%;height:100%;object-fit:cover">
+        {% endif %}
+      </div>
+
+      <div style="flex:1;min-width:0">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:4px">
+          {% if mi %}
+          <a href="{{ url_for('customer.product_details', id=mi.id) }}" style="color:inherit;text-decoration:none;">
+            {{ mi.name }}
+          </a>
+          {% else %}
+          <span style="color:#999">Item no longer available</span>
+          {% endif %}
+        </h3>
+        {% if mi and mi.description %}
+          <p style="color:#888;font-size:13px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            {{ mi.description }}
+          </p>
+        {% endif %}
+        {% if mi %}
+          <p style="color:#333;font-weight:700;font-size:15px">${{ "%.2f"|format(mi.price|float) }}</p>
+        {% endif %}
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0">
+        {% if mi and mi.available_stock > 0 %}
+        <form action="{{ url_for('customer.add_to_cart') }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="item_id" value="{{ mi.id }}">
+          <input type="hidden" name="quantity" value="1">
+          <button type="submit"
+                  style="padding:8px 16px;background:#111;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap">
+            Add to Cart
+          </button>
+        </form>
+        {% else %}
+        <button disabled
+                style="padding:8px 16px;background:#e0e0e0;color:#999;border:none;border-radius:6px;font-weight:600;font-size:13px;white-space:nowrap;cursor:not-allowed">
+          Out of Stock
+        </button>
+        {% endif %}
+
+        <form action="{{ url_for('customer.remove_from_wishlist', wishlist_id=entry.id) }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit"
+                  style="padding:8px 16px;background:#ffebee;color:#d32f2f;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap">
+            Remove
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+
+  {% else %}
+    <div style="text-align:center;padding:80px 20px">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" style="margin-bottom:20px">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+      <p style="color:#666;font-size:18px;margin-bottom:8px;font-weight:600">Your wishlist is empty</p>
+      <p style="color:#aaa;font-size:14px;margin-bottom:24px">Save items you love and find them here later</p>
+      <a href="{{ url_for('customer.menu') }}"
+         style="display:inline-block;padding:14px 32px;background:#6366f1;color:#fff;border-radius:12px;text-decoration:none;font-weight:600">
+        Browse Menu
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

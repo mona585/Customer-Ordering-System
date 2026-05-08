@@ -10,7 +10,8 @@ class WishlistRepository:
 
     @staticmethod
     def get_by_id(wishlist_id):
-        return Wishlist.query.get(wishlist_id)
+        # .query.get() is removed in SQLAlchemy 2.x — use db.session.get() instead
+        return db.session.get(Wishlist, wishlist_id)
 
     @staticmethod
     def get_by_customer(customer_id):
