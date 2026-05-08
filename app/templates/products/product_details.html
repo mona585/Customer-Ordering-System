@@ -227,36 +227,54 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
     </div>
     {% endif %}
 
-    {% if available > 0 %}
-    <form id="addToCartForm" onsubmit="return addToCartDetail(event)">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="item_id" value="{{ item.id }}">
+    {% if current_user.is_authenticated %}
+      {% if available > 0 %}
+      <form id="addToCartForm" onsubmit="return addToCartDetail(event)">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="item_id" value="{{ item.id }}">
 
-      <div class="quantity">
-        <div class="label">Quantity</div>
-        <div style="display:flex;align-items:center;gap:8px;">
-            <button type="button" onclick="adjustDetailQty(-1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;">-</button>
-            <input type="number" name="quantity" id="detailQty" class="qty-input" value="1" min="1" max="{{ available }}" required>
-            <button type="button" onclick="adjustDetailQty(1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;">+</button>
+        <div class="quantity">
+          <div class="label">Quantity</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+              <button type="button" onclick="adjustDetailQty(-1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;">-</button>
+              <input type="number" name="quantity" id="detailQty" class="qty-input" value="1" min="1" max="{{ available }}" required>
+              <button type="button" onclick="adjustDetailQty(1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;">+</button>
+          </div>
+          <div class="stock-limit">Max: {{ available }} items</div>
         </div>
-        <div class="stock-limit">Max: {{ available }} items</div>
-      </div>
 
-      <div class="special-requests">
-        <div class="label">Special Requests</div>
-        <textarea name="special_requests" placeholder="e.g., No onions, Extra cheese, Spicy..."></textarea>
-      </div>
+        <div class="special-requests">
+          <div class="label">Special Requests</div>
+          <textarea name="special_requests" placeholder="e.g., No onions, Extra cheese, Spicy..."></textarea>
+        </div>
 
+        <div class="btns">
+          <button type="submit" class="btn btn-b" id="addToCartBtn">
+              <span id="btnText">Add to Cart</span>
+          </button>
+
+          {% if current_user.is_authenticated %}
+          <button type="button" class="wishlist-detail-btn {% if is_wishlisted %}active{% endif %}" 
+                  id="wishlistBtn" onclick="toggleWishlistDetail({{ item.id }})">
+              <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span id="wishlistBtnText">{% if is_wishlisted %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}</span>
+          </button>
+          {% else %}
+          <a href="{{ url_for('auth.login') }}" class="wishlist-detail-btn">
+              <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span>Login to Wishlist</span>
+          </a>
+          {% endif %}
+        </div>
+      </form>
+      {% else %}
       <div class="btns">
-        <button type="submit" class="btn btn-b" id="addToCartBtn">
-            <span id="btnText">Add to Cart</span>
-        </button>
-
+        <button class="btn btn-b" disabled>Out of Stock</button>
         {% if current_user.is_authenticated %}
-        <button type="button" class="wishlist-detail-btn {% if is_wishlisted %}active{% endif %}" 
+        <button type="button" class="wishlist-detail-btn {% if is_wishlisted %}active{% endif %}"
                 id="wishlistBtn" onclick="toggleWishlistDetail({{ item.id }})">
             <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <span id="wishlistBtnText">{% if is_wishlisted %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}</span>
+            <span id="wishlistBtnText">{% if is_wishlisted %}Remove from Wishlist{% else %}Save to Wishlist{% endif %}</span>
         </button>
         {% else %}
         <a href="{{ url_for('auth.login') }}" class="wishlist-detail-btn">
@@ -265,18 +283,25 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
         </a>
         {% endif %}
       </div>
-    </form>
-    {% else %}
-    <div class="btns">
-      <button class="btn btn-b" disabled>Out of Stock</button>
-      {% if current_user.is_authenticated %}
-      <button type="button" class="wishlist-detail-btn {% if is_wishlisted %}active{% endif %}"
-              id="wishlistBtn" onclick="toggleWishlistDetail({{ item.id }})">
-          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <span id="wishlistBtnText">{% if is_wishlisted %}Remove from Wishlist{% else %}Save to Wishlist{% endif %}</span>
-      </button>
       {% endif %}
-    </div>
+    {% else %}
+      {% if available > 0 %}
+      <div class="btns">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-b">Login to Add to Cart</a>
+        <a href="{{ url_for('auth.login') }}" class="wishlist-detail-btn">
+            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span>Login to Wishlist</span>
+        </a>
+      </div>
+      {% else %}
+      <div class="btns">
+        <button class="btn btn-b" disabled>Out of Stock</button>
+        <a href="{{ url_for('auth.login') }}" class="wishlist-detail-btn">
+            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span>Login to Wishlist</span>
+        </a>
+      </div>
+      {% endif %}
     {% endif %}
   </div>
 </main>
