@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}My Profile — AURA{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container { display:flex; align-items:flex-start; justify-content:center; padding:60px 20px; min-height:calc(100vh - 200px); }
+    .profile-box       { background:var(--cw); padding:40px; border-radius:var(--r); width:100%; max-width:500px; border:1px solid var(--cb); box-shadow:var(--shadow-sm); }
+    .profile-header    { text-align:center; margin-bottom:30px; }
+    .profile-avatar    { width:80px; height:80px; background:var(--c2); color:var(--cw); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:700; margin:0 auto 15px; }
+    .profile-title     { font-size:22px; font-weight:700; letter-spacing:1px; }
+    
+    .form-group        { margin-bottom:15px; }
+    .form-group label  { display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--cg); }
+    .auth-input        { width:100%; padding:10px 14px; border:1.5px solid var(--cb); border-radius:8px; background:transparent; color:var(--c1); outline:none; transition:var(--tr); }
+    .auth-input:focus  { border-color:var(--c2); }
+    .save-btn          { width:100%; padding:14px; background:var(--c1); color:var(--cw); border:none; border-radius:8px; font-weight:600; cursor:pointer; margin-top:20px; transition:var(--tr); }
+    .save-btn:hover    { background:var(--c2); }
+    
+    .msg-banner         { padding:12px; margin-bottom:20px; border-radius:8px; text-align:center; font-size:14px; font-weight:500; display:none; }
+    .msg-banner.error   { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; display:block; }
+    .msg-banner.success { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; display:block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-box">
+        <div class="profile-header">
+            <div class="profile-avatar">{{ user.username[0] | upper }}</div>
+            <h2 class="profile-title">My Profile</h2>
+        </div>
+        
+        <div id="message-handler"></div>
+
+        <form id="profileForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group">
+                <label>USERNAME</label>
+                <input type="text" name="username" class="auth-input" value="{{ user.username }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>EMAIL ADDRESS</label>
+                <input type="email" name="email" class="auth-input" value="{{ user.email }}" required>
+            </div>
+            <div class="form-group">
+                <label>NEW PASSWORD (OPTIONAL)</label>
+                <input type="password" name="password" id="password" class="auth-input" placeholder="Leave blank to keep current password">
+            </div>
+            <div class="form-group">
+                <label>PHONE (OPTIONAL)</label>
+                <div style="display: flex; gap: 8px;">
+                    <select id="country-code" class="auth-input" style="width: 110px; padding: 10px; cursor: pointer;">
+                        <option value="+20">🇪🇬 +20</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+966">🇸🇦 +966</option>
+                        <option value="+971">🇦🇪 +971</option>
+                    </select>
+                    <input type="tel" id="raw-phone" class="auth-input" placeholder="1012345678" style="flex: 1;">
+                    <input type="hidden" name="phone" id="final-phone" value="{{ user.phone or '' }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>DELIVERY ADDRESS (OPTIONAL)</label>
+                <textarea name="address" class="auth-input" style="height: 80px; resize: none;">{{ user.address or '' }}</textarea>
+            </div>
+
+            <button type="submit" class="save-btn" id="saveBtn">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+// --- ON PAGE LOAD: Parse existing phone number ---
+document.addEventListener('DOMContentLoaded', () => {
+    const savedPhone = "{{ user.phone or '' }}";
+    if (savedPhone) {
+        const countryCodeSelect = document.getElementById('country-code');
+        for (let option of countryCodeSelect.options) {
+            if (savedPhone.startsWith(option.value)) {
+                countryCodeSelect.value = option.value;
+                document.getElementById('raw-phone').value = savedPhone.substring(option.value.length);
+                break;
+            }
+        }
+    }
+});
+
+// --- ON SUBMIT: Handle AJAX Update ---
+document.getElementById('profileForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const msgHandler = document.getElementById('message-handler');
+    const btn        = document.getElementById('saveBtn');
+    const formData   = new FormData(this);
+    
+    // 1. --- INSTANT VALIDATIONS ---
+    const username = formData.get('username').trim();
+    const password = formData.get('password');
+
+    if (username.length < 3) {
+        msgHandler.innerHTML = `<div class="msg-banner error">Username must be at least 3 characters long.</div>`;
+        return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        msgHandler.innerHTML = `<div class="msg-banner error">Username can only contain letters, numbers, and underscores.</div>`;
+        return;
+    }
+
+    if (password && password.length < 8) { // Only validate if they typed a new password
+        msgHandler.innerHTML = `<div class="msg-banner error">New password must be at least 8 characters long.</div>`;
+        return;
+    }
+
+    // 2. --- PHONE VALIDATION ---
+    const countryCode     = document.getElementById('country-code').value;
+    const rawPhone        = document.getElementById('raw-phone').value.trim();
+    const finalPhoneInput = document.getElementById('final-phone');
+
+    if (rawPhone) {
+        let digits = rawPhone.replace(/\D/g, ''); 
+        if (countryCode === '+20' && digits.startsWith('0')) digits = digits.substring(1);
+        
+        if (digits.length < 7 || digits.length > 15) {
+            msgHandler.innerHTML = `<div class="msg-banner error">Please enter a valid phone number length.</div>`;
+            return;
+        }
+
+        finalPhoneInput.value = countryCode + digits;
+        formData.set('phone', finalPhoneInput.value); 
+    } else {
+        formData.set('phone', '');
+    }
+
+    // 3. --- SUBMIT TO SERVER ---
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+        const response = await fetch("{{ url_for('profile.update_profile') }}", {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            msgHandler.innerHTML = `<div class="msg-banner success">${data.message}</div>`;
+            document.getElementById('password').value = ''; // Clear the password field
+            setTimeout(() => { msgHandler.innerHTML = ''; }, 3000);
+        } else {
+            msgHandler.innerHTML = `<div class="msg-banner error">${data.message}</div>`;
+        }
+    } catch {
+        msgHandler.innerHTML = `<div class="msg-banner error">Connection error. Please try again.</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+    }
+});
+</script>
+{% endblock %}
