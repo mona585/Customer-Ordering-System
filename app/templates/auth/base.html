@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AURA{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        .auth-body  { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
+        .auth-box   { background:var(--cw); padding:40px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.05); width:100%; max-width:400px; }
+        .auth-input { width:100%; padding:12px; margin-bottom:15px; border:1px solid var(--cb); border-radius:var(--r); outline:none; }
+        .auth-btn   { width:100%; padding:12px; background:var(--c1); color:var(--cw); border:none; border-radius:var(--r); cursor:pointer; font-weight:600; }
+        .msg        { padding:12px; margin-bottom:20px; border-radius:var(--r); text-align:center; font-size:14px; }
+        .error      { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
+        .success    { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+    </style>
+
+    {% block extra_css %}{% endblock %}   {# ← was missing; child templates inject page-specific styles here #}
+</head>
+<body>
+    {% block content %}{% endblock %}
+</body>
+</html>
