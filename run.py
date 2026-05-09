@@ -1,6 +1,9 @@
 # run.py
 """Development server entry point"""
 
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
+
 from app import create_app
 
 app = create_app('development')
