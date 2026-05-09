@@ -1,4 +1,4 @@
-# app/auth/auth.py
+# app/routes/auth.py
 
 from flask import Blueprint, render_template, request, url_for, jsonify, redirect
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -6,27 +6,21 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 import re
+import requests
+import os
 
 auth_bp = Blueprint('auth', __name__)
 
-
-def _is_ajax() -> bool:
-    """True when the request was sent via fetch() with the AJAX header."""
-    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+FIREBASE_API_KEY = os.environ.get('FIREBASE_WEB_API_KEY')
 
 
 def _validate_phone(phone: str) -> str | None:
-    """Validates international E.164 phone number format (e.g., +201012345678)"""
     if not phone:
-        return None  # Phone is optional
-
-    # Regex breakdown:
-    # ^\+       -> Must start with a '+'
-    # [1-9]\d{6,14}$ -> Followed by a non-zero digit, and 6 to 14 total numbers (Standard Int. limits)
+        return None
     if not re.match(r'^\+[1-9]\d{6,14}$', phone):
         return 'Invalid phone number format. Please select a valid country code.'
-    
     return None
+
 
 def _validate_registration(username, email, password, phone='') -> str | None:
     if not username or not email or not password:
@@ -37,12 +31,71 @@ def _validate_registration(username, email, password, phone='') -> str | None:
         return 'Please enter a valid email address.'
     if len(password) < 8:
         return 'Password must be at least 8 characters.'
-    # Phone is optional but validated if provided
     phone_error = _validate_phone(phone)
     if phone_error:
         return phone_error
     return None
 
+
+def _firebase_register(email, password):
+    """Create user in Firebase and send verification email."""
+    # Step 1: Create user in Firebase
+    signup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}"
+    resp = requests.post(signup_url, json={
+        "email": email,
+        "password": password,
+        "returnSecureToken": True
+    })
+    data = resp.json()
+
+    if 'error' in data:
+        msg = data['error'].get('message', 'Registration failed.')
+        # Make Firebase error messages user-friendly
+        if msg == 'EMAIL_EXISTS':
+            return None, None, 'Email already registered.'
+        if msg == 'WEAK_PASSWORD : Password should be at least 6 characters':
+            return None, None, 'Password must be at least 8 characters.'
+        return None, None, msg
+
+    id_token = data['idToken']
+    firebase_uid = data['localId']
+
+    # Step 2: Send verification email
+    verify_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={FIREBASE_API_KEY}"
+    requests.post(verify_url, json={
+        "requestType": "VERIFY_EMAIL",
+        "idToken": id_token
+    })
+
+    return id_token, firebase_uid, None
+
+
+def _firebase_login(email, password):
+    """Sign in with Firebase and return token + uid + verified status."""
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+    resp = requests.post(url, json={
+        "email": email,
+        "password": password,
+        "returnSecureToken": True
+    })
+    data = resp.json()
+
+    if 'error' in data:
+        return None, None, False, 'Invalid email or password.'
+
+    id_token = data['idToken']
+    firebase_uid = data['localId']
+
+    # Check if email is verified
+    lookup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={FIREBASE_API_KEY}"
+    lookup_resp = requests.post(lookup_url, json={"idToken": id_token})
+    lookup_data = lookup_resp.json()
+
+    email_verified = False
+    if 'users' in lookup_data and len(lookup_data['users']) > 0:
+        email_verified = lookup_data['users'][0].get('emailVerified', False)
+
+    return id_token, firebase_uid, email_verified, None
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -57,22 +110,35 @@ def register():
         phone    = request.form.get('phone', '').strip()
         address  = request.form.get('address', '').strip()
 
-        # Pass phone into validation now
+        # Validate inputs
         error = _validate_registration(username, email, password, phone)
         if error:
             return jsonify({'status': 'error', 'message': error}), 400
 
-        if UserRepository.get_by_email(email):
-            return jsonify({'status': 'error', 'message': 'Email already registered.'}), 400
+        # Check username uniqueness in SQLite
         if UserRepository.get_by_username(username):
             return jsonify({'status': 'error', 'message': 'Username is already taken.'}), 400
-        # Only check uniqueness if a phone was actually provided
+
+        # Check email uniqueness in SQLite
+        if UserRepository.get_by_email(email):
+            return jsonify({'status': 'error', 'message': 'Email already registered.'}), 400
+
         if phone and UserRepository.get_by_phone(phone):
-            return jsonify({'status': 'error', 'message': 'This phone number is already registered.'}), 400
-        
+             return jsonify({'status': 'error', 'message': 'This phone number is already registered.'}), 400
+
+        # Register in Firebase + send verification email
+        if not FIREBASE_API_KEY:
+            return jsonify({'status': 'error', 'message': 'Firebase not configured.'}), 500
+
+        _, firebase_uid, firebase_error = _firebase_register(email, password)
+        if firebase_error:
+            return jsonify({'status': 'error', 'message': firebase_error}), 400
+
+        # Save user in SQLite (unverified for now — no login yet)
         new_user = User(
             username=username,
             email=email,
+            firebase_uid=firebase_uid,
             password_hash=generate_password_hash(password),
             phone=phone or None,
             address=address or None,
@@ -81,7 +147,7 @@ def register():
 
         return jsonify({
             'status':   'success',
-            'message':  'Account created! Redirecting to sign in...',
+            'message':  'Account created! Please check your email to verify your account before logging in.',
             'redirect': url_for('auth.login'),
         }), 200
 
@@ -90,7 +156,6 @@ def register():
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    # Already logged in — no reason to show the login page
     if current_user.is_authenticated:
         return redirect(url_for('main.home'))
 
@@ -101,14 +166,26 @@ def login():
         if not email or not password:
             return jsonify({'status': 'error', 'message': 'Email and password are required.'}), 400
 
-        user = UserRepository.get_by_email(email)
+        if not FIREBASE_API_KEY:
+            return jsonify({'status': 'error', 'message': 'Firebase not configured.'}), 500
 
-        # Single generic message — don't reveal whether the email exists
-        if not user or not check_password_hash(user.password_hash, password):
+        # Verify with Firebase
+        _, firebase_uid, email_verified, firebase_error = _firebase_login(email, password)
+
+        if firebase_error:
+            return jsonify({'status': 'error', 'message': firebase_error}), 401
+
+        # Block login if email not verified
+        if not email_verified:
             return jsonify({
                 'status':  'error',
-                'message': 'Invalid email or password.',
+                'message': 'Please verify your email before logging in. Check your inbox.',
             }), 401
+
+        # Get user from SQLite
+        user = UserRepository.get_by_email(email)
+        if not user:
+            return jsonify({'status': 'error', 'message': 'Account not found.'}), 404
 
         login_user(user, remember=False)
 

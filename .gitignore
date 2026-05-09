@@ -1,3 +1,26 @@
+# Python
 __pycache__/
 *.pyc
-instance/app.db
+*.pyo
+*.pyd
+
+# Virtual Environment
+.venv/
+venv/
+
+# Database
+instance/
+*.db
+
+# Environment Variables
+.env
+
+# Firebase
+firebase-service-account.json
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

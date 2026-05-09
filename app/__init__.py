@@ -7,9 +7,8 @@ from flask import Flask
 # Import extensions
 from app.extensions import db, login_manager, migrate, csrf
 
-# NEW ADDED
-from app.routes.auth import auth_bp
-from app.routes.profile import profile_bp
+# Import Firebase configuration (initializes on import)
+import firebase_config
 
 def create_app(config_name='development'):
     """Application factory pattern - creates and configures the Flask app"""
@@ -45,13 +44,14 @@ def create_app(config_name='development'):
     from app.routes.main import main_bp
     from app.routes.customer import customer_bp
     from app.routes.order import order_bp
+    from app.routes.profile import profile_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp, url_prefix='/')
     app.register_blueprint(customer_bp, url_prefix='/customer')
     app.register_blueprint(order_bp, url_prefix='/order')
     app.register_blueprint(profile_bp)
-    
+
     # Create tables if they don't exist
     with app.app_context():
         db.create_all()
