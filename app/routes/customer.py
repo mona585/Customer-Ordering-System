@@ -296,9 +296,9 @@ def api_add_to_cart():
 
 
 @customer_bp.route('/api/cart/count')
-@login_required
 def api_cart_count():
-    """Get current cart count"""
+    if not current_user.is_authenticated:
+        return jsonify({'count': 0})
     cart_data = session.get('cart', {})
     result = CartService.get_cart_count(cart_data)
     return jsonify(result.data)
