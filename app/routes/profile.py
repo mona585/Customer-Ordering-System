@@ -11,7 +11,7 @@ profile_bp = Blueprint('profile', __name__)
 
 def _calculate_points(user) -> int:
     orders = getattr(user, 'orders', []) or []
-    base_points = int(sum(o.total_price for o in orders))
+    base_points = int(sum(o.total_amount for o in orders))
     try:
         review_count = len(user.reviews) if hasattr(user, 'reviews') else 0
         base_points += review_count * 50
