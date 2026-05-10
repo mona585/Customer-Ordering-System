@@ -59,7 +59,7 @@
         <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         Delivery Information
       </h2>
-      <form method="POST">
+      <form method="POST" id="checkout-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="payment_method" id="payment_method_input" value="CREDIT_CARD">
 
@@ -70,7 +70,20 @@
 
         <div class="form-group">
           <label>Phone Number</label>
-          <input type="tel" name="phone" value="{{ current_user.phone or '' }}" placeholder="Your phone number" required>
+          <div style="display: flex; gap: 8px;">
+            <select id="country-code" style="width: 110px; padding: 14px; border: 1.5px solid var(--cb); border-radius: 12px; background: var(--cw); color: var(--text-primary); cursor: pointer;">
+              <option value="+20">🇪🇬 +20</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+966">🇸🇦 +966</option>
+              <option value="+971">🇦🇪 +971</option>
+            </select>
+            
+            <input type="tel" id="raw-phone" placeholder="1012345678" style="flex: 1; padding: 14px; border: 1.5px solid var(--cb); border-radius: 12px; background: var(--cw); color: var(--text-primary); font-size: 15px;" required>
+            
+            <input type="hidden" name="phone" id="final-phone" value="{{ current_user.phone or '' }}">
+          </div>
+          <div id="phone-error" style="color: #b91c1c; font-size: 13px; margin-top: 6px; font-weight: 500; display: none;"></div>
         </div>
 
         <div class="form-group">
@@ -148,10 +161,88 @@
 </div>
 
 <script>
+// Handle Payment Selection UI
 function selectPayment(el, methodValue) {
   document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById('payment_method_input').value = methodValue;
 }
+
+// 1. Auto-fill the phone number from the database when the page loads
+window.addEventListener('DOMContentLoaded', () => {
+    const existingPhone = "{{ current_user.phone or '' }}";
+    if (existingPhone) {
+        const selectBox = document.getElementById('country-code');
+        const rawInput = document.getElementById('raw-phone');
+        
+        let foundCode = false;
+        // Check which country code the saved number starts with
+        for (let option of selectBox.options) {
+            if (existingPhone.startsWith(option.value)) {
+                selectBox.value = option.value;
+                // Remove the country code so only the raw digits show in the input box
+                rawInput.value = existingPhone.substring(option.value.length);
+                foundCode = true;
+                break;
+            }
+        }
+        // If it doesn't match our dropdown codes, just put the whole thing in the box
+        if (!foundCode) rawInput.value = existingPhone;
+    }
+});
+
+// 2. Validate the phone number before submitting the order
+document.querySelector('.checkout-form form').addEventListener('submit', function(e) {
+    const countryCode = document.getElementById('country-code').value;
+    const rawPhone = document.getElementById('raw-phone').value.trim();
+    const finalPhoneInput = document.getElementById('final-phone');
+    const errorDiv = document.getElementById('phone-error');
+
+    // Reset error state
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+
+    if (!rawPhone) {
+        e.preventDefault();
+        errorDiv.textContent = 'Phone number is required.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Strip out spaces or dashes the user might have typed
+    let digits = rawPhone.replace(/\D/g, ''); 
+
+    // Validation rules (Same as register.html)
+    if (countryCode === '+20') {
+        if (digits.startsWith('0')) digits = digits.substring(1); // Remove leading 0 if they typed it
+        
+        const egyptRegex = /^1[0125][0-9]{8}$/;
+        if (!egyptRegex.test(digits)) {
+            e.preventDefault();
+            errorDiv.textContent = 'Invalid Egyptian number. Try dropping the leading 0 (e.g., 1012345678).';
+            errorDiv.style.display = 'block';
+            return;
+        }
+    } 
+    else if (countryCode === '+1') {
+        if (digits.length !== 10) {
+            e.preventDefault();
+            errorDiv.textContent = 'US/CA numbers must be exactly 10 digits.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+    }
+    else {
+        if (digits.length < 7 || digits.length > 15) {
+            e.preventDefault();
+            errorDiv.textContent = 'Invalid phone length for this region.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+    }
+
+    // If it passes validation, combine them into the hidden input and allow submission!
+    finalPhoneInput.value = countryCode + digits;
+});
 </script>
 {% endblock %}
