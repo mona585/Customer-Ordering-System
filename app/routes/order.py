@@ -19,6 +19,16 @@ def order_tracking(order_id):
             flash('Access denied', 'danger')
         else:
             flash(result.error, 'danger')
-        return redirect(url_for('customer.orders'))
+        return redirect(url_for('order.my_orders'))
 
     return render_template("orders/order_tracking.html", order=result.data)
+
+# --- New Route for Order History ---
+@order_bp.route("/my-orders")
+@login_required
+def my_orders():
+    # Retrieve orders from the current_user object and sort them by date (Newest First)
+    user_orders = current_user.orders if current_user.orders else []
+    orders = sorted(user_orders, key=lambda x: x.created_at, reverse=True)    
+    # Render the history template and pass the orders list
+    return render_template("orders/my_orders.html", orders=orders)

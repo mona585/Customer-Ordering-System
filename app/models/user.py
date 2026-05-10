@@ -19,15 +19,16 @@ class User(UserMixin, db.Model):
 
     orders  = db.relationship('Order',  back_populates='customer', lazy=True, cascade='all, delete-orphan')
     reviews = db.relationship('Review', back_populates='customer', lazy=True, cascade='all, delete-orphan')
+    points = db.Column(db.Integer, default=0)
 
-    def __init__(self, username, email, firebase_uid=None, password_hash=None, phone=None, address=None):
+    def __init__(self, username, email, firebase_uid=None, password_hash=None, phone=None, address=None, points=0):
         self.username      = username
         self.email         = email
         self.firebase_uid  = firebase_uid  # NEW
         self.password_hash = password_hash
         self.phone         = phone
         self.address       = address
-
+        self.points        = points
     def __repr__(self):
         return f'<User {self.username}>'
 
