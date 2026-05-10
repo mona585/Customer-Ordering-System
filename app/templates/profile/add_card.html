@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Add New Card - AURA{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:center;align-items:center;min-height:80vh;padding:24px;">
+  <div style="background:var(--cw);width:100%;max-width:450px;padding:40px;border-radius:24px;box-shadow:var(--shadow-lg);border:1px solid var(--cb);font-family:'Plus Jakarta Sans',sans-serif;">
+    
+    <div style="text-align:center;margin-bottom:30px;">
+      <div style="width:56px;height:56px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;color:white;">
+        <i class="fas fa-credit-card"></i>
+      </div>
+      <h2 style="font-size:26px;font-weight:800;color:var(--c1);margin:0 0 6px;">Add New Card</h2>
+      <p style="color:var(--cl);font-size:14px;margin:0;">Securely add a payment method</p>
+    </div>
+
+    <form id="addCardForm">
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--cl);margin-bottom:8px;text-transform:uppercase;">Cardholder Name</label>
+        <input type="text" name="card_name" class="edit-input" placeholder="Full Name on Card" required>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--cl);margin-bottom:8px;text-transform:uppercase;">Card Number</label>
+        <input type="text" name="card_number" class="edit-input" placeholder="0000 0000 0000 0000" maxlength="19" required>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:28px;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--cl);margin-bottom:8px;text-transform:uppercase;">Expiry Date</label>
+          <input type="text" name="expiry" class="edit-input" placeholder="MM/YY" maxlength="5" required>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--cl);margin-bottom:8px;text-transform:uppercase;">CVV</label>
+          <input type="password" name="cvv" class="edit-input" placeholder="***" maxlength="3" required>
+        </div>
+      </div>
+
+      <button type="submit" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:15px;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+        Save Card Details
+      </button>
+
+      <a href="{{ url_for('profile.view_profile') }}" style="display:block;text-align:center;margin-top:16px;color:var(--cl);font-size:14px;text-decoration:none;">Cancel</a>
+    </form>
+  </div>
+</div>
+
+<style>
+.edit-input { width: 100%; padding: 13px 16px; border-radius: 12px; border: 1.5px solid var(--cb); background: var(--bg); font-size: 14px; color: var(--c1); box-sizing: border-box; }
+.edit-input:focus { outline: none; border-color: #6366f1; }
+</style>
+{% endblock %}

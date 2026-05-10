@@ -20,6 +20,8 @@ def create_app(config_name='development'):
     # Load configuration
     from config import config
     app.config.from_object(config[config_name])
+    app.config['WTF_CSRF_ENABLED'] = False
+
 
     # Initialize extensions
     db.init_app(app)
@@ -51,7 +53,7 @@ def create_app(config_name='development'):
     app.register_blueprint(customer_bp, url_prefix='/customer')
     app.register_blueprint(order_bp, url_prefix='/order')
     app.register_blueprint(profile_bp)
-
+    
     # Create tables if they don't exist
     with app.app_context():
         db.create_all()
