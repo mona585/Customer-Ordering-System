@@ -39,6 +39,19 @@
 .continue-btn{display:inline-block;padding:12px 24px;background:var(--cw);color:var(--c1);border:1.5px solid var(--cb);border-radius:var(--r);font-size:14px;font-weight:600;text-decoration:none;transition:var(--tr)}
 .continue-btn:hover{border-color:var(--c1)}
 
+/* New Elements Styling */
+.delivery-progress-container {background:var(--cw);padding:20px;border-radius:var(--r);border:1px solid #f0f0f0;margin-bottom:16px;}
+.delivery-msg {font-size:14px;font-weight:600;margin-bottom:10px;display:block}
+.progress-bar-bg {background:#f0f0f0;height:8px;border-radius:10px;overflow:hidden;width:100%}
+.progress-bar-fill {background:var(--c2);height:100%;transition: width 0.5s ease-in-out}
+
+.promo-container {margin-top:20px;padding-top:20px;border-top:1px solid #f0f0f0}
+.promo-form {display:flex;gap:10px;margin-top:10px}
+.promo-input {flex:1;padding:10px 14px;border:1px solid var(--cb);border-radius:var(--r);font-size:14px;outline:none}
+.promo-input:focus {border-color:var(--c2)}
+.promo-apply-btn {padding:0 20px;background:var(--c1);color:var(--cw);border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;transition:var(--tr)}
+.promo-apply-btn:hover {background:#333}
+
 @media(max-width:768px){
   .cart-item{grid-template-columns:1fr;gap:12px;text-align:center}
   .cart-item-img{margin:0 auto}
@@ -50,6 +63,24 @@
   <h1 class="cart-title">Shopping Cart</h1>
 
   {% if cart_items %}
+  
+  {% set free_delivery_limit = 100.0 %}
+  {% set amount_left = free_delivery_limit - cart_total %}
+  {% set progress_percent = (cart_total / free_delivery_limit * 100) if cart_total < free_delivery_limit else 100 %}
+  
+  <div class="delivery-progress-container">
+    <span class="delivery-msg">
+        {% if amount_left > 0 %}
+            Add <strong>${{ "%.2f"|format(amount_left) }}</strong> more for FREE delivery!
+        {% else %}
+            🎉 You've unlocked <strong>FREE delivery!</strong>
+        {% endif %}
+    </span>
+    <div class="progress-bar-bg">
+        <div class="progress-bar-fill" style="width: {{ progress_percent }}%;"></div>
+    </div>
+  </div>
+
   <div class="cart-items">
     {% for item in cart_items %}
     <div class="cart-item">
@@ -72,7 +103,6 @@
         {% endif %}
       </div>
 
-      <!-- Quantity Controls with +/- buttons -->
       <div class="qty-controls">
         <form action="{{ url_for('customer.update_cart', item_id=item.menu_item.id) }}" method="POST" style="display:inline;margin:0;padding:0;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -103,7 +133,7 @@
     </div>
     <div class="summary-row">
       <span class="summary-label">Delivery Fee</span>
-      <span>$5.00</span>
+      <span>{% if cart_total >= free_delivery_limit %}$0.00{% else %}$5.00{% endif %}</span>
     </div>
     <div class="summary-row">
       <span class="summary-label">Tax</span>
@@ -111,8 +141,18 @@
     </div>
     <div class="summary-row">
       <span class="summary-label">Total</span>
-      <span>${{ "%.2f"|format(cart_total + 5.00 + (cart_total * 0.08)) }}</span>
+      {% set delivery = 0.0 if cart_total >= free_delivery_limit else 5.0 %}
+      <span>${{ "%.2f"|format(cart_total + delivery + (cart_total * 0.08)) }}</span>
     </div>
+
+    <div class="promo-container">
+        <span class="summary-label" style="font-size: 14px; font-weight: 600;">Have a promo code?</span>
+        <form class="promo-form" action="#" method="POST">
+            <input type="text" name="promo_code" class="promo-input" placeholder="Enter code">
+            <button type="submit" class="promo-apply-btn">Apply</button>
+        </form>
+    </div>
+
     <a href="{{ url_for('customer.checkout') }}" class="checkout-btn">Proceed to Checkout</a>
     <div style="text-align:center;margin-top:16px">
       <a href="{{ url_for('customer.menu') }}" class="continue-btn">Continue Shopping</a>
@@ -127,4 +167,4 @@
   </div>
   {% endif %}
 </div>
-{% endblock %}
+{% endblock %} 
