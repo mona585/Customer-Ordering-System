@@ -18,7 +18,6 @@
 .cart-item-info h3{font-size:16px;font-weight:600;margin-bottom:4px}
 .cart-item-info p{font-size:13px;color:var(--cg)}
 
-/* Quantity Controls */
 .qty-controls{display:flex;align-items:center;gap:4px;background:#f8f8f8;border-radius:6px;padding:4px}
 .qty-btn{width:32px;height:32px;border:none;background:var(--c1);color:var(--cw);border-radius:4px;font-size:18px;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;justify-content:center}
 .qty-btn:hover{background:var(--c2)}
@@ -39,18 +38,19 @@
 .continue-btn{display:inline-block;padding:12px 24px;background:var(--cw);color:var(--c1);border:1.5px solid var(--cb);border-radius:var(--r);font-size:14px;font-weight:600;text-decoration:none;transition:var(--tr)}
 .continue-btn:hover{border-color:var(--c1)}
 
-/* New Elements Styling */
+/* New Elements Styles */
 .delivery-progress-container {background:var(--cw);padding:20px;border-radius:var(--r);border:1px solid #f0f0f0;margin-bottom:16px;}
 .delivery-msg {font-size:14px;font-weight:600;margin-bottom:10px;display:block}
 .progress-bar-bg {background:#f0f0f0;height:8px;border-radius:10px;overflow:hidden;width:100%}
 .progress-bar-fill {background:var(--c2);height:100%;transition: width 0.5s ease-in-out}
 
-.promo-container {margin-top:20px;padding-top:20px;border-top:1px solid #f0f0f0}
-.promo-form {display:flex;gap:10px;margin-top:10px}
-.promo-input {flex:1;padding:10px 14px;border:1px solid var(--cb);border-radius:var(--r);font-size:14px;outline:none}
-.promo-input:focus {border-color:var(--c2)}
-.promo-apply-btn {padding:0 20px;background:var(--c1);color:var(--cw);border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;transition:var(--tr)}
-.promo-apply-btn:hover {background:#333}
+.promo-container {margin-top:24px;padding:20px;background: #f9f9fb;border-radius: var(--r);border: 1px solid #eee;}
+.promo-form {display: flex;gap: 0;margin-top: 12px;box-shadow: 0 2px 8px rgba(0,0,0,0.05);border-radius: var(--r);overflow: hidden;}
+.promo-input {flex: 1;padding: 12px 16px;border: 1px solid var(--cb);border-right: none;border-radius: var(--r) 0 0 var(--r);font-size: 14px;outline: none;transition: var(--tr);}
+.promo-input:focus {border-color: var(--c2);background: var(--cw);}
+.promo-apply-btn {padding: 0 24px;background: var(--c2);color: var(--cw);border: 1px solid var(--c2);border-radius: 0 var(--r) var(--r) 0;font-size: 13px;font-weight: 700;cursor: pointer;transition: var(--tr);}
+.promo-apply-btn:hover {background: #4f46e5;border-color: #4f46e5;}
+.promo-msg {font-size: 12px;margin-top: 10px;display: flex;align-items: center;gap: 5px;}
 
 @media(max-width:768px){
   .cart-item{grid-template-columns:1fr;gap:12px;text-align:center}
@@ -64,20 +64,18 @@
 
   {% if cart_items %}
   
-  {% set free_delivery_limit = 100.0 %}
-  {% set amount_left = free_delivery_limit - cart_total %}
-  {% set progress_percent = (cart_total / free_delivery_limit * 100) if cart_total < free_delivery_limit else 100 %}
-  
+  {% set free_limit = 100.0 %}
+  {% set progress = (cart_total / free_limit * 100) if cart_total < free_limit else 100 %}
   <div class="delivery-progress-container">
     <span class="delivery-msg">
-        {% if amount_left > 0 %}
-            Add <strong>${{ "%.2f"|format(amount_left) }}</strong> more for FREE delivery!
+        {% if cart_total < free_limit %}
+            Add <strong>${{ "%.2f"|format(free_limit - cart_total) }}</strong> more for FREE delivery!
         {% else %}
             🎉 You've unlocked <strong>FREE delivery!</strong>
         {% endif %}
     </span>
     <div class="progress-bar-bg">
-        <div class="progress-bar-fill" style="width: {{ progress_percent }}%;"></div>
+        <div class="progress-bar-fill" style="width: {{ progress }}%;"></div>
     </div>
   </div>
 
@@ -85,32 +83,21 @@
     {% for item in cart_items %}
     <div class="cart-item">
       <div class="cart-item-img">
-        {% if item.menu_item.image_url %}
-          {% set img_path = item.menu_item.image_url %}
-          {% if img_path.startswith('static/') %}
-            {% set img_path = img_path[7:] %}
-          {% endif %}
-          <img src="{{ url_for('static', filename=img_path) }}" alt="{{ item.menu_item.name }}" onerror="this.src='https://via.placeholder.com/80x80?text={{ item.menu_item.name | urlencode }}'">
-        {% else %}
-          <img src="https://via.placeholder.com/80x80?text={{ item.menu_item.name | urlencode }}" alt="{{ item.menu_item.name }}">
-        {% endif %}
+        <img src="{{ url_for('static', filename=item.menu_item.image_url|replace('static/', '')) if item.menu_item.image_url else 'https://via.placeholder.com/80' }}" alt="{{ item.menu_item.name }}">
       </div>
       <div class="cart-item-info">
         <h3>{{ item.menu_item.name }}</h3>
         <p>{{ item.menu_item.category.value }}</p>
-        {% if item.special_requests %}
-          <p style="color:var(--c2);font-size:12px;">Note: {{ item.special_requests }}</p>
-        {% endif %}
       </div>
 
       <div class="qty-controls">
-        <form action="{{ url_for('customer.update_cart', item_id=item.menu_item.id) }}" method="POST" style="display:inline;margin:0;padding:0;">
+        <form action="{{ url_for('customer.update_cart', item_id=item.menu_item.id) }}" method="POST">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="quantity" value="{{ item.quantity - 1 }}">
           <button type="submit" class="qty-btn" {% if item.quantity <= 1 %}disabled{% endif %}>-</button>
         </form>
         <span class="qty-value">{{ item.quantity }}</span>
-        <form action="{{ url_for('customer.update_cart', item_id=item.menu_item.id) }}" method="POST" style="display:inline;margin:0;padding:0;">
+        <form action="{{ url_for('customer.update_cart', item_id=item.menu_item.id) }}" method="POST">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="quantity" value="{{ item.quantity + 1 }}">
           <button type="submit" class="qty-btn" {% if item.quantity >= item.available_stock %}disabled{% endif %}>+</button>
@@ -131,26 +118,41 @@
       <span class="summary-label">Subtotal</span>
       <span>${{ "%.2f"|format(cart_total) }}</span>
     </div>
+
+    {% if discount and discount > 0 %}
+    <div class="summary-row" style="color: #10b981;">
+      <span class="summary-label" style="color: #10b981;">Discount ({{ applied_code }})</span>
+      <span>-${{ "%.2f"|format(discount) }}</span>
+    </div>
+    {% endif %}
+
     <div class="summary-row">
       <span class="summary-label">Delivery Fee</span>
-      <span>{% if cart_total >= free_delivery_limit %}$0.00{% else %}$5.00{% endif %}</span>
+      <span>{% if cart_total >= free_limit %}$0.00{% else %}$5.00{% endif %}</span>
     </div>
     <div class="summary-row">
-      <span class="summary-label">Tax</span>
+      <span class="summary-label">Tax (8%)</span>
       <span>${{ "%.2f"|format(cart_total * 0.08) }}</span>
     </div>
     <div class="summary-row">
       <span class="summary-label">Total</span>
-      {% set delivery = 0.0 if cart_total >= free_delivery_limit else 5.0 %}
-      <span>${{ "%.2f"|format(cart_total + delivery + (cart_total * 0.08)) }}</span>
+      {% set del_fee = 0.0 if cart_total >= free_limit else 5.0 %}
+      {% set disc_amt = discount if discount else 0 %}
+      <span>${{ "%.2f"|format(cart_total - disc_amt + del_fee + (cart_total * 0.08)) }}</span>
     </div>
 
     <div class="promo-container">
-        <span class="summary-label" style="font-size: 14px; font-weight: 600;">Have a promo code?</span>
-        <form class="promo-form" action="#" method="POST">
-            <input type="text" name="promo_code" class="promo-input" placeholder="Enter code">
+        <span class="summary-label" style="font-size: 13px; font-weight: 600; color: var(--c1);">Apply Coupon Code</span>
+        <form class="promo-form" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="promo_code" class="promo-input" placeholder="e.g. SAVE10" value="{{ applied_code if applied_code else '' }}">
             <button type="submit" class="promo-apply-btn">Apply</button>
         </form>
+        {% if promo_error %}
+          <span class="promo-msg" style="color: #ef4444;">✕ {{ promo_error }}</span>
+        {% elif discount %}
+          <span class="promo-msg" style="color: #10b981;">✓ Code applied successfully!</span>
+        {% endif %}
     </div>
 
     <a href="{{ url_for('customer.checkout') }}" class="checkout-btn">Proceed to Checkout</a>
