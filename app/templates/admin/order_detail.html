@@ -1,0 +1,103 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_title %}Order #{{ order.id }}{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-head">
+  <div>
+    <h1>Order #{{ order.id }}</h1>
+    <p>Placed {{ order.created_at.strftime('%Y-%m-%d %H:%M UTC') if order.created_at else '—' }}</p>
+  </div>
+  <a class="admin-btn admin-btn-outline" href="{{ url_for('admin.orders_list') }}">← Back to orders</a>
+</div>
+
+<div class="detail-grid">
+  <div class="detail-card">
+    <h3>Current status</h3>
+    <p style="margin-bottom:12px">
+      <span class="badge-status badge-{{ order.status.value|lower|replace(' ', '') }}">{{ order.status.value }}</span>
+    </p>
+    <form method="post" action="{{ url_for('admin.order_update_status', order_id=order.id) }}" class="filter-bar" style="margin-bottom:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <select name="status" required style="flex:1">
+        {% for name, label in order_statuses %}
+          <option value="{{ name }}" {% if name == order.status.name %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="admin-btn admin-btn-primary">Save</button>
+    </form>
+  </div>
+  <div class="detail-card">
+    <h3>Customer</h3>
+    <p><strong>{{ order.customer.username if order.customer else '—' }}</strong></p>
+    <p style="font-size:14px;color:var(--text-secondary);margin-top:8px;">{{ order.customer.email if order.customer else '' }}</p>
+  </div>
+</div>
+
+<div class="detail-card" style="margin-top:20px">
+  <h3>Line items</h3>
+  <div class="admin-table-wrap" style="margin-top:12px;border:none;box-shadow:none">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Qty</th>
+          <th>Unit</th>
+          <th>Line</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in order.items %}
+        <tr>
+          <td>
+            {{ line.menu_item.name if line.menu_item else ('#' ~ line.menu_item_id) }}
+            {% if line.special_requests %}
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ line.special_requests }}</div>
+            {% endif %}
+          </td>
+          <td>{{ line.quantity }}</td>
+          <td>${{ '%.2f'|format(line.unit_price|float) }}</td>
+          <td>${{ '%.2f'|format((line.quantity * line.unit_price)|float) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">No line items.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:16px;font-size:18px;font-weight:700;">Total: ${{ '%.2f'|format(order.total_amount|float) }}</p>
+</div>
+
+<div class="detail-grid" style="margin-top:20px">
+  <div class="detail-card">
+    <h3>Delivery</h3>
+    <p style="font-size:14px;white-space:pre-wrap;">{{ order.delivery_address or '—' }}</p>
+    {% if order.special_instructions %}
+    <p style="margin-top:12px;font-size:13px;color:var(--text-secondary);"><strong>Notes:</strong> {{ order.special_instructions }}</p>
+    {% endif %}
+  </div>
+  <div class="detail-card">
+    <h3>Payment</h3>
+    {% if order.payment %}
+      <p>{{ order.payment.method.value }} — <strong>{{ order.payment.status.value }}</strong></p>
+      <p style="margin-top:8px;">${{ '%.2f'|format(order.payment.amount|float) }}</p>
+    {% else %}
+      <p style="color:var(--text-muted);">No payment record.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if order.status_history %}
+<div class="detail-card" style="margin-top:20px">
+  <h3>Status history</h3>
+  <ul style="list-style:none;margin-top:12px;font-size:14px;">
+    {% for h in order.status_history|sort(attribute='changed_at', reverse=true) %}
+    <li style="padding:8px 0;border-bottom:1px solid var(--cb);">
+      <strong>{{ h.status }}</strong>
+      <span style="color:var(--text-muted);margin-left:8px;">{{ h.changed_at.strftime('%Y-%m-%d %H:%M') if h.changed_at else '' }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}
