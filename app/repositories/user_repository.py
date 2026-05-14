@@ -20,6 +20,19 @@ class UserRepository:
         return User.query.filter_by(username=username).first()
 
     @staticmethod
+    def get_by_login_identifier(identifier: str) -> User | None:
+        """
+        Resolve a User from a single login field (email or username).
+        Emails are normalized to lower-case; usernames match as stored (case-sensitive).
+        """
+        raw = (identifier or "").strip()
+        if not raw:
+            return None
+        if "@" in raw:
+            return UserRepository.get_by_email(raw.lower())
+        return UserRepository.get_by_username(raw)
+
+    @staticmethod
     def get_by_phone(phone: str) -> User | None:
         return User.query.filter_by(phone=phone).first()
     
