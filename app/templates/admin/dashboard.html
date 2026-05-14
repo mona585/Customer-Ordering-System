@@ -1,0 +1,63 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_title %}Dashboard{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-head">
+  <div>
+    <h1>Dashboard</h1>
+    <p>Overview of orders, revenue, and catalog.</p>
+  </div>
+</div>
+
+<div class="admin-stats">
+  <div class="stat-card">
+    <div class="label">Pending orders</div>
+    <div class="value">{{ stats.get('pending_orders', 0) }}</div>
+    <div class="sub">Need confirmation or action</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Orders today</div>
+    <div class="value">{{ stats.get('orders_today', 0) }}</div>
+    <div class="sub">UTC date</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Revenue today</div>
+    <div class="value">${{ '%.2f'|format(stats.get('revenue_today', 0)) }}</div>
+    <div class="sub">Excludes cancelled</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Total orders</div>
+    <div class="value">{{ stats.get('total_orders', 0) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Menu items</div>
+    <div class="value">{{ stats.get('menu_items', 0) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Users</div>
+    <div class="value">{{ stats.get('users', 0) }}</div>
+  </div>
+</div>
+
+<div class="admin-table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Quick links</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Review and update order statuses</td>
+        <td style="text-align:right"><a class="admin-btn admin-btn-primary admin-btn-sm" href="{{ url_for('admin.orders_list') }}">Open orders</a></td>
+      </tr>
+      <tr>
+        <td>Edit menu, stock, and availability</td>
+        <td style="text-align:right"><a class="admin-btn admin-btn-primary admin-btn-sm" href="{{ url_for('admin.menu_list') }}">Open menu</a></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

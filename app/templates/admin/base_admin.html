@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{% block admin_title %}Admin{% endblock %} — AURA{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-shell">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="admin-flash">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Manager</h2>
+      <ul class="admin-nav">
+        <li><a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.endpoint == 'admin.dashboard' else '' }}">Dashboard</a></li>
+        <li><a href="{{ url_for('admin.orders_list') }}" class="{{ 'active' if request.endpoint in ['admin.orders_list', 'admin.order_detail'] else '' }}">Orders</a></li>
+        <li><a href="{{ url_for('admin.menu_list') }}" class="{{ 'active' if request.endpoint in ['admin.menu_list', 'admin.menu_edit'] else '' }}">Menu</a></li>
+        <li><a href="{{ url_for('customer.menu') }}">Storefront</a></li>
+        <li><a href="{{ url_for('auth.logout') }}">Log out</a></li>
+      </ul>
+    </aside>
+    <div class="admin-main">
+      {% block admin_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

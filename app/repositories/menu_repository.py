@@ -14,6 +14,11 @@ class MenuRepository:
         return db.session.get(MenuItem, item_id)
 
     @staticmethod
+    def list_all_for_admin():
+        """All menu items (including unavailable), grouped sort by category then name."""
+        return MenuItem.query.order_by(MenuItem.category, MenuItem.name).all()
+
+    @staticmethod
     def get_all_available():
         return MenuItem.query.filter_by(is_available=True).all()
 
@@ -46,3 +51,17 @@ class MenuRepository:
             category=item.category,
             is_available=True
         ).filter(MenuItem.id != item.id).limit(limit).all()
+
+    @staticmethod
+    def save(item: MenuItem) -> MenuItem:
+        db.session.add(item)
+        return item
+
+    @staticmethod
+    def commit() -> bool:
+        try:
+            db.session.commit()
+            return True
+        except Exception:
+            db.session.rollback()
+            return False
