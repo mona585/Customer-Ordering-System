@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
 from sqlalchemy import func as sqlfunc
@@ -26,6 +26,7 @@ class AdminService(BaseService):
     @staticmethod
     def get_dashboard_stats() -> ServiceResult:
         today = datetime.utcnow().date()
+        start_7d = today - timedelta(days=6)
 
         total_orders = Order.query.count()
         pending_orders = Order.query.filter(Order.status == OrderStatus.PENDING).count()
@@ -43,7 +44,86 @@ class AdminService(BaseService):
         revenue_today = float(revenue_row or 0)
 
         menu_items = MenuItem.query.count()
+        menu_available = MenuItem.query.filter_by(is_available=True).count()
+        menu_unavailable = MenuItem.query.filter_by(is_available=False).count()
         users = User.query.count()
+
+        orders_by_status = {
+            status.value: Order.query.filter(Order.status == status).count()
+            for status in OrderStatus
+        }
+
+        non_cancelled = Order.query.filter(Order.status != OrderStatus.CANCELLED)
+        non_cancelled_count = non_cancelled.count()
+        if non_cancelled_count:
+            total_revenue_nc = (
+                db.session.query(sqlfunc.coalesce(sqlfunc.sum(Order.total_amount), 0))
+                .filter(Order.status != OrderStatus.CANCELLED)
+                .scalar()
+                or 0
+            )
+            avg_order_value = float(total_revenue_nc) / non_cancelled_count
+        else:
+            avg_order_value = 0.0
+
+        revenue_7d = float(
+            db.session.query(sqlfunc.coalesce(sqlfunc.sum(Order.total_amount), 0))
+            .filter(
+                sqlfunc.date(Order.created_at) >= start_7d,
+                Order.status != OrderStatus.CANCELLED,
+            )
+            .scalar()
+            or 0
+        )
+        orders_7d = Order.query.filter(sqlfunc.date(Order.created_at) >= start_7d).count()
+
+        count_rows = (
+            db.session.query(sqlfunc.date(Order.created_at), sqlfunc.count(Order.id))
+            .filter(sqlfunc.date(Order.created_at) >= start_7d)
+            .group_by(sqlfunc.date(Order.created_at))
+            .all()
+        )
+        rev_rows = (
+            db.session.query(
+                sqlfunc.date(Order.created_at),
+                sqlfunc.coalesce(sqlfunc.sum(Order.total_amount), 0),
+            )
+            .filter(
+                sqlfunc.date(Order.created_at) >= start_7d,
+                Order.status != OrderStatus.CANCELLED,
+            )
+            .group_by(sqlfunc.date(Order.created_at))
+            .all()
+        )
+
+        def _day_key(d) -> str:
+            if hasattr(d, "isoformat"):
+                return d.isoformat()
+            return str(d)
+
+        counts_by_day = {_day_key(r[0]): int(r[1]) for r in count_rows}
+        rev_by_day = {_day_key(r[0]): float(r[1] or 0) for r in rev_rows}
+
+        daily_series = []
+        for i in range(7):
+            d = start_7d + timedelta(days=i)
+            key = d.isoformat()
+            daily_series.append(
+                {
+                    "date": key,
+                    "label": d.strftime("%a %m/%d"),
+                    "orders": counts_by_day.get(key, 0),
+                    "revenue": rev_by_day.get(key, 0.0),
+                }
+            )
+
+        distinct_ordering_customers = (
+            db.session.query(sqlfunc.count(sqlfunc.distinct(Order.customer_id))).scalar() or 0
+        )
+
+        max_status_orders = max(orders_by_status.values()) if orders_by_status else 1
+        if max_status_orders < 1:
+            max_status_orders = 1
 
         return ServiceResult.ok(
             data={
@@ -52,7 +132,16 @@ class AdminService(BaseService):
                 "orders_today": orders_today,
                 "revenue_today": revenue_today,
                 "menu_items": menu_items,
+                "menu_available": menu_available,
+                "menu_unavailable": menu_unavailable,
                 "users": users,
+                "orders_by_status": orders_by_status,
+                "max_status_orders": max_status_orders,
+                "avg_order_value": avg_order_value,
+                "revenue_last_7_days": revenue_7d,
+                "orders_last_7_days": orders_7d,
+                "daily_series": daily_series,
+                "distinct_customers_with_orders": int(distinct_ordering_customers),
             }
         )
 

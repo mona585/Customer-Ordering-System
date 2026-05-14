@@ -6,7 +6,7 @@
 <div class="admin-page-head">
   <div>
     <h1>Dashboard</h1>
-    <p>Overview of orders, revenue, and catalog.</p>
+    <p>Overview of orders, revenue, catalog, and recent activity (UTC).</p>
   </div>
 </div>
 
@@ -19,7 +19,7 @@
   <div class="stat-card">
     <div class="label">Orders today</div>
     <div class="value">{{ stats.get('orders_today', 0) }}</div>
-    <div class="sub">UTC date</div>
+    <div class="sub">UTC calendar day</div>
   </div>
   <div class="stat-card">
     <div class="label">Revenue today</div>
@@ -27,16 +27,85 @@
     <div class="sub">Excludes cancelled</div>
   </div>
   <div class="stat-card">
+    <div class="label">Revenue (7 days)</div>
+    <div class="value">${{ '%.2f'|format(stats.get('revenue_last_7_days', 0)) }}</div>
+    <div class="sub">Excludes cancelled</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Orders (7 days)</div>
+    <div class="value">{{ stats.get('orders_last_7_days', 0) }}</div>
+    <div class="sub">All statuses</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Avg order value</div>
+    <div class="value">${{ '%.2f'|format(stats.get('avg_order_value', 0)) }}</div>
+    <div class="sub">Non-cancelled, all time</div>
+  </div>
+  <div class="stat-card">
     <div class="label">Total orders</div>
     <div class="value">{{ stats.get('total_orders', 0) }}</div>
   </div>
   <div class="stat-card">
+    <div class="label">Customers w/ orders</div>
+    <div class="value">{{ stats.get('distinct_customers_with_orders', 0) }}</div>
+    <div class="sub">Distinct accounts</div>
+  </div>
+  <div class="stat-card">
     <div class="label">Menu items</div>
     <div class="value">{{ stats.get('menu_items', 0) }}</div>
+    <div class="sub">{{ stats.get('menu_available', 0) }} available / {{ stats.get('menu_unavailable', 0) }} off</div>
   </div>
   <div class="stat-card">
     <div class="label">Users</div>
     <div class="value">{{ stats.get('users', 0) }}</div>
+    <div class="sub">All accounts</div>
+  </div>
+</div>
+
+<div class="detail-grid" style="margin-bottom:24px">
+  <div class="detail-card">
+    <h3>Orders by status</h3>
+    <p style="font-size:13px;color:var(--text-secondary);margin:8px 0 16px;">Count of orders currently in each status.</p>
+    {% set ob = stats.get('orders_by_status', {}) %}
+    {% set mx = stats.get('max_status_orders', 1) %}
+    {% for label, count in ob.items() %}
+    <div class="stat-bar-row">
+      <div class="stat-bar-label">{{ label }}</div>
+      <div class="stat-bar-track">
+        <div class="stat-bar-fill" style="width:{{ (100 * count / mx)|round(1) }}%"></div>
+      </div>
+      <div class="stat-bar-val">{{ count }}</div>
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted);font-size:14px;">No data.</p>
+    {% endfor %}
+  </div>
+
+  <div class="detail-card">
+    <h3>Last 7 days</h3>
+    <p style="font-size:13px;color:var(--text-secondary);margin:8px 0 16px;">Orders placed and net revenue per day (revenue excludes cancelled).</p>
+    <div class="admin-table-wrap" style="border:none;box-shadow:none;margin:0">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Orders</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in stats.get('daily_series', []) %}
+          <tr>
+            <td>{{ row.label }}</td>
+            <td>{{ row.orders }}</td>
+            <td>${{ '%.2f'|format(row.revenue) }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3">No activity in range.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
