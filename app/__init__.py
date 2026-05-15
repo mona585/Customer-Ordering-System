@@ -55,13 +55,14 @@ def create_app(config_name='development'):
     from app.routes.customer import customer_bp
     from app.routes.delivery import delivery_bp
     from app.routes.main import main_bp
-    from app.routes.order import order_bp
+    from app.routes.order import order_bp, api_order_bp
     from app.routes.profile import profile_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp, url_prefix='/')
     app.register_blueprint(customer_bp, url_prefix='/customer')
     app.register_blueprint(order_bp, url_prefix='/order')
+    app.register_blueprint(api_order_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(delivery_bp)
