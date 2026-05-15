@@ -4,6 +4,8 @@
 
 
 import os
+
+from dotenv import load_dotenv
 from flask import Flask
 
 # Import extensions
@@ -14,6 +16,8 @@ import firebase_config
 
 def create_app(config_name='development'):
     """Application factory pattern - creates and configures the Flask app"""
+
+    load_dotenv()
 
     app = Flask(__name__,
                 template_folder='templates',
@@ -58,6 +62,29 @@ def create_app(config_name='development'):
     
     # Create tables if they don't exist
     with app.app_context():
+        os.makedirs(os.path.join(os.path.dirname(app.root_path), "instance"), exist_ok=True)
         db.create_all()
+        from app.bootstrap.schema_compat import ensure_users_schema_compat
+        from app.bootstrap.rbac import ensure_rbac_initialized
+        from app.bootstrap.dev_accounts import ensure_dev_accounts
+
+        ensure_users_schema_compat()
+        ensure_rbac_initialized()
+        if app.config.get("DEBUG"):
+            ensure_dev_accounts()
+
+    @app.errorhandler(403)
+    def forbidden_page(_error):
+        from flask import render_template_string
+
+        return (
+            render_template_string(
+                "<!doctype html><title>Forbidden</title>"
+                "<h1>403 — Forbidden</h1>"
+                "<p>You do not have access to this area.</p>"
+                "<p><a href=\"{{ url_for('main.home') }}\">Home</a></p>"
+            ),
+            403,
+        )
 
     return app

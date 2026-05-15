@@ -1,6 +1,6 @@
 # app/routes/auth.py
 
-from flask import Blueprint, render_template, request, url_for, jsonify, redirect
+from flask import Blueprint, current_app, render_template, request, url_for, jsonify, redirect
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models.user import User
@@ -11,7 +11,10 @@ import os
 
 auth_bp = Blueprint('auth', __name__)
 
-FIREBASE_API_KEY = os.environ.get('FIREBASE_WEB_API_KEY')
+
+def _firebase_api_key() -> str | None:
+    """Read API key at request time so .env / app config is always applied."""
+    return current_app.config.get('FIREBASE_WEB_API_KEY') or os.environ.get('FIREBASE_WEB_API_KEY')
 
 
 def _validate_phone(phone: str) -> str | None:
@@ -40,7 +43,10 @@ def _validate_registration(username, email, password, phone='') -> str | None:
 def _firebase_register(email, password):
     """Create user in Firebase and send verification email."""
     # Step 1: Create user in Firebase
-    signup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}"
+    api_key = _firebase_api_key()
+    if not api_key:
+        return None, None, 'Firebase not configured.'
+    signup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}"
     resp = requests.post(signup_url, json={
         "email": email,
         "password": password,
@@ -61,7 +67,7 @@ def _firebase_register(email, password):
     firebase_uid = data['localId']
 
     # Step 2: Send verification email
-    verify_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={FIREBASE_API_KEY}"
+    verify_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={api_key}"
     requests.post(verify_url, json={
         "requestType": "VERIFY_EMAIL",
         "idToken": id_token
@@ -72,7 +78,10 @@ def _firebase_register(email, password):
 
 def _firebase_login(email, password):
     """Sign in with Firebase and return token + uid + verified status."""
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+    api_key = _firebase_api_key()
+    if not api_key:
+        return None, None, False, 'Firebase not configured.'
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
     resp = requests.post(url, json={
         "email": email,
         "password": password,
@@ -87,7 +96,7 @@ def _firebase_login(email, password):
     firebase_uid = data['localId']
 
     # Check if email is verified
-    lookup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={FIREBASE_API_KEY}"
+    lookup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={api_key}"
     lookup_resp = requests.post(lookup_url, json={"idToken": id_token})
     lookup_data = lookup_resp.json()
 
@@ -127,7 +136,7 @@ def register():
              return jsonify({'status': 'error', 'message': 'This phone number is already registered.'}), 400
 
         # Register in Firebase + send verification email
-        if not FIREBASE_API_KEY:
+        if not _firebase_api_key():
             return jsonify({'status': 'error', 'message': 'Firebase not configured.'}), 500
 
         _, firebase_uid, firebase_error = _firebase_register(email, password)
@@ -166,7 +175,42 @@ def login():
         if not email or not password:
             return jsonify({'status': 'error', 'message': 'Email and password are required.'}), 400
 
-        if not FIREBASE_API_KEY:
+        user = UserRepository.get_by_login_identifier(identifier)
+
+        # Treat NULL is_active as active (legacy rows before column backfill).
+        if not user or user.is_active is False:
+            return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
+
+        # ----- Staff (admin / delivery / chef): Flask + password_hash only -----
+        # Also treat local-only accounts (no Firebase UID) with a staff role as staff.
+        if user.uses_staff_authentication() or (
+            user.firebase_uid is None
+            and user.password_hash
+            and any(user.has_role(s) for s in ("admin", "delivery", "chef"))
+        ):
+            if not user.password_hash or not check_password_hash(user.password_hash, password):
+                return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
+
+            login_user(user, remember=False)
+
+            return jsonify({
+                'status': 'success',
+                'message': 'Welcome back!',
+                'redirect': get_post_login_redirect(user),
+            }), 200
+
+        # ----- Customer: Firebase (or local hash if no Firebase UID on file) -----
+        if user.firebase_uid is None and user.password_hash:
+            if check_password_hash(user.password_hash, password):
+                login_user(user, remember=False)
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Welcome back! Entering AURA...',
+                    'redirect': get_post_login_redirect(user),
+                }), 200
+            return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
+
+        if not _firebase_api_key():
             return jsonify({'status': 'error', 'message': 'Firebase not configured.'}), 500
 
         # Verify with Firebase

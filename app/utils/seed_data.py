@@ -4,6 +4,7 @@ from app.extensions import db
 from app.models.user import User
 from app.models.menu_item import MenuItem, Category
 from werkzeug.security import generate_password_hash
+import os
 
 
 def seed_test_user():
@@ -255,3 +256,18 @@ def seed_menu_items():
         db.session.add(item)
         print(f"✅ Added: {item_data['name']}")
     db.session.commit()
+
+def seed_dev_staff_accounts() -> None:
+    """
+    Create local admin + delivery users (password in SQLite, no Firebase).
+    In DEBUG mode these are also created on every app startup via bootstrap.
+    Set SEED_DEV_STAFF=1 when running seed.py explicitly.
+    """
+    if os.environ.get("SEED_DEV_STAFF", "0") != "1":
+        print("Skipping dev staff seed (set SEED_DEV_STAFF=1 to enable, or run app in DEBUG).")
+        return
+
+    from app.bootstrap.dev_accounts import ensure_dev_accounts
+
+    ensure_dev_accounts()
+    print("✅ Dev accounts ready: aura_admin / AdminPass!123, aura_delivery / DeliveryPass!123")

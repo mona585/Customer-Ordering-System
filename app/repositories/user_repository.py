@@ -1,5 +1,7 @@
 # app/repositories/user_repository.py
 
+from sqlalchemy.orm import selectinload
+
 from app.extensions import db
 from app.models.user import User
 
@@ -18,6 +20,21 @@ class UserRepository:
     @staticmethod
     def get_by_username(username: str) -> User | None:
         return User.query.filter_by(username=username).first()
+
+    @staticmethod
+    def get_by_login_identifier(identifier: str) -> User | None:
+        """
+        Resolve a User from a single login field (email or username).
+        Emails are normalized to lower-case; usernames match as stored (case-sensitive).
+        Eager-loads roles so staff vs customer auth branch is correct on login.
+        """
+        raw = (identifier or "").strip()
+        if not raw:
+            return None
+        q = User.query.options(selectinload(User.roles))
+        if "@" in raw:
+            return q.filter_by(email=raw.lower()).first()
+        return q.filter_by(username=raw).first()
 
     @staticmethod
     def get_by_phone(phone: str) -> User | None:
