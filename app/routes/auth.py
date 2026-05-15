@@ -3,8 +3,11 @@
 from flask import Blueprint, current_app, render_template, request, url_for, jsonify, redirect
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
+from app.constants.roles import ROLE_CUSTOMER
 from app.models.user import User
+from app.repositories.role_repository import RoleRepository
 from app.repositories.user_repository import UserRepository
+from app.security.rbac import get_post_login_redirect
 import re
 import requests
 import os
@@ -110,7 +113,7 @@ def _firebase_login(email, password):
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('main.home'))
+        return redirect(get_post_login_redirect(current_user))
 
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
@@ -154,6 +157,8 @@ def register():
         )
         UserRepository.create(new_user)
 
+        RoleRepository.attach_role_to_user(new_user, ROLE_CUSTOMER)
+
         return jsonify({
             'status':   'success',
             'message':  'Account created! Please check your email to verify your account before logging in.',
@@ -166,28 +171,25 @@ def register():
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.home'))
+        return redirect(get_post_login_redirect(current_user))
 
     if request.method == 'POST':
-        email    = request.form.get('email', '').strip().lower()
+        identifier = (request.form.get('identifier') or request.form.get('email', '')).strip()
         password = request.form.get('password', '')
 
-        if not email or not password:
-            return jsonify({'status': 'error', 'message': 'Email and password are required.'}), 400
+        if not identifier or not password:
+            return jsonify({
+                'status': 'error',
+                'message': 'Email or username and password are required.',
+            }), 400
 
         user = UserRepository.get_by_login_identifier(identifier)
 
-        # Treat NULL is_active as active (legacy rows before column backfill).
-        if not user or user.is_active is False:
+        if not user or not user.is_active:
             return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
 
         # ----- Staff (admin / delivery / chef): Flask + password_hash only -----
-        # Also treat local-only accounts (no Firebase UID) with a staff role as staff.
-        if user.uses_staff_authentication() or (
-            user.firebase_uid is None
-            and user.password_hash
-            and any(user.has_role(s) for s in ("admin", "delivery", "chef"))
-        ):
+        if user.uses_staff_authentication():
             if not user.password_hash or not check_password_hash(user.password_hash, password):
                 return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
 
@@ -199,44 +201,30 @@ def login():
                 'redirect': get_post_login_redirect(user),
             }), 200
 
-        # ----- Customer: Firebase (or local hash if no Firebase UID on file) -----
-        if user.firebase_uid is None and user.password_hash:
-            if check_password_hash(user.password_hash, password):
-                login_user(user, remember=False)
-                return jsonify({
-                    'status': 'success',
-                    'message': 'Welcome back! Entering AURA...',
-                    'redirect': get_post_login_redirect(user),
-                }), 200
-            return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
-
-        if not _firebase_api_key():
+        # ----- Customer: Firebase unchanged (uses account email) -----
+        if not FIREBASE_API_KEY:
             return jsonify({'status': 'error', 'message': 'Firebase not configured.'}), 500
 
-        # Verify with Firebase
-        _, firebase_uid, email_verified, firebase_error = _firebase_login(email, password)
+        _, firebase_uid, email_verified, firebase_error = _firebase_login(user.email, password)
 
         if firebase_error:
-            return jsonify({'status': 'error', 'message': firebase_error}), 401
+            return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
 
-        # Block login if email not verified
         if not email_verified:
             return jsonify({
-                'status':  'error',
+                'status': 'error',
                 'message': 'Please verify your email before logging in. Check your inbox.',
             }), 401
 
-        # Get user from SQLite
-        user = UserRepository.get_by_email(email)
-        if not user:
-            return jsonify({'status': 'error', 'message': 'Account not found.'}), 404
+        if user.firebase_uid and firebase_uid != user.firebase_uid:
+            return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
 
         login_user(user, remember=False)
 
         return jsonify({
-            'status':   'success',
-            'message':  'Welcome back! Entering AURA...',
-            'redirect': url_for('main.home'),
+            'status': 'success',
+            'message': 'Welcome back! Entering AURA...',
+            'redirect': get_post_login_redirect(user),
         }), 200
 
     return render_template('auth/login.html')

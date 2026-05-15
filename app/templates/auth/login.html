@@ -27,8 +27,8 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="field-wrap">
-                <input type="email" name="email" id="email" class="auth-input"
-                       placeholder="Email Address" required autofocus>
+                <input type="text" name="identifier" id="identifier" class="auth-input"
+                       placeholder="Email or username" required autofocus autocomplete="username">
             </div>
 
             <div class="field-wrap">
@@ -60,11 +60,11 @@ document.getElementById('loginForm').addEventListener('submit', async function (
 
     const msgHandler = document.getElementById('message-handler');
     const btn        = document.getElementById('submitBtn');
-    const email      = document.getElementById('email').value.trim();
+    const identifier = document.getElementById('identifier').value.trim();
     const password   = document.getElementById('password').value;
 
     // Client-side guard (server validates too, but this saves a round-trip)
-    if (!email || !password) {
+    if (!identifier || !password) {
         msgHandler.innerHTML = `<div class="msg-banner error">Please fill in all fields.</div>`;
         return;
     }

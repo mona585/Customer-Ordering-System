@@ -26,15 +26,13 @@ class UserRepository:
         """
         Resolve a User from a single login field (email or username).
         Emails are normalized to lower-case; usernames match as stored (case-sensitive).
-        Eager-loads roles so staff vs customer auth branch is correct on login.
         """
         raw = (identifier or "").strip()
         if not raw:
             return None
-        q = User.query.options(selectinload(User.roles))
         if "@" in raw:
-            return q.filter_by(email=raw.lower()).first()
-        return q.filter_by(username=raw).first()
+            return UserRepository.get_by_email(raw.lower())
+        return UserRepository.get_by_username(raw)
 
     @staticmethod
     def get_by_phone(phone: str) -> User | None:

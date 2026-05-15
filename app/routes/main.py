@@ -14,4 +14,9 @@ def home():
             categories[cat_name] = []
         categories[cat_name].append(item)
     
-    return render_template('products/home.html', categories=categories)
+    return render_template(
+        'products/home.html',
+        categories=categories,
+        active_category='all',
+        wishlist_ids=set(),
+    )

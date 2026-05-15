@@ -27,7 +27,6 @@ class CartService(BaseService):
             quantity = item_data.get('quantity', 1)
             available = menu_item.available_stock
 
-            # Validate stock
             if quantity > available + quantity:
                 stock_errors.append(f"{menu_item.name}: Only {available} available")
                 quantity = min(quantity, available)
@@ -53,6 +52,28 @@ class CartService(BaseService):
         })
 
     @staticmethod
+    def apply_promo_code(cart_total, promo_code):
+        """التحقق من كود الخصم وحساب القيمة (New Modification)"""
+        valid_promos = {
+            'SAVE10': 0.10,  # 10% discount
+            'AURA20': 0.20   # 20% discount
+        }
+        
+        if not promo_code:
+            return ServiceResult.fail("Please enter a code")
+
+        code = promo_code.strip().upper()
+        if code in valid_promos:
+            discount_percent = valid_promos[code]
+            discount_amount = cart_total * discount_percent
+            return ServiceResult.ok(data={
+                'discount': discount_amount,
+                'code': code
+            }, message=f"Code {code} applied!")
+        
+        return ServiceResult.fail("Invalid or expired promo code")
+
+    @staticmethod
     def add_to_cart(cart_data, item_id, quantity=1, special_requests=''):
         """Add item to cart with stock validation"""
         if not item_id:
@@ -72,7 +93,6 @@ class CartService(BaseService):
                 f"You have {current_qty} in cart."
             )
 
-        # Update cart
         cart_data = CartRepository.update_item(cart_data, item_id, 
                                                current_qty + quantity, 
                                                special_requests)
@@ -100,7 +120,6 @@ class CartService(BaseService):
         available = menu_item.available_stock
         current_qty = cart_data[str_id]['quantity']
 
-        # Validate if increasing quantity
         if new_quantity > current_qty:
             extra_needed = new_quantity - current_qty
             if extra_needed > available:
@@ -156,4 +175,4 @@ class CartService(BaseService):
                 data={'stock_errors': data['errors']}
             )
 
-        return ServiceResult.ok(data=data)
+        return ServiceResult.ok(data=data) 

@@ -24,3 +24,8 @@ firebase-service-account.json
 # OS
 .DS_Store
 Thumbs.db
+
+migrations/
+*.db
+*.sqlite
+*.sqlite3

@@ -1,25 +1,47 @@
 # app/utils/seed_data.py
+import os
 
+from app.constants.roles import ROLE_ADMIN, ROLE_CUSTOMER, ROLE_DELIVERY
+from app.repositories.role_repository import RoleRepository
+from app.repositories.user_repository import UserRepository
 from app.extensions import db
+from app.constants.roles import ROLE_CUSTOMER
 from app.models.user import User
 from app.models.menu_item import MenuItem, Category
+from app.repositories.role_repository import RoleRepository
 from werkzeug.security import generate_password_hash
 import os
 
 
 def seed_test_user():
-    """Create a test user if none exists"""
-    if not User.query.filter_by(email='test@aura.com').first():
-        user = User(
-            username='testuser',
-            email='test@aura.com',
-            password_hash=generate_password_hash('password123'),
-            phone='+1 234 567 890',
-            address='123 Test Street, Test City, TC 12345'
-        )
-        db.session.add(user)
-        db.session.commit()
-        print("✅ Test user created: test@aura.com / password123")
+    """
+    Ensure a local test customer row exists with the `customer` role.
+    Idempotent: if the user exists but has no role (legacy DB), attaches `customer`.
+    Note: customer login still requires Firebase for this account's email unless you
+    only use this row for DB checks — align with your dev Firebase project if needed.
+    """
+    RoleRepository.ensure_default_roles()
+
+    existing = User.query.filter_by(email='test@aura.com').first()
+    if existing:
+        if not existing.has_role(ROLE_CUSTOMER):
+            RoleRepository.attach_role_to_user(existing, ROLE_CUSTOMER)
+            print("✅ Test user role repaired: test@aura.com → customer")
+        return
+
+    user = User(
+        username='testuser',
+        email='test@aura.com',
+        firebase_uid=None,
+        password_hash=generate_password_hash('password123'),
+        phone='+1 234 567 890',
+        address='123 Test Street, Test City, TC 12345',
+    )
+    db.session.add(user)
+    db.session.commit()
+
+    RoleRepository.attach_role_to_user(user, ROLE_CUSTOMER)
+    print("✅ Test user created: test@aura.com / password123 (+ customer role)")
 
 
 def seed_menu_items():
@@ -260,14 +282,50 @@ def seed_menu_items():
 def seed_dev_staff_accounts() -> None:
     """
     Create local admin + delivery users (password in SQLite, no Firebase).
-    In DEBUG mode these are also created on every app startup via bootstrap.
-    Set SEED_DEV_STAFF=1 when running seed.py explicitly.
+    **Development only.** Enable with environment variable SEED_DEV_STAFF=1.
+
+    Defaults:
+      - admin:   username aura_admin   / email admin@aura.local   / password AdminPass!123
+      - delivery username aura_delivery / email delivery@aura.local / password DeliveryPass!123
     """
     if os.environ.get("SEED_DEV_STAFF", "0") != "1":
-        print("Skipping dev staff seed (set SEED_DEV_STAFF=1 to enable, or run app in DEBUG).")
+        print("Skipping dev staff seed (set SEED_DEV_STAFF=1 to enable).")
         return
 
-    from app.bootstrap.dev_accounts import ensure_dev_accounts
+    RoleRepository.ensure_default_roles()
 
-    ensure_dev_accounts()
-    print("✅ Dev accounts ready: aura_admin / AdminPass!123, aura_delivery / DeliveryPass!123")
+    if not UserRepository.get_by_username("aura_admin"):
+        admin_user = User(
+            username="aura_admin",
+            email="admin@aura.local",
+            firebase_uid=None,
+            password_hash=generate_password_hash("AdminPass!123"),
+            phone=None,
+            address=None,
+        )
+        UserRepository.create(admin_user)
+        RoleRepository.attach_role_to_user(admin_user, ROLE_ADMIN)
+        print("✅ Dev admin created: aura_admin / AdminPass!123")
+    else:
+        admin_user = UserRepository.get_by_username("aura_admin")
+        if admin_user and not admin_user.has_role(ROLE_ADMIN):
+            RoleRepository.attach_role_to_user(admin_user, ROLE_ADMIN)
+            print("✅ Dev admin role repaired: aura_admin → admin")
+
+    if not UserRepository.get_by_username("aura_delivery"):
+        delivery_user = User(
+            username="aura_delivery",
+            email="delivery@aura.local",
+            firebase_uid=None,
+            password_hash=generate_password_hash("DeliveryPass!123"),
+            phone=None,
+            address=None,
+        )
+        UserRepository.create(delivery_user)
+        RoleRepository.attach_role_to_user(delivery_user, ROLE_DELIVERY)
+        print("✅ Dev delivery created: aura_delivery / DeliveryPass!123")
+    else:
+        delivery_user = UserRepository.get_by_username("aura_delivery")
+        if delivery_user and not delivery_user.has_role(ROLE_DELIVERY):
+            RoleRepository.attach_role_to_user(delivery_user, ROLE_DELIVERY)
+            print("✅ Dev delivery role repaired: aura_delivery → delivery")

@@ -2,7 +2,7 @@
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>{% block title %}AURA{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -43,14 +43,16 @@
 }
 
 /* ===== RESET ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text-primary);line-height:1.6}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text-primary);line-height:1.6;overflow-x:clip}
 a{text-decoration:none;color:inherit}
 img{max-width:100%;display:block}
+button,.nav-icon-btn,.theme-toggle,.profile-btn,input[type="button"],input[type="submit"]{touch-action:manipulation}
 
 /* ===== NAVBAR ===== */
 .nav{display:flex;justify-content:space-between;align-items:center;padding:14px 40px;background:var(--cw);border-bottom:1px solid var(--cb);position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
-.nav-left{display:flex;align-items:center;gap:40px}
+.nav-left{display:flex;align-items:center;gap:40px;min-width:0;flex:1}
 .logo{font-size:22px;font-weight:800;letter-spacing:2px;color:var(--text-primary);display:flex;align-items:center;gap:8px}
 .logo svg{width:28px;height:28px;fill:var(--c2)}
 
@@ -141,23 +143,24 @@ img{max-width:100%;display:block}
 .modal-close:hover{background:var(--bg)}
 .modal-close svg{width:20px;height:20px;stroke:var(--text-primary);fill:none;stroke-width:2}
 
+/* Quick view modal body (injected by openQuickView) */
+.qv-layout{display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:stretch}
+.qv-media{aspect-ratio:4/3;background:#e8e8e8;overflow:hidden;min-height:0}
+[data-theme="dark"] .qv-media{background:#333}
+.qv-media img{width:100%;height:100%;object-fit:cover;display:block}
+.qv-panel{padding:32px;min-width:0}
+.qv-qty-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.qv-qty-controls{display:flex;align-items:center;gap:8px}
+.qv-qty-btn{min-width:44px;min-height:44px;border:1.5px solid var(--cb);background:var(--cw);border-radius:8px;cursor:pointer;font-size:18px;color:var(--text-primary);display:flex;align-items:center;justify-content:center}
+.qv-add-btn{flex:1;min-width:min(100%,160px);min-height:48px;padding:12px 16px;background:var(--c2);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer}
+.qv-modal-input{width:52px;text-align:center;padding:10px 6px;border:1.5px solid var(--cb);border-radius:8px;background:var(--cw);color:var(--text-primary);font-size:15px}
+
 /* ===== BOTTOM NAV (MOBILE) ===== */
-.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--cw);border-top:1px solid var(--cb);padding:8px 0;z-index:100;justify-content:space-around;backdrop-filter:blur(20px)}
-.bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text-secondary);font-size:11px;text-decoration:none;transition:var(--tr);position:relative;padding:4px 8px}
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--cw);border-top:1px solid var(--cb);padding:8px 0;padding-bottom:max(8px, env(safe-area-inset-bottom, 0px));padding-left:env(safe-area-inset-left, 0px);padding-right:env(safe-area-inset-right, 0px);z-index:100;justify-content:space-around;backdrop-filter:blur(20px)}
+.bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text-secondary);font-size:11px;text-decoration:none;transition:var(--tr);position:relative;padding:6px 10px;min-height:48px;justify-content:center;-webkit-tap-highlight-color:transparent}
 .bottom-nav a.active,.bottom-nav a:hover{color:var(--c2)}
 .bottom-nav svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.5}
 .bottom-nav .cart-counter{top:-4px;right:4px;width:16px;height:16px;font-size:9px}
-
-@media(max-width:768px){
-  .bottom-nav{display:flex}
-  .footer{padding-bottom:80px}
-  .nav .links{display:none}
-  .nav{padding:12px 16px}
-  .nav-right{gap:8px}
-  .profile-name{display:none}
-  .profile-btn{padding:6px}
-  .nav-search{display:none}
-}
 
 /* ===== FOOTER ===== */
 .footer{background:var(--c1);color:var(--cw);padding:60px 40px 40px}
@@ -182,15 +185,30 @@ img{max-width:100%;display:block}
 [data-theme="dark"] input,[data-theme="dark"] textarea,[data-theme="dark"] select{background:#252525;color:var(--text-primary);border-color:#333}
 [data-theme="dark"] .dropdown-menu{background:#1a1a1a;border-color:#333}
 
-/* ===== RESPONSIVE ===== */
 @media(max-width:768px){
+  .bottom-nav{display:flex}
+  .nav .links{display:none}
+  .nav{padding:12px 16px;padding-top:max(12px, env(safe-area-inset-top, 0px));padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+  .nav-right{gap:8px}
+  .profile-name{display:none}
+  .profile-btn{padding:6px;min-height:44px}
+  .nav-search{display:none}
+  .nav-icon-btn,.theme-toggle{min-width:44px;min-height:44px}
+  .dropdown-item{min-height:44px;padding:12px 14px}
   .f-grid{grid-template-columns:1fr;gap:32px}
-  .footer{padding:40px 20px}
+  .footer{padding-top:40px;padding-left:max(20px, env(safe-area-inset-left, 0px));padding-right:max(20px, env(safe-area-inset-right, 0px));padding-bottom:calc(40px + 72px + env(safe-area-inset-bottom, 0px))}
+  .toast-container{left:12px;right:12px;top:max(72px, calc(env(safe-area-inset-top, 0px) + 52px));width:auto}
+  .toast{min-width:0;width:100%;max-width:none;transform:translateX(105%)}
+  .toast.show{transform:translateX(0)}
+  .modal-overlay{padding:max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));align-items:flex-end}
+  .modal-content{width:100%;max-width:100%;border-radius:20px 20px 0 0;max-height:min(92dvh, 100%);margin:0}
+  .modal-close{top:10px;right:10px;width:44px;height:44px}
+  .qv-layout{grid-template-columns:1fr}
+  .qv-media{aspect-ratio:16/10;border-radius:0}
+  .qv-panel{padding:20px 18px calc(20px + env(safe-area-inset-bottom, 0px))}
 }
 </style>
 <base target="_self">
-<base target="_blank">
-<base target="_blank">
 </head>
 <body>
 
@@ -217,6 +235,9 @@ img{max-width:100%;display:block}
 
     <ul class="links">
       <li><a href="{{ url_for('customer.menu') }}" class="{% if request.endpoint == 'customer.menu' %}active{% endif %}">Menu</a></li>
+      {% if current_user.is_authenticated and current_user.has_role('admin') %}
+      <li><a href="{{ url_for('admin.dashboard') }}" class="{% if request.blueprint == 'admin' %}active{% endif %}">Manager</a></li>
+      {% endif %}
     </ul>
   </div>
 
@@ -269,6 +290,13 @@ img{max-width:100%;display:block}
             My Profile
         </a>
 
+        {% if current_user.has_role('admin') %}
+        <a href="{{ url_for('admin.dashboard') }}" class="dropdown-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Manager dashboard
+        </a>
+        {% endif %}
+
         <div class="dropdown-divider"></div>
         <a href="{{ url_for('customer.wishlist') }}" class="dropdown-item">
           <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -302,6 +330,12 @@ img{max-width:100%;display:block}
         <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Menu
     </a>
+    {% if current_user.is_authenticated and current_user.has_role('admin') %}
+    <a href="{{ url_for('admin.dashboard') }}" class="{% if request.blueprint == 'admin' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Manager
+    </a>
+    {% endif %}
     <a href="{{ url_for('customer.search') }}">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         Search
@@ -482,11 +516,11 @@ function openQuickView(itemId) {
                 : `https://via.placeholder.com/600x450?text=${encodeURIComponent(item.name)}`;
 
             modalBody.innerHTML = `
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
-                    <div style="aspect-ratio:4/3;background:#e8e8e8;overflow:hidden;">
-                        <img src="${imageUrl}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;" onerror="this.src='https://via.placeholder.com/600x450?text=${encodeURIComponent(item.name)}'">
+                <div class="qv-layout">
+                    <div class="qv-media">
+                        <img src="${imageUrl}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/600x450?text=${encodeURIComponent(item.name)}'">
                     </div>
-                    <div style="padding:32px;">
+                    <div class="qv-panel">
                         <h1 style="font-size:24px;font-weight:700;margin-bottom:12px;color:var(--text-primary);">${item.name}</h1>
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;color:var(--text-secondary);">
                             <span style="color:var(--c2);font-weight:700;">★ ${item.average_rating}</span>
@@ -504,18 +538,18 @@ function openQuickView(itemId) {
                         ${item.ingredients ? `<div style="background:var(--bg);padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px;color:var(--text-secondary);"><strong style="color:var(--text-primary);">Ingredients:</strong> ${item.ingredients}</div>` : ''}
 
                         ${available > 0 ? `
-                        <div style="display:flex;gap:12px;align-items:center;">
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <button onclick="adjustModalQty(-1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;color:var(--text-primary);">-</button>
-                                <input type="number" id="modalQty" value="1" min="1" max="${available}" style="width:50px;text-align:center;padding:6px;border:1.5px solid var(--cb);border-radius:6px;background:var(--cw);color:var(--text-primary);">
-                                <button onclick="adjustModalQty(1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;color:var(--text-primary);">+</button>
+                        <div class="qv-qty-row">
+                            <div class="qv-qty-controls">
+                                <button type="button" class="qv-qty-btn" onclick="adjustModalQty(-1)" aria-label="Decrease quantity">−</button>
+                                <input type="number" class="qv-modal-input" id="modalQty" value="1" min="1" max="${available}" inputmode="numeric" aria-label="Quantity">
+                                <button type="button" class="qv-qty-btn" onclick="adjustModalQty(1)" aria-label="Increase quantity">+</button>
                             </div>
-                            <button onclick="addToCartFromModal(${item.id})" style="flex:1;padding:12px;background:var(--c2);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;transition:all 0.3s;">Add to Cart</button>
+                            <button type="button" class="qv-add-btn" onclick="addToCartFromModal(${item.id})">Add to Cart</button>
                         </div>
                         <div style="margin-top:12px;">
                             <a href="/customer/product/${item.id}" style="color:var(--c2);font-size:13px;font-weight:600;">View Full Details &rarr;</a>
                         </div>
-                        ` : `<button disabled style="width:100%;padding:12px;background:#ccc;color:white;border:none;border-radius:8px;font-weight:700;cursor:not-allowed;">Out of Stock</button>`}
+                        ` : `<button type="button" disabled style="width:100%;min-height:48px;padding:12px;background:#ccc;color:white;border:none;border-radius:8px;font-weight:700;cursor:not-allowed;">Out of Stock</button>`}
                     </div>
                 </div>
             `;

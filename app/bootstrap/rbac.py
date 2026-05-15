@@ -19,14 +19,6 @@ def ensure_rbac_initialized() -> None:
     """
     RoleRepository.ensure_default_roles()
 
-    # Legacy DBs: is_active column added later may be NULL for existing rows.
-    User.query.filter(User.is_active.is_(None)).update(
-        {User.is_active: True}, synchronize_session=False
-    )
-    from app.extensions import db
-
-    db.session.commit()
-
     for user in User.query.all():
         if list(user.roles):
             continue

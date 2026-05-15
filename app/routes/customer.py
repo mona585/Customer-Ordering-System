@@ -110,12 +110,12 @@ def product_details(id):
                          is_wishlisted=is_wishlisted)
 
 
-# ==================== CART ====================
+# ==================== CART (Updated with Promo Logic) ====================
 
-@customer_bp.route('/cart')
+@customer_bp.route('/cart', methods=['GET', 'POST'])
 @login_required
 def cart():
-    """Display shopping cart"""
+    """Display shopping cart with Promo Code support"""
     cart_data = session.get('cart', {})
     result = CartService.get_cart_items(cart_data)
 
@@ -123,9 +123,41 @@ def cart():
         for error in result.data['errors']:
             flash(error, 'warning')
 
+    cart_total = result.data['total']
+    
+    # استرجاع بيانات الخصم من السيشين لضمان استمراريته
+    discount = session.get('promo_discount', 0)
+    applied_code = session.get('applied_promo', "")
+    promo_error = None
+
+    # معالجة طلب البرومو كود عند الضغط على Apply
+    if request.method == 'POST' and 'promo_code' in request.form:
+        promo_code = request.form.get('promo_code', '')
+        
+        # استخدام الـ CartService للتحقق من الكود
+        promo_result = CartService.apply_promo_code(cart_total, promo_code)
+        
+        if promo_result.success:
+            discount = promo_result.data['discount']
+            applied_code = promo_result.data['code']
+            # حفظ في السيشين
+            session['promo_discount'] = discount
+            session['applied_promo'] = applied_code
+            flash(promo_result.message, 'success')
+        else:
+            promo_error = promo_result.error
+            # مسح الخصم القديم لو الكود الجديد غلط
+            session.pop('promo_discount', None)
+            session.pop('applied_promo', None)
+            discount = 0
+            applied_code = ""
+
     return render_template('cart/cart.html',
                          cart_items=result.data['items'],
-                         cart_total=result.data['total'])
+                         cart_total=cart_total,
+                         discount=discount,
+                         applied_code=applied_code,
+                         promo_error=promo_error)
 
 
 @customer_bp.route('/cart/add', methods=['POST'])
@@ -195,19 +227,13 @@ def remove_from_cart(item_id):
 def wishlist():
     """Display user's wishlist"""
     try:
-        print(f"[DEBUG] Loading wishlist for user_id={current_user.id}, username={current_user.username}")
         result = WishlistService.get_user_wishlist(current_user.id)
-        print(f"[DEBUG] WishlistService result: success={result.success}, data_count={len(result.data) if result.data else 0}")
-
         if not result.success:
             flash(result.error, 'warning')
             return render_template('cart/wishlist.html', wishlist_items=[])
 
         return render_template('cart/wishlist.html', wishlist_items=result.data)
     except Exception as e:
-        import traceback
-        print(f"[DEBUG] WISHLIST ROUTE ERROR: {e}")
-        traceback.print_exc()
         flash(f'Wishlist error: {str(e)}', 'danger')
         return render_template('cart/wishlist.html', wishlist_items=[])
 
@@ -226,6 +252,8 @@ def remove_from_wishlist(wishlist_id):
     return redirect(url_for('customer.wishlist'))
 
 
+# ==================== AJAX API ====================
+
 @customer_bp.route('/api/wishlist/toggle/<int:item_id>', methods=['POST'])
 @csrf.exempt
 @login_required
@@ -233,30 +261,21 @@ def api_toggle_wishlist(item_id):
     """AJAX toggle wishlist item"""
     try:
         from app.repositories.wishlist_repository import WishlistRepository
-
-        # Single direct query — no ambiguity about current state
         existing_entry = WishlistRepository.get_customer_item(current_user.id, item_id)
 
         if existing_entry:
-            # Item IS in wishlist → remove it
             result = WishlistService.remove_from_wishlist(current_user.id, existing_entry.id)
             if result.success:
                 return jsonify({'success': True, 'action': 'removed', 'message': result.message})
             return jsonify({'success': False, 'message': result.error}), 400
         else:
-            # Item is NOT in wishlist → add it
             result = WishlistService.add_to_wishlist(current_user.id, item_id)
             if result.success:
                 return jsonify({'success': True, 'action': 'added', 'message': result.message})
             return jsonify({'success': False, 'message': result.error}), 400
-
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
-
-# ==================== AJAX API ====================
 
 @customer_bp.route('/api/cart/add', methods=['POST'])
 @login_required
@@ -272,11 +291,6 @@ def api_add_to_cart():
         item_id = data.get('item_id', type=int)
         quantity = data.get('quantity', 1, type=int)
         special_requests = data.get('special_requests', '')
-
-    if isinstance(item_id, str):
-        item_id = int(item_id)
-    if isinstance(quantity, str):
-        quantity = int(quantity)
 
     cart_data = session.get('cart', {})
     result = CartService.add_to_cart(cart_data, item_id, quantity, special_requests)
@@ -308,10 +322,8 @@ def api_cart_count():
 def api_product_details(item_id):
     """Get product details for quick view modal"""
     result = MenuService.get_product_for_api(item_id)
-
     if not result.success:
         return jsonify({'error': result.error}), 404
-
     return jsonify(result.data)
 
 
@@ -323,7 +335,6 @@ def checkout():
     """Checkout page with stock validation"""
     cart_data = session.get('cart', {})
 
-    # Validate cart
     result = OrderService.prepare_checkout(cart_data)
     if not result.success:
         flash(result.error, 'warning')
@@ -358,7 +369,7 @@ def checkout():
                          total=cart_result['total'])
 
 
-# ==================== ORDERS ====================
+# ==================== ORDERS & REVIEWS ====================
 
 @customer_bp.route('/orders')
 @login_required
@@ -373,16 +384,12 @@ def orders():
 def cancel_order(order_id):
     """Cancel order"""
     result = OrderService.cancel_order(order_id, current_user.id)
-
     if result.success:
         flash(result.message, 'success')
     else:
         flash(result.error, 'warning')
-
     return redirect(url_for('customer.orders'))
 
-
-# ==================== REVIEWS ====================
 
 @customer_bp.route('/product/<int:item_id>/review', methods=['POST'])
 @login_required
@@ -403,4 +410,4 @@ def add_review(item_id):
     else:
         flash(result.error, 'warning' if 'already reviewed' in result.error else 'danger')
 
-    return redirect(url_for('customer.product_details', id=item_id))
+    return redirect(url_for('customer.product_details', id=item_id)) 

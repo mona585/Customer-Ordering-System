@@ -1,0 +1,55 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_title %}Menu{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-head">
+  <div>
+    <h1>Menu</h1>
+    <p>Stock, pricing, and availability for all catalog items.</p>
+  </div>
+</div>
+
+<div class="admin-table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th>Stock</th>
+        <th>Available</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td><strong>{{ item.name }}</strong></td>
+        <td>{{ item.category.value }}</td>
+        <td>${{ '%.2f'|format(item.price|float) }}</td>
+        <td>{{ item.stock_quantity }}</td>
+        <td>
+          {% if item.is_available %}
+            <span class="badge-status badge-ready">Yes</span>
+          {% else %}
+            <span class="badge-status badge-cancelled">No</span>
+          {% endif %}
+        </td>
+        <td style="text-align:right;white-space:nowrap">
+          <a class="admin-btn admin-btn-outline admin-btn-sm" href="{{ url_for('admin.menu_edit', item_id=item.id) }}">Edit</a>
+          <form method="post" action="{{ url_for('admin.menu_toggle_availability', item_id=item.id) }}" style="display:inline;margin-left:6px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="admin-btn admin-btn-outline admin-btn-sm">Toggle</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px;">No menu items.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

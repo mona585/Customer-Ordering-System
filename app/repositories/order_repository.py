@@ -1,8 +1,10 @@
 # app/repositories/order_repository.py
 """Order data access layer"""
 
+from sqlalchemy.orm import joinedload, selectinload
+
 from app.extensions import db
-from app.models.orders import Order
+from app.models.orders import Order, OrderStatus
 from app.models.order_item import OrderItem
 from app.models.payment import Payment
 from app.models.order_status_history import OrderStatusHistory
@@ -13,7 +15,31 @@ class OrderRepository:
 
     @staticmethod
     def get_by_id(order_id):
-        return Order.query.get(order_id)
+        return db.session.get(Order, order_id)
+
+    @staticmethod
+    def get_by_id_with_relations(order_id):
+        """Order with customer, line items (+ menu item), status history, payment."""
+        return (
+            Order.query.options(
+                joinedload(Order.customer),
+                selectinload(Order.items).joinedload(OrderItem.menu_item),
+                selectinload(Order.status_history),
+                joinedload(Order.payment),
+            )
+            .filter_by(id=order_id)
+            .first()
+        )
+
+    @staticmethod
+    def list_for_admin(status: OrderStatus | None = None, limit: int = 200):
+        q = Order.query.options(
+            joinedload(Order.customer),
+            selectinload(Order.items).joinedload(OrderItem.menu_item),
+        ).order_by(Order.created_at.desc())
+        if status is not None:
+            q = q.filter(Order.status == status)
+        return q.limit(limit).all()
 
     @staticmethod
     def get_by_customer(customer_id):

@@ -40,38 +40,44 @@ def create_app(config_name='development'):
     login_manager.login_message = 'Please log in to access this page.'
     login_manager.login_message_category = 'info'
 
-    # User loader
+    # User loader (eager-load roles for RBAC checks)
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+
     from app.models.user import User
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        uid = int(user_id)
+        return db.session.execute(
+            select(User).options(selectinload(User.roles)).where(User.id == uid)
+        ).scalar_one_or_none()
 
     # Register blueprints
+    from app.routes.admin import admin_bp
     from app.routes.auth import auth_bp
-    from app.routes.main import main_bp
     from app.routes.customer import customer_bp
-    from app.routes.order import order_bp
+    from app.routes.delivery import delivery_bp
+    from app.routes.main import main_bp
+    from app.routes.order import order_bp, api_order_bp
     from app.routes.profile import profile_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp, url_prefix='/')
     app.register_blueprint(customer_bp, url_prefix='/customer')
     app.register_blueprint(order_bp, url_prefix='/order')
+    app.register_blueprint(api_order_bp)
     app.register_blueprint(profile_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(delivery_bp)
     
-    # Create tables if they don't exist
+    # Create tables if they don't exist; seed RBAC rows
     with app.app_context():
         os.makedirs(os.path.join(os.path.dirname(app.root_path), "instance"), exist_ok=True)
         db.create_all()
-        from app.bootstrap.schema_compat import ensure_users_schema_compat
         from app.bootstrap.rbac import ensure_rbac_initialized
-        from app.bootstrap.dev_accounts import ensure_dev_accounts
 
-        ensure_users_schema_compat()
         ensure_rbac_initialized()
-        if app.config.get("DEBUG"):
-            ensure_dev_accounts()
 
     @app.errorhandler(403)
     def forbidden_page(_error):

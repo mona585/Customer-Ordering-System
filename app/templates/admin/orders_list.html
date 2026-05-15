@@ -1,0 +1,58 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_title %}Orders{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-head">
+  <div>
+    <h1>Orders</h1>
+    <p>Latest orders from customers. Filter by kitchen / fulfillment status.</p>
+  </div>
+</div>
+
+<form class="filter-bar" method="get" action="{{ url_for('admin.orders_list') }}">
+  <label for="status">Status</label>
+  <select name="status" id="status" onchange="this.form.submit()">
+    <option value="">All</option>
+    {% for name, label in statuses %}
+      <option value="{{ name }}" {% if current_status == name %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <noscript><button type="submit" class="admin-btn admin-btn-outline admin-btn-sm">Apply</button></noscript>
+</form>
+
+<div class="admin-table-wrap">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>When</th>
+        <th>Customer</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td><strong>#{{ order.id }}</strong></td>
+        <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') if order.created_at else '—' }}</td>
+        <td>{{ order.customer.username if order.customer else '—' }}</td>
+        <td>${{ '%.2f'|format(order.total_amount|float) }}</td>
+        <td>
+          <span class="badge-status badge-{{ order.status.value|lower|replace(' ', '') }}">{{ order.status.value }}</span>
+        </td>
+        <td style="text-align:right">
+          <a class="admin-btn admin-btn-outline admin-btn-sm" href="{{ url_for('admin.order_detail', order_id=order.id) }}">View</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px;">No orders match this filter.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
