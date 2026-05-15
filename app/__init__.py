@@ -4,6 +4,8 @@
 
 
 import os
+
+from dotenv import load_dotenv
 from flask import Flask
 
 # Import extensions
@@ -14,6 +16,8 @@ import firebase_config
 
 def create_app(config_name='development'):
     """Application factory pattern - creates and configures the Flask app"""
+
+    load_dotenv()
 
     app = Flask(__name__,
                 template_folder='templates',
@@ -69,6 +73,7 @@ def create_app(config_name='development'):
     
     # Create tables if they don't exist; seed RBAC rows
     with app.app_context():
+        os.makedirs(os.path.join(os.path.dirname(app.root_path), "instance"), exist_ok=True)
         db.create_all()
         from app.bootstrap.rbac import ensure_rbac_initialized
 

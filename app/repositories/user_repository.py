@@ -1,5 +1,7 @@
 # app/repositories/user_repository.py
 
+from sqlalchemy.orm import selectinload
+
 from app.extensions import db
 from app.models.user import User
 

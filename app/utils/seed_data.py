@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.menu_item import MenuItem, Category
 from app.repositories.role_repository import RoleRepository
 from werkzeug.security import generate_password_hash
+import os
 
 
 def seed_test_user():
