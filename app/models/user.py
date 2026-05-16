@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from flask_login import UserMixin
 
@@ -21,6 +21,9 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=True)
     phone = db.Column(db.String(20))
     address = db.Column(db.Text)
+    date_of_birth = db.Column(db.Date, nullable=True)
+    dietary_preferences = db.Column(db.String(500), nullable=True)
+    other_allergies = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True, nullable=False, server_default=db.text("1"))
 
