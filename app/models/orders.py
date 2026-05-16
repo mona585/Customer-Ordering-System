@@ -8,6 +8,7 @@ class OrderStatus(Enum):
     CONFIRMED = "Confirmed"
     PREPARING = "Preparing"
     READY = "Ready"
+    OUT_FOR_DELIVERY = "Out for delivery"
     DELIVERED = "Delivered"
     CANCELLED = "Cancelled"
 

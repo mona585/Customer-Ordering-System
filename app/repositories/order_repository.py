@@ -42,6 +42,22 @@ class OrderRepository:
         return q.limit(limit).all()
 
     @staticmethod
+    def list_for_delivery(statuses: list[OrderStatus] | None = None, limit: int = 200):
+        """Orders in the delivery pipeline (ready → out for delivery → delivered)."""
+        delivery_statuses = statuses or [
+            OrderStatus.READY,
+            OrderStatus.OUT_FOR_DELIVERY,
+            OrderStatus.DELIVERED,
+        ]
+        return (
+            Order.query.options(joinedload(Order.customer))
+            .filter(Order.status.in_(delivery_statuses))
+            .order_by(Order.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+
+    @staticmethod
     def get_by_customer(customer_id):
         return Order.query.filter_by(customer_id=customer_id)\
                          .order_by(Order.created_at.desc()).all()
