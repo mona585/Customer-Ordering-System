@@ -11,6 +11,10 @@ from app.security.rbac import get_post_login_redirect
 import re
 import requests
 import os
+import urllib3
+
+# Demo only: suppress InsecureRequestWarning when verify=False (Windows Store Python SSL).
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -80,23 +84,62 @@ def _firebase_login(email, password):
     api_key = _firebase_api_key()
     if not api_key:
         return None, None, False, 'Firebase not configured.'
+
+    # Demo only (temporary): Microsoft Store Python on Windows often fails SSL verification
+    # against identitytoolkit.googleapis.com (CERTIFICATE_VERIFY_FAILED). Remove verify=False
+    # after installing proper CA certs or using a standard Python build for production.
+    verify_ssl = False
+
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
-    resp = requests.post(url, json={
-        "email": email,
-        "password": password,
-        "returnSecureToken": True
-    })
-    data = resp.json()
+    try:
+        resp = requests.post(
+            url,
+            json={
+                "email": email,
+                "password": password,
+                "returnSecureToken": True,
+            },
+            verify=verify_ssl,
+            timeout=30,
+        )
+        data = resp.json()
+    except requests.exceptions.SSLError:
+        current_app.logger.exception('[login] Firebase SSL error during sign-in')
+        return None, None, False, 'Sign-in is temporarily unavailable. Please try again in a moment.'
+    except requests.exceptions.RequestException:
+        current_app.logger.exception('[login] Firebase network error during sign-in')
+        return None, None, False, 'Could not reach the sign-in service. Check your connection and try again.'
+    except ValueError:
+        current_app.logger.exception('[login] Firebase returned invalid JSON during sign-in')
+        return None, None, False, 'Sign-in failed. Please try again.'
 
     if 'error' in data:
         return None, None, False, 'Invalid email or password.'
 
-    id_token = data['idToken']
-    firebase_uid = data['localId']
+    id_token = data.get('idToken')
+    firebase_uid = data.get('localId')
+    if not id_token or not firebase_uid:
+        current_app.logger.error('[login] Firebase sign-in response missing idToken or localId')
+        return None, None, False, 'Sign-in failed. Please try again.'
 
     lookup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={api_key}"
-    lookup_resp = requests.post(lookup_url, json={"idToken": id_token})
-    lookup_data = lookup_resp.json()
+    try:
+        lookup_resp = requests.post(
+            lookup_url,
+            json={"idToken": id_token},
+            verify=verify_ssl,
+            timeout=30,
+        )
+        lookup_data = lookup_resp.json()
+    except requests.exceptions.SSLError:
+        current_app.logger.exception('[login] Firebase SSL error during email lookup')
+        return None, None, False, 'Sign-in is temporarily unavailable. Please try again in a moment.'
+    except requests.exceptions.RequestException:
+        current_app.logger.exception('[login] Firebase network error during email lookup')
+        return None, None, False, 'Could not reach the sign-in service. Check your connection and try again.'
+    except ValueError:
+        current_app.logger.exception('[login] Firebase returned invalid JSON during email lookup')
+        return None, None, False, 'Sign-in failed. Please try again.'
 
     email_verified = False
     if 'users' in lookup_data and len(lookup_data['users']) > 0:
@@ -217,7 +260,8 @@ def login():
         _, firebase_uid, email_verified, firebase_error = _firebase_login(login_email, password)
 
         if firebase_error:
-            return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
+            status = 503 if 'unavailable' in firebase_error.lower() or 'connection' in firebase_error.lower() else 401
+            return jsonify({'status': 'error', 'message': firebase_error}), status
 
         if not email_verified:
             return jsonify({
