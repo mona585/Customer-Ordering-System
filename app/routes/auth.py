@@ -202,7 +202,7 @@ def login():
             }), 200
 
         # ----- Customer: Firebase unchanged (uses account email) -----
-        if not FIREBASE_API_KEY:
+        if not _firebase_api_key():
             return jsonify({'status': 'error', 'message': 'Firebase not configured.'}), 500
 
         _, firebase_uid, email_verified, firebase_error = _firebase_login(user.email, password)

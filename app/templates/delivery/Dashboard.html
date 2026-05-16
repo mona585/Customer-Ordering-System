@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Delivery Dashboard — AURA{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-shell">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="admin-flash">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Delivery</h2>
+      <ul class="admin-nav">
+        <li><a href="{{ url_for('delivery.dashboard') }}" class="active">Orders</a></li>
+        <li><a href="{{ url_for('customer.menu') }}">Storefront</a></li>
+        <li><a href="{{ url_for('auth.logout') }}">Log out</a></li>
+      </ul>
+    </aside>
+
+    <div class="admin-main">
+      <div class="admin-page-head">
+        <div>
+          <h1>Delivery Dashboard</h1>
+          <p>Manage orders from ready for pickup through to delivered.</p>
+        </div>
+      </div>
+
+      {# ── Status filter tabs ── #}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+        <a href="{{ url_for('delivery.dashboard') }}"
+           class="admin-btn {% if not current_status %}admin-btn-primary{% else %}admin-btn-outline{% endif %} admin-btn-sm">
+          All
+        </a>
+        {% for status_name, label in delivery_statuses %}
+        <a href="{{ url_for('delivery.dashboard', status=status_name) }}"
+           class="admin-btn {% if current_status == status_name %}admin-btn-primary{% else %}admin-btn-outline{% endif %} admin-btn-sm">
+          {{ label }}
+        </a>
+        {% endfor %}
+      </div>
+
+      {# ── Orders table ── #}
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Customer</th>
+              <th>Address</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Placed</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders_data %}
+            <tr>
+              <td><strong>#{{ order.id }}</strong></td>
+              <td>{{ order.customer.username if order.customer else '—' }}</td>
+              <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                {{ order.delivery_address or '—' }}
+              </td>
+              <td>${{ '%.2f'|format(order.total_amount|float) }}</td>
+              <td>
+                {% if order.status.name == 'READY' %}
+                  <span class="badge-status badge-ready">Ready for Pickup</span>
+                {% elif order.status.name == 'OUT_FOR_DELIVERY' %}
+                  <span class="badge-status badge-preparing">Out for Delivery</span>
+                {% elif order.status.name == 'DELIVERED' %}
+                  <span class="badge-status badge-delivered">Delivered</span>
+                {% else %}
+                  <span class="badge-status">{{ order.status.value }}</span>
+                {% endif %}
+              </td>
+              <td style="white-space:nowrap;font-size:13px;color:var(--text-secondary);">
+                {{ order.created_at.strftime('%b %d, %H:%M') if order.created_at else '—' }}
+              </td>
+              <td style="text-align:right;white-space:nowrap;">
+                {% if order.status.name != 'DELIVERED' %}
+                <form method="post"
+                      action="{{ url_for('delivery.update_order_status', order_id=order.id, status=current_status) }}"
+                      style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm">
+                    {% if order.status.name == 'READY' %}Mark Out for Delivery
+                    {% else %}Mark Delivered
+                    {% endif %}
+                  </button>
+                </form>
+                {% else %}
+                  <span style="font-size:13px;color:var(--text-muted);">Done</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px;">
+                No orders found{% if current_status %} for this status{% endif %}.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>{# end admin-main #}
+  </div>{# end admin-layout #}
+</div>{# end admin-shell #}
+{% endblock %}

@@ -50,11 +50,11 @@ class OrderService(BaseService):
                         f"{menu_item.name} is no longer available in requested quantity"
                     )
 
-            # Create order
+            # Create order — start at CONFIRMED so tracking moves immediately
             order = Order(
                 customer_id=customer_id,
                 total_amount=cart_result['total'],
-                status=OrderStatus.PENDING,
+                status=OrderStatus.CONFIRMED,          # ← was PENDING
                 delivery_address=delivery_address,
                 special_instructions=special_instructions
             )
@@ -80,10 +80,11 @@ class OrderService(BaseService):
             )
             OrderRepository.create_payment(payment)
 
-            # Create initial status history
+            # Create initial status history — record CONFIRMED with a timestamp
             status_history = OrderStatusHistory(
                 order_id=order.id,
-                status='PENDING'
+                status='CONFIRMED',                    # ← was PENDING
+                changed_at=datetime.utcnow(),
             )
             OrderRepository.create_status_history(status_history)
 
@@ -147,7 +148,8 @@ class OrderService(BaseService):
             # Add status history
             history = OrderStatusHistory(
                 order_id=order.id,
-                status='CANCELLED'
+                status='CANCELLED',
+                changed_at=datetime.utcnow(),
             )
             OrderRepository.create_status_history(history)
             OrderRepository.commit()
@@ -165,7 +167,7 @@ class OrderService(BaseService):
             'label': 'Confirmation',
             'description': 'Order received and confirmed',
             'status_key': 'CONFIRMED',
-            'active_statuses': ('PENDING',),
+            'active_statuses': ('PENDING', 'CONFIRMED'),
         },
         {
             'id': 'preparation',
@@ -269,6 +271,11 @@ class OrderService(BaseService):
                 node_state = 'pending'
 
             started_at = stage_timestamp(stage_def)
+
+            # ── FIX: active stage always gets a started_at so the JS timer works ──
+            if node_state == 'active' and not started_at:
+                started_at = placed_at
+
             if node_state == 'completed':
                 next_def = OrderService.TRACKING_STAGES[index + 1] if index + 1 < len(OrderService.TRACKING_STAGES) else None
                 ended_at = stage_timestamp(next_def) if next_def else (order.updated_at or now)
