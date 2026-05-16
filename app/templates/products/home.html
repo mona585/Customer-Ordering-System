@@ -215,31 +215,72 @@
   .hero p{font-size:16px;padding:0 8px}
   .hero{padding:56px 16px 36px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
   .hero-thumb{width:128px;height:96px;border-radius:12px}
-  .cat-filter{justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;gap:10px;padding:18px 16px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));scrollbar-width:thin}
+  .cat-filter{justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;gap:10px;padding:18px 16px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));scrollbar-width:thin;-webkit-overflow-scrolling:touch}
   .cat-btn{scroll-snap-align:start;flex:0 0 auto;padding:10px 20px;font-size:13px}
-  .menu-section{padding:28px 16px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
-  .menu-title{font-size:22px;margin-bottom:24px;gap:12px}
-  .menu-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:20px}
-  .food-info{padding:20px}
-  .food-name{white-space:normal;font-size:16px}
+  .menu-section{padding:24px 12px;padding-left:max(12px, env(safe-area-inset-left, 0px));padding-right:max(12px, env(safe-area-inset-right, 0px));padding-bottom:calc(24px + 72px + env(safe-area-inset-bottom, 0px))}
+  .menu-title{font-size:20px;margin-bottom:16px;gap:10px}
+  .menu-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+    align-items:stretch;
+  }
+  .food-card{border-radius:12px}
+  .food-img{aspect-ratio:1/1}
+  .food-info{padding:10px 12px 12px}
+  .food-name{white-space:normal;font-size:13px;font-weight:700;margin-bottom:4px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .food-desc{display:none}
+  .food-cal{display:none}
+  .stock-indicator{font-size:10px;margin-bottom:8px}
+  .stock-indicator .dot{width:6px;height:6px}
+  .food-price{font-size:15px}
+  .food-bottom{margin-top:0;gap:6px}
+  .add-btn{width:36px;height:36px;min-width:36px;min-height:36px;font-size:18px}
+  .food-badge{top:8px;left:8px;font-size:9px;padding:4px 8px}
+  .food-time{top:8px;right:8px;font-size:10px;padding:4px 8px}
+  .wishlist-heart-btn{bottom:10px;right:10px;width:36px;height:36px;min-width:36px;min-height:36px}
+  .wishlist-heart-btn svg{width:16px;height:16px}
   .food-card:hover{transform:none;box-shadow:var(--shadow-sm)}
   .food-card:hover .food-img img{transform:none}
-  .quick-view-btn {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-    font-size: 12px;
-    padding: 8px 16px;
-    bottom: 62px;
+  .quick-view-btn{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+    font-size:10px;
+    padding:6px 12px;
+    min-height:32px;
+    bottom:48px;
   }
 }
 
 @media(max-width:480px){
   .hero{min-height:180px;padding-top:48px}
   .hero-thumb{width:108px;height:82px}
-  .menu-grid{grid-template-columns:1fr;gap:16px}
-  .food-time{font-size:11px;padding:5px 8px;top:12px;right:12px}
-  .food-badge{top:12px;left:12px;font-size:10px;padding:5px 10px}
+  .menu-grid{gap:10px}
+  .food-info{padding:8px 10px 10px}
+  .food-name{font-size:12px}
+  .food-price{font-size:14px}
   .search-results{padding:32px 16px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+}
+
+/* Optional horizontal scroll row (add .menu-grid--scroll on section grid) */
+@media(max-width:768px){
+  .menu-grid.menu-grid--scroll{
+    display:flex;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    scroll-snap-type:x mandatory;
+    gap:12px;
+    padding-bottom:4px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .menu-grid.menu-grid--scroll::-webkit-scrollbar{display:none}
+  .menu-grid.menu-grid--scroll .food-card{
+    flex:0 0 min(42vw,168px);
+    max-width:168px;
+    scroll-snap-align:start;
+  }
 }
 
 /* Wishlist Heart Button */
