@@ -45,7 +45,13 @@ class UserRepository:
         return user
 
     @staticmethod
-    def update(user: User) -> User:
+    def update(user_id: int, updates: dict) -> User | None:
+        user = UserRepository.get_by_id(user_id)
+        if not user:
+            return None
+        for key, value in updates.items():
+            if hasattr(user, key):
+                setattr(user, key, value)
         db.session.commit()
         return user
 
