@@ -2,6 +2,29 @@
 
 {% block title %}Shopping Cart - AURA{% endblock %}
 
+{% block extra_css %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    corePlugins: { preflight: false }
+  };
+  
+  (function() {
+    const html = document.documentElement;
+    const syncDarkClass = () => {
+      if (html.getAttribute('data-theme') === 'dark') {
+        html.classList.add('dark');
+      } else {
+        html.classList.remove('dark');
+      }
+    };
+    syncDarkClass();
+    new MutationObserver(syncDarkClass).observe(html, { attributes: true, attributeFilter: ['data-theme'] });
+  })();
+</script>
+{% endblock %}
+
 {% block content %}
 <style>
 .cart-container{max-width:1000px;margin:0 auto;padding:40px}
@@ -52,69 +75,64 @@
 .promo-apply-btn:hover {background: #4f46e5;border-color: #4f46e5;}
 .promo-msg {font-size: 12px;margin-top: 10px;display: flex;align-items: center;gap: 5px;}
 
-@media(max-width:768px){
-  .cart-item{grid-template-columns:1fr;gap:12px;text-align:center}
-  .cart-item-img{margin:0 auto}
-  .cart-item-price{text-align:center}
-}
 </style>
 
-<div class="cart-container">
-  <h1 class="cart-title">Shopping Cart</h1>
+<div class="cart-container max-md:!p-4 max-md:!w-full max-md:!max-w-none">
+  <h1 class="cart-title max-md:!text-2xl max-md:!mb-6 max-md:!text-center">Shopping Cart</h1>
 
   {% if cart_items %}
   
   {% set free_limit = 100.0 %}
   {% set progress = (cart_total / free_limit * 100) if cart_total < free_limit else 100 %}
-  <div class="delivery-progress-container">
-    <span class="delivery-msg">
+  <div class="delivery-progress-container max-md:!p-4 max-md:!mb-4 dark:!bg-[#1a1a1a] dark:!border-[#333]">
+    <span class="delivery-msg max-md:!text-sm max-md:!text-center dark:!text-white">
         {% if cart_total < free_limit %}
             Add <strong>${{ "%.2f"|format(free_limit - cart_total) }}</strong> more for FREE delivery!
         {% else %}
             🎉 You've unlocked <strong>FREE delivery!</strong>
         {% endif %}
     </span>
-    <div class="progress-bar-bg">
+    <div class="progress-bar-bg dark:!bg-[#333]">
         <div class="progress-bar-fill" style="width: {{ progress }}%;"></div>
     </div>
   </div>
 
-  <div class="cart-items">
+  <div class="cart-items max-md:!gap-3">
     {% for item in cart_items %}
-    <div class="cart-item">
-      <div class="cart-item-img">
+    <div class="cart-item max-md:!grid max-md:!grid-cols-[auto_1fr_auto] max-md:!gap-x-3 max-md:!gap-y-2 max-md:!p-3 max-md:shadow-sm dark:!bg-[#1a1a1a] dark:!border-[#333] dark:max-md:!bg-[#1a1a1a]">
+      <div class="cart-item-img max-md:!w-16 max-md:!h-16 max-md:!m-0 max-md:!col-start-1 max-md:!row-start-1 max-md:!row-span-2">
         <img src="{{ url_for('static', filename=item.menu_item.image_url|replace('static/', '')) if item.menu_item.image_url else 'https://via.placeholder.com/80' }}" alt="{{ item.menu_item.name }}">
       </div>
-      <div class="cart-item-info">
-        <h3>{{ item.menu_item.name }}</h3>
-        <p>{{ item.menu_item.category.value }}</p>
+      <div class="cart-item-info max-md:!col-start-2 max-md:!row-start-1 max-md:!self-end">
+        <h3 class="max-md:!mb-1 dark:!text-white">{{ item.menu_item.name }}</h3>
+        <p class="max-md:!text-xs dark:!text-[#aaa]">{{ item.menu_item.category.value }}</p>
       </div>
 
-      <div class="qty-controls">
+      <div class="qty-controls max-md:!col-start-2 max-md:!row-start-2 max-md:!self-start max-md:!w-max dark:!bg-[#333]">
         <form action="{{ url_for('customer.update_cart', item_id=item.menu_item.id) }}" method="POST">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="quantity" value="{{ item.quantity - 1 }}">
-          <button type="submit" class="qty-btn" {% if item.quantity <= 1 %}disabled{% endif %}>-</button>
+          <button type="submit" class="qty-btn dark:!bg-[#555] dark:hover:!bg-[var(--c2)]" {% if item.quantity <= 1 %}disabled{% endif %}>-</button>
         </form>
-        <span class="qty-value">{{ item.quantity }}</span>
+        <span class="qty-value dark:!text-white">{{ item.quantity }}</span>
         <form action="{{ url_for('customer.update_cart', item_id=item.menu_item.id) }}" method="POST">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="quantity" value="{{ item.quantity + 1 }}">
-          <button type="submit" class="qty-btn" {% if item.quantity >= item.available_stock %}disabled{% endif %}>+</button>
+          <button type="submit" class="qty-btn dark:!bg-[#555] dark:hover:!bg-[var(--c2)]" {% if item.quantity >= item.available_stock %}disabled{% endif %}>+</button>
         </form>
       </div>
 
-      <div class="cart-item-price">${{ "%.2f"|format(item.subtotal) }}</div>
-      <form action="{{ url_for('customer.remove_from_cart', item_id=item.menu_item.id) }}" method="POST">
+      <div class="cart-item-price max-md:!col-start-3 max-md:!row-start-1 max-md:!text-right max-md:!text-base max-md:!font-bold max-md:!self-end max-md:!mt-0 dark:!text-white">${{ "%.2f"|format(item.subtotal) }}</div>
+      <form action="{{ url_for('customer.remove_from_cart', item_id=item.menu_item.id) }}" method="POST" class="max-md:!col-start-3 max-md:!row-start-2 max-md:!self-end max-md:!justify-self-end">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="remove-btn">Remove</button>
+        <button type="submit" class="remove-btn max-md:!p-1 max-md:!text-sm dark:!text-red-400">Remove</button>
       </form>
     </div>
     {% endfor %}
   </div>
 
-  <div class="cart-summary">
-    <div class="summary-row">
+  <div class="cart-summary max-md:!p-5 max-md:!mt-8 max-md:shadow-sm max-md:bg-white max-md:border max-md:border-gray-100 max-md:!rounded-xl dark:!bg-[#1a1a1a] dark:!border-[#333] dark:max-md:!bg-[#1a1a1a]">
+    <div class="summary-row max-md:!py-1">
       <span class="summary-label">Subtotal</span>
       <span>${{ "%.2f"|format(cart_total) }}</span>
     </div>
@@ -126,27 +144,27 @@
     </div>
     {% endif %}
 
-    <div class="summary-row">
+    <div class="summary-row max-md:!py-1">
       <span class="summary-label">Delivery Fee</span>
       <span>{% if cart_total >= free_limit %}$0.00{% else %}$5.00{% endif %}</span>
     </div>
-    <div class="summary-row">
+    <div class="summary-row max-md:!py-1">
       <span class="summary-label">Tax (8%)</span>
       <span>${{ "%.2f"|format(cart_total * 0.08) }}</span>
     </div>
-    <div class="summary-row">
+    <div class="summary-row max-md:!py-2 max-md:!mt-1">
       <span class="summary-label">Total</span>
       {% set del_fee = 0.0 if cart_total >= free_limit else 5.0 %}
       {% set disc_amt = discount if discount else 0 %}
       <span>${{ "%.2f"|format(cart_total - disc_amt + del_fee + (cart_total * 0.08)) }}</span>
     </div>
 
-    <div class="promo-container">
-        <span class="summary-label" style="font-size: 13px; font-weight: 600; color: var(--c1);">Apply Coupon Code</span>
-        <form class="promo-form" method="POST">
+    <div class="promo-container max-md:!mt-4 max-md:!p-4 dark:!bg-[#1a1a1a] dark:!border-[#333]">
+        <span class="summary-label dark:!text-white" style="font-size: 13px; font-weight: 600; color: var(--c1);">Apply Coupon Code</span>
+        <form class="promo-form dark:!border dark:!border-[#444]" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="text" name="promo_code" class="promo-input" placeholder="e.g. SAVE10" value="{{ applied_code if applied_code else '' }}">
-            <button type="submit" class="promo-apply-btn">Apply</button>
+            <input type="text" name="promo_code" class="promo-input dark:!bg-[#222] dark:!text-white dark:!border-[#444]" placeholder="e.g. SAVE10" value="{{ applied_code if applied_code else '' }}">
+            <button type="submit" class="promo-apply-btn dark:!text-white">Apply</button>
         </form>
         {% if promo_error %}
           <span class="promo-msg" style="color: #ef4444;">✕ {{ promo_error }}</span>
@@ -155,17 +173,17 @@
         {% endif %}
     </div>
 
-    <a href="{{ url_for('customer.checkout') }}" class="checkout-btn">Proceed to Checkout</a>
-    <div style="text-align:center;margin-top:16px">
-      <a href="{{ url_for('customer.menu') }}" class="continue-btn">Continue Shopping</a>
+    <a href="{{ url_for('customer.checkout') }}" class="checkout-btn max-md:!p-3 max-md:!text-lg max-md:!mt-4">Proceed to Checkout</a>
+    <div style="text-align:center;margin-top:16px" class="max-md:!mt-3">
+      <a href="{{ url_for('customer.menu') }}" class="continue-btn max-md:!p-2 max-md:!text-sm max-md:!w-full max-md:!max-w-xs max-md:!mx-auto">Continue Shopping</a>
     </div>
   </div>
 
   {% else %}
-  <div class="cart-empty">
-    <h2>Your cart is empty</h2>
-    <p>Looks like you haven't added any items yet.</p>
-    <a href="{{ url_for('customer.menu') }}" class="continue-btn">Browse Menu</a>
+  <div class="cart-empty max-md:!p-6 dark:!bg-[#1a1a1a] dark:!border-[#333] dark:!rounded-xl">
+    <h2 class="dark:!text-white">Your cart is empty</h2>
+    <p class="dark:!text-[#aaa]">Looks like you haven't added any items yet.</p>
+    <a href="{{ url_for('customer.menu') }}" class="continue-btn max-md:!w-full max-md:!max-w-xs max-md:!mx-auto">Browse Menu</a>
   </div>
   {% endif %}
 </div>
