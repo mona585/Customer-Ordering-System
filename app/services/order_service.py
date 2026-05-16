@@ -15,6 +15,9 @@ from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.order_status_history import OrderStatusHistory
 from app.services.base_service import BaseService, ServiceResult
 from app.services.cart_service import CartService
+from app.services.checkout_service import CheckoutService
+from app.services.order_lifecycle_service import OrderLifecycleService
+from app.services.voucher_service import VoucherService
 
 
 class OrderService(BaseService):
@@ -32,17 +35,27 @@ class OrderService(BaseService):
         return ServiceResult.ok(data=result.data)
 
     @staticmethod
-    def create_order(customer_id, cart_data, delivery_address, special_instructions='', payment_method='CREDIT_CARD'):
+    def create_order(
+        customer_id,
+        cart_data,
+        delivery_address,
+        special_instructions='',
+        payment_method='CREDIT_CARD',
+        promo_code=None,
+        voucher_code=None,
+        saved_card_id=None,
+    ):
         """Create order from cart - full transaction"""
-        # Validate cart first
-        result = CartService.validate_cart_for_checkout(cart_data)
-        if not result.success:
-            return result
+        pricing = CheckoutService.calculate_totals(
+            cart_data, user_id=customer_id, promo_code=promo_code, voucher_code=voucher_code
+        )
+        if not pricing.success:
+            return pricing
 
-        cart_result = result.data
+        totals = pricing.data
+        cart_result = {'items': totals['items'], 'total': totals['subtotal']}
 
         try:
-            # Final stock check
             for cart_item in cart_result['items']:
                 menu_item = cart_item['menu_item']
                 if cart_item['quantity'] > menu_item.available_stock:
@@ -50,35 +63,47 @@ class OrderService(BaseService):
                         f"{menu_item.name} is no longer available in requested quantity"
                     )
 
-            # Create order — start at CONFIRMED so tracking moves immediately
             order = Order(
                 customer_id=customer_id,
-                total_amount=cart_result['total'],
-                status=OrderStatus.CONFIRMED,          # ← was PENDING
+                total_amount=totals['total'],
+                subtotal=totals['subtotal'],
+                discount_amount=totals['discount'],
+                delivery_fee=totals['delivery_fee'],
+                tax_amount=totals['tax'],
+                promo_code=totals.get('applied_promo'),
+                voucher_id=totals.get('voucher_id'),
+                status=OrderStatus.CONFIRMED,
                 delivery_address=delivery_address,
-                special_instructions=special_instructions
+                special_instructions=special_instructions,
             )
             OrderRepository.create(order)
 
-            # Create order items
             for cart_item in cart_result['items']:
                 order_item = OrderItem(
                     order_id=order.id,
                     menu_item_id=cart_item['menu_item'].id,
                     quantity=cart_item['quantity'],
                     unit_price=cart_item['unit_price'],
-                    special_requests=cart_item['special_requests']
+                    special_requests=cart_item['special_requests'],
                 )
                 OrderRepository.create_order_item(order_item)
 
-            # Create payment
             payment = Payment(
                 order_id=order.id,
-                amount=cart_result['total'],
+                amount=totals['total'],
                 method=PaymentMethod[payment_method],
-                status=PaymentStatus.PENDING
+                status=PaymentStatus.PENDING,
             )
+            if saved_card_id and payment_method == 'CREDIT_CARD':
+                from app.repositories.card_repository import CardRepository
+
+                card = CardRepository.get_by_id(saved_card_id, customer_id)
+                if card:
+                    payment.card_last_four = card.last_four
             OrderRepository.create_payment(payment)
+
+            if totals.get('voucher_id'):
+                VoucherService.mark_used(totals['voucher_id'], customer_id)
 
             # Create initial status history — record CONFIRMED with a timestamp
             status_history = OrderStatusHistory(
@@ -90,6 +115,7 @@ class OrderService(BaseService):
 
             # Commit all
             if OrderRepository.commit():
+                OrderLifecycleService.on_status_change(order, OrderStatus.CONFIRMED)
                 return ServiceResult.ok(
                     data={'order_id': order.id},
                     message="Order placed successfully!"
@@ -361,7 +387,10 @@ class OrderService(BaseService):
                 changed_at=datetime.utcnow(),
             )
         )
-        return OrderRepository.commit()
+        committed = OrderRepository.commit()
+        if committed:
+            OrderLifecycleService.on_status_change(order, status)
+        return committed
 
     @staticmethod
     def demo_start(order_id, customer_id):

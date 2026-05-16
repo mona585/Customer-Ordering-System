@@ -3,8 +3,9 @@
 
 {% block content %}
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
 
-<div class="profile-container">
+<div class="profile-page profile-container">
     <aside class="profile-sidebar">
         <div class="user-main-card">
             <div class="avatar-wrapper">
@@ -35,13 +36,17 @@
     </aside>
 
     <main class="profile-main">
-        <div id="personal" class="tabcontent">
+        <div id="personal" class="tabcontent active-tab">
             <div class="section-header">
                 <h3>Account Details</h3>
                 <a href="{{ url_for('profile.edit_profile') }}" class="btn-primary-outline">Edit Profile</a>
             </div>
             
             <div class="info-grid">
+                <div class="info-item">
+                    <label>USERNAME</label>
+                    <p>{{ current_user.username }}</p>
+                </div>
                 <div class="info-item">
                     <label>EMAIL ADDRESS</label>
                     <p>{{ current_user.email }}</p>
@@ -50,18 +55,22 @@
                     <label>PHONE NUMBER</label>
                     <p>{{ current_user.phone or 'Not provided' }}</p>
                 </div>
+                <div class="info-item">
+                    <label>DATE OF BIRTH</label>
+                    <p>{% if current_user.date_of_birth %}{{ current_user.date_of_birth.strftime('%B %d, %Y') }}{% else %}Not provided{% endif %}</p>
+                </div>
                 <div class="info-item" style="grid-column: span 2;">
                     <label>DEFAULT DELIVERY ADDRESS</label>
-                    <p id="top-default-addr" class="highlight-text">{{ current_user.address or 'No address selected yet' }}</p>
+                    <p id="top-default-addr" class="highlight-text">{{ default_address or 'No address selected yet' }}</p>
                 </div>
             </div>
 
-            <h4 class="sub-title">Dietary Preferences</h4>
-            <div class="diet-tags">
-                <span class="tag" onclick="this.classList.toggle('active')"><i class="fas fa-pepper-hot"></i> Spicy Lover</span>
-                <span class="tag" onclick="this.classList.toggle('active')"><i class="fas fa-leaf"></i> Vegetarian</span>
-                <span class="tag" onclick="this.classList.toggle('active')"><i class="fas fa-bread-slice"></i> Gluten Free</span>
-                <span class="tag" onclick="this.classList.toggle('active')"><i class="fas fa-seedling"></i> Organic Only</span>
+            <h4 class="sub-title">Dietary Preferences <span style="font-size:12px;font-weight:500;color:var(--cl)">(click to save)</span></h4>
+            <div class="diet-tags" id="dietTags">
+                <span class="tag" data-pref="Spicy Lover"><i class="fas fa-pepper-hot"></i> Spicy Lover</span>
+                <span class="tag" data-pref="Vegetarian"><i class="fas fa-leaf"></i> Vegetarian</span>
+                <span class="tag" data-pref="Gluten Free"><i class="fas fa-bread-slice"></i> Gluten Free</span>
+                <span class="tag" data-pref="Organic Only"><i class="fas fa-seedling"></i> Organic Only</span>
             </div>
         </div>
 
@@ -72,25 +81,32 @@
                         <span class="label">AURA Points</span>
                         <h2>{{ points or 0 }} <small>pts</small></h2>
                     </div>
-                    <div class="tier-badge">Bronze Tier</div>
+                    <div class="tier-badge">{{ tier }} Tier</div>
                 </div>
                 <div class="progress-container">
-                    <div class="progress-bar" style="width: {{ (points/10) if points else 5 }}%;"></div>
+                    {% set next_tier_pts = 500 if tier == 'Bronze' else (2000 if tier == 'Silver' else 2000) %}
+                    {% set tier_pct = ([(points / next_tier_pts * 100), 100]|min) if tier != 'Gold' else 100 %}
+                    <div class="progress-bar" style="width: {{ tier_pct }}%;"></div>
                 </div>
-                <p class="progress-text">Order more to reach <strong>Silver Tier</strong>!</p>
+                <p class="progress-text">Referral: <strong>{{ referral_code }}</strong></p>
+                <button type="button" class="btn-primary-outline" style="margin-top:10px;color:#fff;border-color:#fff" onclick="redeemPoints()">Redeem 500 pts → 10% voucher</button>
             </div>
 
             <h4 class="sub-title">My Vouchers</h4>
             <div class="voucher-grid">
+                {% for v in vouchers %}
                 <div class="voucher">
-                    <div class="v-type">NEW</div>
+                    <div class="v-type">{{ v.source[:3]|upper }}</div>
                     <div class="v-info">
-                        <h5>WELCOME20</h5>
-                        <p>20% OFF on your next order</p>
-                        <span class="expiry">Expires: 30 June 2026</span>
+                        <h5>{{ v.code }}</h5>
+                        <p>{{ v.discount_percent }}% off · min ${{ "%.0f"|format(v.min_order_amount) }}</p>
+                        <span class="expiry">Expires: {{ v.expires_at[:10] if v.expires_at else '—' }}</span>
                     </div>
-                    <button class="v-apply" onclick="applyVoucher(this, 'WELCOME20')">Apply</button>
+                    <a href="{{ url_for('profile.apply_voucher_redirect', code=v.code) }}" class="v-apply" style="text-decoration:none;display:flex;align-items:center">Apply</a>
                 </div>
+                {% else %}
+                <p style="color:var(--cl)">No active vouchers.</p>
+                {% endfor %}
             </div>
         </div>
 
@@ -150,13 +166,21 @@
             </div>
 
             <div id="address-list" class="address-column">
-                <div class="address-card is-default" id="addr-0">
-                    <div class="addr-icon"><i class="fas fa-home"></i></div>
+                {% for addr in addresses %}
+                <div class="address-card {% if addr.is_default %}is-default{% endif %}" data-id="{{ addr.id }}">
+                    <div class="addr-icon"><i class="fas fa-{% if addr.label == 'Work' %}briefcase{% elif addr.label == 'Other' %}map-marker-alt{% else %}home{% endif %}"></i></div>
                     <div class="addr-details">
-                        <strong>Default Address</strong>
-                        <p>{{ current_user.address or 'No address saved' }}</p>
+                        <strong>{{ addr.label }}{% if addr.is_default %} · Default{% endif %}</strong>
+                        <p>{{ addr.formatted }}</p>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-direction:column">
+                        {% if not addr.is_default %}<button type="button" class="btn-primary-outline" style="font-size:12px;padding:6px 10px" onclick="setDefaultAddr({{ addr.id }})">Set default</button>{% endif %}
+                        <button type="button" class="btn-cancel" style="font-size:12px;padding:6px 10px" onclick="deleteAddr({{ addr.id }})">Delete</button>
                     </div>
                 </div>
+                {% else %}
+                <p style="color:var(--cl)">No saved addresses yet.</p>
+                {% endfor %}
             </div>
         </div>
 
@@ -164,25 +188,44 @@
             <div class="wallet-box">
                 <div class="w-info">
                     <span>AURA Wallet Balance</span>
-                    <h3>0.00 <small>E£</small></h3>
+                    <h3>{{ "%.2f"|format(wallet_balance) }} <small>E£</small></h3>
                 </div>
             </div>
             <div class="section-header" style="margin-top:30px;">
                 <h3>Saved Cards</h3>
-                <a href="{{ url_for('profile.add_card') }}" class="btn-primary-outline" style="text-decoration:none;">+ Add Card</a>
+                <a href="{{ url_for('profile.add_card', next=url_for('profile.view_profile') + '#payments') }}" class="btn-primary-outline" style="text-decoration:none;">+ Add Card</a>
             </div>
-            <p style="color:var(--cl); font-size:14px;">No cards saved yet.</p>
+            <div id="cards-list">
+                {% for card in saved_cards %}
+                <div class="address-card {% if card.is_default %}is-default{% endif %}" style="margin-bottom:10px">
+                    <div class="addr-icon"><i class="fas fa-credit-card"></i></div>
+                    <div class="addr-details">
+                        <strong>{{ card.masked_display }}</strong>
+                        <p>Exp {{ '%02d'|format(card.exp_month) }}/{{ card.exp_year }}{% if card.is_default %} · Default{% endif %}</p>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        {% if not card.is_default %}<button type="button" class="btn-primary-outline" style="font-size:12px;padding:6px 10px" onclick="setDefaultCard({{ card.id }})">Default</button>{% endif %}
+                        <button type="button" class="btn-cancel" style="font-size:12px;padding:6px 10px" onclick="deleteCard({{ card.id }})">Remove</button>
+                    </div>
+                </div>
+                {% else %}
+                <p style="color:var(--cl); font-size:14px;">No cards saved yet.</p>
+                {% endfor %}
+            </div>
         </div>
     </main>
 </div>
 
 <style>
-:root {
-    --c1: #0f172a; --c2: #6366f1; --c2-light: #eef2ff;
-    --bg: #f8fafc; --cb: #e2e8f0; --cl: #64748b;
+.profile-page {
+    --c1: var(--text-primary);
+    --c2: #6366f1;
+    --c2-light: #eef2ff;
+    --profile-surface: var(--card-bg);
+    --profile-muted: var(--text-muted);
 }
 .profile-container { display: grid; grid-template-columns: 300px 1fr; gap: 25px; max-width: 1200px; margin: 40px auto; padding: 0 20px; font-family: 'Plus Jakarta Sans', sans-serif; }
-.profile-sidebar { background: white; border-radius: 24px; padding: 25px; border: 1px solid var(--cb); height: fit-content; }
+.profile-sidebar { background: var(--profile-surface); border-radius: 24px; padding: 25px; border: 1px solid var(--cb); height: fit-content; }
 .user-main-card { text-align: center; border-bottom: 1px solid var(--cb); padding-bottom: 20px; margin-bottom: 20px; }
 .avatar-wrapper { width: 90px; height: 90px; background: linear-gradient(135deg, var(--c2), #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 32px; font-weight: 800; }
 .joined-date { font-size: 13px; color: var(--cl); margin: 5px 0; }
@@ -192,9 +235,14 @@
 .q-stat span { font-size: 12px; color: var(--cl); }
 .nav-btn { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 15px; border: none; background: none; border-radius: 12px; color: var(--cl); font-weight: 600; cursor: pointer; transition: 0.3s; margin-bottom: 5px; }
 .nav-btn.active, .nav-btn:hover { background: var(--c2-light); color: var(--c2); }
-.profile-main { background: white; border-radius: 24px; padding: 35px; border: 1px solid var(--cb); min-height: 500px; }
+.profile-main { background: var(--profile-surface); border-radius: 24px; padding: 35px; border: 1px solid var(--cb); min-height: 500px; color: var(--text-primary); }
+.tabcontent { display: none; }
+.tabcontent.active-tab { display: block; }
+.sub-title { font-size: 16px; font-weight: 700; margin: 28px 0 12px; color: var(--c1); }
+.highlight-text { color: var(--c2); line-height: 1.5; }
+.info-item .label-badge { font-size: 9px; background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; margin-left: 4px; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: var(--bg); padding: 20px; border-radius: 18px; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: var(--bg); padding: 20px; border-radius: 18px; border: 1px solid var(--cb); }
 .info-item label { font-size: 10px; font-weight: 800; color: var(--cl); display: block; margin-bottom: 4px; }
 .info-item p { margin: 0; font-weight: 600; color: var(--c1); }
 .diet-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
@@ -215,15 +263,15 @@
 .v-apply { background: var(--c2-light); color: var(--c2); border: none; padding: 0 20px; font-weight: 700; cursor: pointer; }
 .addr-form-card { background: var(--bg); padding: 20px; border-radius: 15px; border: 1px solid var(--cb); margin-bottom: 20px; }
 .type-selector { display: flex; gap: 10px; margin: 10px 0; }
-.type-btn { flex: 1; padding: 8px; border: 1px solid var(--cb); background: white; border-radius: 8px; cursor: pointer; }
+.type-btn { flex: 1; padding: 8px; border: 1px solid var(--cb); background: var(--profile-surface); color: var(--text-primary); border-radius: 8px; cursor: pointer; }
 .type-btn.active { background: var(--c2); color: white; }
 #new-addr-input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--cb); margin-top: 5px; box-sizing: border-box; }
 .form-actions { margin-top: 15px; display: flex; gap: 10px; }
 .btn-save { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; }
-.btn-cancel { background: #e2e8f0; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+.btn-cancel { background: var(--bg); color: var(--text-primary); border: 1px solid var(--cb); padding: 10px 20px; border-radius: 8px; cursor: pointer; }
 .address-card { display: flex; align-items: center; padding: 15px; border: 1px solid var(--cb); border-radius: 15px; margin-bottom: 10px; transition: 0.3s; }
 .address-card.is-default { border-color: var(--c2); background: var(--c2-light); }
-.addr-icon { width: 40px; height: 40px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--c2); }
+.addr-icon { width: 40px; height: 40px; background: var(--profile-surface); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--c2); border: 1px solid var(--cb); }
 .addr-details { margin-left: 15px; flex-grow: 1; }
 .empty-state { text-align: center; padding: 40px; color: var(--cl); }
 .empty-state i { font-size: 40px; margin-bottom: 10px; display: block; opacity: 0.3; }
@@ -270,18 +318,50 @@
     .profile-order-row { flex-direction: column; align-items: flex-start; }
     .profile-order-meta { text-align: left; width: 100%; display: flex; justify-content: space-between; align-items: center; }
 }
+
+[data-theme="dark"] .profile-page {
+    --c2-light: rgba(99, 102, 241, 0.2);
+}
+[data-theme="dark"] .profile-page .nav-btn.active,
+[data-theme="dark"] .profile-page .nav-btn:hover {
+    background: var(--c2-light);
+    color: #a5b4fc;
+}
+[data-theme="dark"] .profile-page .address-card.is-default {
+    background: rgba(99, 102, 241, 0.12);
+}
+[data-theme="dark"] .profile-page .type-btn.active {
+    color: #fff;
+}
+[data-theme="dark"] .profile-page .points-card {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+}
+[data-theme="dark"] .profile-page .v-apply {
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+}
+[data-theme="dark"] .profile-page .btn-primary-outline {
+    color: #a5b4fc;
+    border-color: #6366f1;
+}
 </style>
 
 <script>
 let selectedType = 'Home';
 
 function openTab(evt, tabName) {
-    let tabcontent = document.getElementsByClassName("tabcontent");
-    for (let i = 0; i < tabcontent.length; i++) tabcontent[i].style.display = "none";
-    let tablinks = document.getElementsByClassName("nav-btn");
-    for (let i = 0; i < tablinks.length; i++) tablinks[i].classList.remove("active");
-    document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.classList.add("active");
+    document.querySelectorAll('.tabcontent').forEach(el => {
+        el.classList.remove('active-tab');
+        el.style.display = 'none';
+    });
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    const panel = document.getElementById(tabName);
+    if (panel) {
+        panel.classList.add('active-tab');
+        panel.style.display = 'block';
+    }
+    if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+    if (history.replaceState) history.replaceState(null, '', '#' + tabName);
 }
 
 function applyVoucher(btn, codeValue) {
@@ -307,24 +387,79 @@ function setType(btn, type) {
     selectedType = type;
 }
 
-function saveNewAddr() {
-    let addrText = document.getElementById('new-addr-input').value;
-    if(!addrText) return;
-    let list = document.getElementById('address-list');
-    let id = Date.now();
-    let icon = selectedType === 'Home' ? 'home' : (selectedType === 'Work' ? 'briefcase' : 'map-marker-alt');
-    let html = `
-        <div class="address-card" id="addr-${id}">
-            <div class="addr-icon"><i class="fas fa-${icon}"></i></div>
-            <div class="addr-details"><strong>${selectedType}</strong><p>${addrText}</p></div>
-        </div>`;
-    list.insertAdjacentHTML('beforeend', html);
-    document.getElementById('new-addr-input').value = '';
-    hideAddrForm();
+async function saveNewAddr() {
+    const street = document.getElementById('new-addr-input').value.trim();
+    if (!street) return;
+    const res = await fetch('/api/addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: selectedType, street, is_default: false })
+    });
+    const data = await res.json();
+    if (data.status === 'success') location.reload();
+    else alert(data.message || 'Could not save address');
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("defaultOpen").click();
+async function setDefaultAddr(id) {
+    await fetch(`/api/addresses/${id}/default`, { method: 'POST' });
+    location.reload();
+}
+
+async function deleteAddr(id) {
+    if (!confirm('Delete this address?')) return;
+    await fetch(`/api/addresses/${id}`, { method: 'DELETE' });
+    location.reload();
+}
+
+async function setDefaultCard(id) {
+    await fetch(`/api/cards/${id}/default`, { method: 'POST' });
+    location.reload();
+}
+
+async function deleteCard(id) {
+    if (!confirm('Remove this card?')) return;
+    await fetch(`/api/cards/${id}`, { method: 'DELETE' });
+    location.reload();
+}
+
+async function redeemPoints() {
+    const res = await fetch('/api/rewards/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const data = await res.json();
+    if (data.status === 'success') { alert(data.message); location.reload(); }
+    else alert(data.message);
+}
+
+function initDietaryTags() {
+    const saved = {{ (current_user.dietary_preferences or '')|tojson }};
+    const prefs = saved ? saved.split(',').map(s => s.trim()) : [];
+    document.querySelectorAll('#dietTags .tag').forEach(tag => {
+        if (prefs.includes(tag.dataset.pref)) tag.classList.add('active');
+        tag.addEventListener('click', async function () {
+            this.classList.toggle('active');
+            const selected = [...document.querySelectorAll('#dietTags .tag.active')].map(t => t.dataset.pref);
+            await fetch('{{ url_for("profile.update_preferences") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dietary_preferences: selected.join(',') })
+            });
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.tabcontent').forEach(el => {
+        if (!el.classList.contains('active-tab')) el.style.display = 'none';
+    });
+    const hash = (window.location.hash || '').replace('#', '');
+    const valid = ['personal', 'rewards', 'orders', 'addresses', 'payments'];
+    if (hash && valid.includes(hash)) {
+        const btn = document.querySelector(`.nav-btn[onclick*="'${hash}'"]`);
+        if (btn) {
+            document.getElementById('defaultOpen')?.classList.remove('active');
+            openTab({ currentTarget: btn }, hash);
+        }
+    }
+    initDietaryTags();
 });
 </script>
 {% endblock %}

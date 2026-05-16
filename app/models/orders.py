@@ -22,6 +22,13 @@ class Order(db.Model):
     status = db.Column(db.Enum(OrderStatus), default=OrderStatus.PENDING)
     delivery_address = db.Column(db.Text)
     special_instructions = db.Column(db.Text)
+    voucher_id = db.Column(db.Integer, db.ForeignKey("user_vouchers.id"), nullable=True)
+    promo_code = db.Column(db.String(32), nullable=True)
+    subtotal = db.Column(db.Numeric(10, 2), nullable=True)
+    discount_amount = db.Column(db.Numeric(10, 2), default=0)
+    delivery_fee = db.Column(db.Numeric(10, 2), default=0)
+    tax_amount = db.Column(db.Numeric(10, 2), default=0)
+    points_awarded = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

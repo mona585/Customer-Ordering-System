@@ -185,6 +185,9 @@ class AdminService(BaseService):
             history = OrderStatusHistory(order_id=order.id, status=new_status.name)
             OrderRepository.create_status_history(history)
             if OrderRepository.commit():
+                from app.services.order_lifecycle_service import OrderLifecycleService
+
+                OrderLifecycleService.on_status_change(order, new_status)
                 return ServiceResult.ok(message="Order status updated.")
             return ServiceResult.fail("Could not save status change.")
         except Exception as exc:  # pragma: no cover

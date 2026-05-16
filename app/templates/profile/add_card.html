@@ -1,95 +1,137 @@
 {% extends "base.html" %}
 {% block title %}Add New Card - AURA{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+<style>
+.add-card-wrap{display:flex;justify-content:center;align-items:center;min-height:min(80vh,100%);padding:24px;font-family:'Plus Jakarta Sans',sans-serif}
+.add-card-box{background:var(--card-bg);width:100%;max-width:450px;padding:40px;border-radius:24px;box-shadow:var(--shadow-lg);border:1px solid var(--cb)}
+.add-card-box h2{font-size:26px;font-weight:800;color:var(--text-primary);margin:0 0 6px}
+.add-card-box p{color:var(--text-muted);font-size:14px;margin:0}
+.add-card-box label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase}
+.edit-input{width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid var(--cb);background:var(--bg);font-size:16px;color:var(--text-primary);box-sizing:border-box}
+.edit-input:focus{outline:none;border-color:var(--c2);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+#cardFeedback{display:none;margin-bottom:14px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600}
+#cardFeedback[data-type="success"]{background:#dcfce7;color:#16a34a}
+#cardFeedback[data-type="error"]{background:#fee2e2;color:#dc2626}
+#cardFeedback[data-type="loading"]{background:#e0e7ff;color:#4338ca}
+[data-theme="dark"] #cardFeedback[data-type="success"]{background:#14532d;color:#86efac}
+[data-theme="dark"] #cardFeedback[data-type="error"]{background:#7f1d1d;color:#fecaca}
+[data-theme="dark"] #cardFeedback[data-type="loading"]{background:#312e81;color:#c7d2fe}
+.save-card-btn{width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:15px;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px}
+.save-card-btn:disabled{opacity:.7;cursor:not-allowed}
+.secure-note{font-size:12px;color:var(--text-muted);margin-top:16px;text-align:center;line-height:1.5}
+.set-default-row{display:flex;align-items:center;gap:8px;margin:16px 0;font-size:13px;color:var(--text-secondary)}
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="display:flex;justify-content:center;align-items:center;min-height:80vh;padding:24px;">
-  <div style="background:var(--cw);width:100%;max-width:450px;padding:40px;border-radius:24px;box-shadow:var(--shadow-lg);border:1px solid var(--cb);font-family:'Plus Jakarta Sans',sans-serif;">
-    
-    <div style="text-align:center;margin-bottom:30px;">
-      <div style="width:56px;height:56px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;color:white;">
+<div class="add-card-wrap">
+  <div class="add-card-box">
+    <div style="text-align:center;margin-bottom:30px">
+      <div style="width:56px;height:56px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;color:white">
         <i class="fas fa-credit-card"></i>
       </div>
-      <h2 style="font-size:26px;font-weight:800;color:var(--c1);margin:0 0 6px;">Add New Card</h2>
-      <p style="color:var(--cl);font-size:14px;margin:0;">Securely add a payment method</p>
+      <h2>Add New Card</h2>
+      <p>Securely save a card for faster checkout</p>
     </div>
 
-    <form id="addCardForm">
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:11px;font-weight:700;color:var(--cl);margin-bottom:8px;text-transform:uppercase;">Cardholder Name</label>
-        <input type="text" name="card_name" class="edit-input" placeholder="Full Name on Card" required>
-      </div>
+    <div id="cardFeedback" role="alert"></div>
 
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:11px;font-weight:700;color:var(--cl);margin-bottom:8px;text-transform:uppercase;">Card Number</label>
-        <input type="text" name="card_number" class="edit-input" placeholder="0000 0000 0000 0000" maxlength="19" required>
+    <form id="addCardForm" autocomplete="off">
+      <div style="margin-bottom:16px">
+        <label for="card_name">Cardholder Name</label>
+        <input type="text" id="card_name" name="cardholder_name" class="edit-input" placeholder="Full name on card" required minlength="2">
       </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:28px;">
+      <div style="margin-bottom:16px">
+        <label for="card_number">Card Number</label>
+        <input type="text" id="card_number" name="card_number" class="edit-input" placeholder="0000 0000 0000 0000" inputmode="numeric" maxlength="19" required>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:16px">
         <div>
-          <label style="display:block;font-size:11px;font-weight:700;color:var(--cl);margin-bottom:8px;text-transform:uppercase;">Expiry Date</label>
-          <input type="text" name="expiry" class="edit-input" placeholder="MM/YY" maxlength="5" required>
+          <label for="expiry">Expiry (MM/YY)</label>
+          <input type="text" id="expiry" name="expiry" class="edit-input" placeholder="MM/YY" maxlength="5" required>
         </div>
         <div>
-          <label style="display:block;font-size:11px;font-weight:700;color:var(--cl);margin-bottom:8px;text-transform:uppercase;">CVV</label>
-          <input type="password" name="cvv" class="edit-input" placeholder="***" maxlength="3" required>
+          <label for="cvv">CVV</label>
+          <input type="password" id="cvv" name="cvv" class="edit-input" placeholder="***" inputmode="numeric" maxlength="4" required autocomplete="off">
         </div>
       </div>
-
-      <button type="submit" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:15px;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-        Save Card Details
+      <label class="set-default-row">
+        <input type="checkbox" name="set_default" value="1" checked> Set as default payment card
+      </label>
+      <button type="submit" class="save-card-btn" id="saveCardBtn">
+        <i class="fas fa-lock"></i> Verify &amp; Save Card
       </button>
-
-      <a href="{{ url_for('profile.view_profile') }}" style="display:block;text-align:center;margin-top:16px;color:var(--cl);font-size:14px;text-decoration:none;">Cancel</a>
+      <p class="secure-note"><i class="fas fa-shield-alt"></i> We only store the last 4 digits, brand, and expiry — never your full card number or CVV.</p>
+      <a href="{{ next_url }}" style="display:block;text-align:center;margin-top:16px;color:var(--text-muted);font-size:14px;text-decoration:none">Cancel</a>
     </form>
   </div>
 </div>
+{% endblock %}
 
-<style>
-.edit-input { width: 100%; padding: 13px 16px; border-radius: 12px; border: 1.5px solid var(--cb); background: var(--bg); font-size: 16px; color: var(--c1); box-sizing: border-box; }
-.edit-input:focus { outline: none; border-color: #6366f1; }
-#cardFeedback { display: none; margin-bottom: 14px; padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; }
-#cardFeedback[data-type="success"] { background: #dcfce7; color: #16a34a; }
-#cardFeedback[data-type="error"] { background: #fee2e2; color: #dc2626; }
-#cardFeedback[data-type="loading"] { background: #e0e7ff; color: #4338ca; }
-</style>
+{% block extra_js %}
 <script src="{{ url_for('static', filename='js/account-api.js') }}"></script>
 <script>
+const REDIRECT_URL = {{ next_url|tojson }};
+const LOGIN_URL = {{ url_for('auth.login')|tojson }};
+
+document.getElementById('card_number').addEventListener('input', function(e) {
+  let v = e.target.value.replace(/\D/g, '').slice(0, 19);
+  e.target.value = v.replace(/(.{4})/g, '$1 ').trim();
+});
+
+document.getElementById('expiry').addEventListener('input', function(e) {
+  let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+  if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2);
+  e.target.value = v;
+});
+
+function showFeedback(msg, type) {
+  const el = document.getElementById('cardFeedback');
+  el.style.display = 'block';
+  el.dataset.type = type;
+  el.textContent = msg;
+}
+
 document.getElementById('addCardForm').addEventListener('submit', async function(e) {
   e.preventDefault();
-  const btn = this.querySelector('button[type="submit"]');
-  const feedback = document.getElementById('cardFeedback') || (() => {
-    const el = document.createElement('div');
-    el.id = 'cardFeedback';
-    this.parentElement.insertBefore(el, this);
-    return el;
-  })();
-
+  const btn = document.getElementById('saveCardBtn');
   const original = btn.innerHTML;
-  feedback.style.display = 'block';
-  feedback.dataset.type = 'loading';
-  feedback.textContent = 'Saving card…';
+  showFeedback('Verifying card details…', 'loading');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
   try {
     const { response, data } = await AuraAccount.postForm(
       "{{ url_for('profile.add_card') }}",
       new FormData(this)
     );
-    if (response.ok && data.status === 'success') {
-      feedback.dataset.type = 'success';
-      feedback.textContent = data.message || 'Card saved!';
-      setTimeout(() => { window.location.href = "{{ url_for('profile.view_profile') }}"; }, 900);
+
+    if (response.status === 401) {
+      showFeedback('Session expired. Redirecting to sign in…', 'error');
+      setTimeout(() => {
+        window.location.href = (data && data.redirect) || LOGIN_URL + '?next=' + encodeURIComponent(window.location.pathname);
+      }, 1200);
       return;
     }
-    feedback.dataset.type = 'error';
-    feedback.textContent = data.message || 'Could not save card.';
+
+    if (response.ok && data.status === 'success') {
+      showFeedback(data.message || 'Card saved!', 'success');
+      btn.innerHTML = '<i class="fas fa-check"></i> Saved';
+      setTimeout(() => { window.location.href = REDIRECT_URL; }, 900);
+      return;
+    }
+
+    showFeedback((data && data.message) || 'Could not save card. Check your details.', 'error');
     btn.disabled = false;
     btn.innerHTML = original;
   } catch (err) {
-    console.error('[profile] add card failed:', err);
-    feedback.dataset.type = 'error';
-    feedback.textContent = AuraAccount.networkMessage(err);
+    if (err && err.code === 'AUTH') {
+      showFeedback(err.message, 'error');
+      setTimeout(() => { window.location.href = LOGIN_URL; }, 1200);
+      return;
+    }
+    showFeedback(AuraAccount.networkMessage(err), 'error');
     btn.disabled = false;
     btn.innerHTML = original;
   }
