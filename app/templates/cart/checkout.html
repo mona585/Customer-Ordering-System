@@ -38,9 +38,18 @@
 .payment-methods{display:flex;gap:12px;margin-bottom:24px}
 .payment-method{flex:1;padding:20px 16px;border:2px solid var(--cb);border-radius:12px;cursor:pointer;text-align:center;transition:var(--tr);background:var(--cw)}
 .payment-method:hover{border-color:var(--c1)}
-.payment-method.selected{border-color:var(--c2);background:#f5f5ff}
+.payment-method.selected{border-color:var(--c2);background:rgba(99,102,241,0.08)}
 .payment-method svg{width:32px;height:32px;margin-bottom:10px;stroke:var(--c1);fill:none;stroke-width:1.5}
 .payment-method-name{font-size:13px;font-weight:600;color:var(--text-primary)}
+.card-option{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--cb);border-radius:12px;margin-bottom:8px;cursor:pointer;background:var(--cw);transition:var(--tr)}
+.card-option:has(input:checked){border-color:var(--c2);background:rgba(99,102,241,0.08)}
+.card-option input{accent-color:var(--c2)}
+.new-card-panel{margin-top:12px;padding:16px;border:1px dashed var(--cb);border-radius:12px;background:var(--bg);display:none}
+.new-card-panel.visible{display:block}
+.checkout-error{color:#b91c1c;font-size:13px;margin-top:8px;font-weight:600;display:none}
+[data-theme="dark"] .payment-method.selected,[data-theme="dark"] .card-option:has(input:checked){background:rgba(99,102,241,0.15)}
+[data-theme="dark"] .checkout-error{color:#fca5a5}
+[data-theme="dark"] label.card-option,[data-theme="dark"] #address-options label{border-color:var(--cb)}
 
 @media(max-width:768px){
   .checkout-grid{grid-template-columns:1fr}
@@ -59,13 +68,24 @@
         <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         Delivery Information
       </h2>
-      <form method="POST" id="checkout-form">
+      <form method="POST" id="checkout-form" class="checkout-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="payment_method" id="payment_method_input" value="CREDIT_CARD">
+        <input type="hidden" name="address_id" id="address_id_input" value="">
 
         <div class="form-group">
           <label>Delivery Address</label>
-          <textarea name="delivery_address" placeholder="Enter your full address..." required>{{ current_user.address or '' }}</textarea>
+          {% if addresses %}
+          <div id="address-options" style="margin-bottom:12px">
+            {% for addr in addresses %}
+            <label class="checkout-pick" style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1.5px solid var(--cb);border-radius:12px;margin-bottom:8px;cursor:pointer;{% if addr.is_default %}border-color:var(--c2);background:rgba(99,102,241,0.08){% endif %}">
+              <input type="radio" name="addr_pick" value="{{ addr.id }}" data-text="{{ addr.formatted }}" {% if addr.is_default %}checked{% endif %} onchange="pickAddress(this)">
+              <span><strong>{{ addr.label }}</strong><br>{{ addr.formatted }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <textarea name="delivery_address" id="delivery_address" placeholder="Or enter a new address..." required>{{ addresses[0].formatted if addresses else (current_user.address or '') }}</textarea>
         </div>
 
         <div class="form-group">
@@ -106,6 +126,70 @@
           </div>
         </div>
 
+        <div id="saved-cards-panel" class="form-group" style="margin-top:16px">
+          <label>Payment card</label>
+          <div id="saved-cards-list">
+            {% if saved_cards %}
+            {% for card in saved_cards %}
+            <label class="card-option">
+              <input type="radio" name="saved_card_id" value="{{ card.id }}" {% if card.is_default %}checked{% endif %} onchange="onCardPick()">
+              <span><strong>{{ card.masked_display }}</strong> · Exp {{ '%02d'|format(card.exp_month) }}/{{ card.exp_year }}{% if card.is_default %} · Default{% endif %}</span>
+            </label>
+            {% endfor %}
+            {% endif %}
+          </div>
+          <label class="card-option" id="use-new-card-option">
+            <input type="radio" name="saved_card_id" value="" id="pick-new-card" {% if not saved_cards %}checked{% endif %} onchange="onCardPick()">
+            <span>Use a different card</span>
+          </label>
+          <div id="new-card-panel" class="new-card-panel {% if not saved_cards %}visible{% endif %}">
+            <div style="margin-bottom:12px">
+              <label style="font-size:11px;display:block;margin-bottom:6px">Cardholder name</label>
+              <input type="text" name="new_card_name" placeholder="Name on card" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--cb);background:var(--cw);color:var(--text-primary)">
+            </div>
+            <div style="margin-bottom:12px">
+              <label style="font-size:11px;display:block;margin-bottom:6px">Card number</label>
+              <input type="text" name="new_card_number" id="new_card_number" placeholder="0000 0000 0000 0000" maxlength="19" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--cb);background:var(--cw);color:var(--text-primary)">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <label style="font-size:11px;display:block;margin-bottom:6px">Expiry MM/YY</label>
+                <input type="text" name="new_card_expiry" id="new_card_expiry" placeholder="MM/YY" maxlength="5" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--cb);background:var(--cw);color:var(--text-primary)">
+              </div>
+              <div>
+                <label style="font-size:11px;display:block;margin-bottom:6px">CVV</label>
+                <input type="password" name="new_card_cvv" placeholder="***" maxlength="4" autocomplete="off" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--cb);background:var(--cw);color:var(--text-primary)">
+              </div>
+            </div>
+            <p style="font-size:11px;color:var(--cg);margin-top:10px">Verified and saved to your profile (last 4 digits only).</p>
+          </div>
+          <p style="font-size:13px;margin-top:10px">
+            <a href="{{ url_for('profile.add_card', next=url_for('customer.checkout')) }}" style="color:var(--c2);font-weight:600">Manage cards in profile</a>
+          </p>
+          <div id="card-pay-error" class="checkout-error" role="alert"></div>
+        </div>
+
+        <div class="form-group" style="margin-top:24px">
+          <label>Promo Code</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" name="promo_code" id="promo_code" placeholder="e.g. SAVE10, AURA20" value="{{ prefill_promo or '' }}">
+            <button type="button" onclick="recalcCheckout()" style="padding:12px 16px;border-radius:10px;border:none;background:var(--c2);color:#fff;font-weight:600;cursor:pointer">Apply</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Your Vouchers</label>
+          {% if vouchers %}
+          {% for v in vouchers %}
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px dashed var(--c2);border-radius:10px;margin-bottom:8px;cursor:pointer">
+            <span><input type="radio" name="voucher_code" value="{{ v.code }}" {% if prefill_voucher == v.code %}checked{% endif %} onchange="recalcCheckout()"> <strong>{{ v.code }}</strong> — {{ v.discount_percent }}% off (min ${{ v.min_order_amount }})</span>
+          </label>
+          {% endfor %}
+          {% else %}
+          <p style="font-size:13px;color:var(--cg)">No vouchers available.</p>
+          {% endif %}
+        </div>
+
         <button type="submit" class="place-order-btn">
           <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           Place Order
@@ -131,19 +215,23 @@
 
       <div class="summary-row">
         <span class="summary-label">Subtotal</span>
-        <span>${{ "%.2f"|format(total) }}</span>
+        <span id="sum-subtotal">${{ "%.2f"|format(subtotal) }}</span>
+      </div>
+      <div class="summary-row" id="row-discount" style="{% if not discount %}display:none{% endif %}">
+        <span class="summary-label">Discount</span>
+        <span id="sum-discount">-${{ "%.2f"|format(discount) }}</span>
       </div>
       <div class="summary-row">
         <span class="summary-label">Delivery Fee</span>
-        <span>$5.00</span>
+        <span id="sum-delivery">${{ "%.2f"|format(delivery_fee) }}</span>
       </div>
       <div class="summary-row">
         <span class="summary-label">Tax</span>
-        <span>${{ "%.2f"|format(total * 0.08) }}</span>
+        <span id="sum-tax">${{ "%.2f"|format(tax) }}</span>
       </div>
       <div class="summary-row">
         <span class="summary-label">Total</span>
-        <span>${{ "%.2f"|format(total + 5.00 + (total * 0.08)) }}</span>
+        <span id="sum-total">${{ "%.2f"|format(total) }}</span>
       </div>
     </div>
   </div>
@@ -161,11 +249,87 @@
 </div>
 
 <script>
-// Handle Payment Selection UI
+function pickAddress(radio) {
+  document.getElementById('address_id_input').value = radio.value;
+  document.getElementById('delivery_address').value = radio.dataset.text || '';
+}
+
+async function recalcCheckout() {
+  const promo = document.getElementById('promo_code')?.value || '';
+  const voucherEl = document.querySelector('input[name="voucher_code"]:checked');
+  const voucher = voucherEl ? voucherEl.value : '';
+  const res = await fetch('/customer/api/checkout/validate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ promo_code: promo, voucher_code: voucher })
+  });
+  const data = await res.json();
+  if (data.status !== 'success') { alert(data.message); return; }
+  const t = data.totals;
+  document.getElementById('sum-subtotal').textContent = '$' + t.subtotal.toFixed(2);
+  document.getElementById('sum-discount').textContent = '-$' + t.discount.toFixed(2);
+  document.getElementById('row-discount').style.display = t.discount > 0 ? 'flex' : 'none';
+  document.getElementById('sum-delivery').textContent = '$' + t.delivery_fee.toFixed(2);
+  document.getElementById('sum-tax').textContent = '$' + t.tax.toFixed(2);
+  document.getElementById('sum-total').textContent = '$' + t.total.toFixed(2);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const def = document.querySelector('input[name="addr_pick"]:checked');
+  if (def) pickAddress(def);
+  onCardPick();
+  const nc = document.getElementById('new_card_number');
+  const ne = document.getElementById('new_card_expiry');
+  if (nc) nc.addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 19);
+    e.target.value = v.replace(/(.{4})/g, '$1 ').trim();
+  });
+  if (ne) ne.addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+    if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2);
+    e.target.value = v;
+  });
+});
+
+function onCardPick() {
+  const useNew = document.getElementById('pick-new-card')?.checked;
+  const panel = document.getElementById('new-card-panel');
+  if (panel) panel.classList.toggle('visible', !!useNew);
+  const err = document.getElementById('card-pay-error');
+  if (err) { err.style.display = 'none'; err.textContent = ''; }
+}
+
 function selectPayment(el, methodValue) {
+  const panel = document.getElementById('saved-cards-panel');
+  if (panel) panel.style.display = methodValue === 'CREDIT_CARD' ? 'block' : 'none';
   document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById('payment_method_input').value = methodValue;
+  if (methodValue === 'CREDIT_CARD') onCardPick();
+}
+
+function validateCardPayment() {
+  const method = document.getElementById('payment_method_input').value;
+  if (method !== 'CREDIT_CARD') return true;
+  const err = document.getElementById('card-pay-error');
+  const useNew = document.getElementById('pick-new-card')?.checked;
+  if (!useNew) {
+    const picked = document.querySelector('input[name="saved_card_id"]:checked');
+    if (!picked || !picked.value) {
+      if (err) { err.textContent = 'Select a saved card or choose “Use a different card”.'; err.style.display = 'block'; }
+      return false;
+    }
+    return true;
+  }
+  const name = (document.querySelector('[name="new_card_name"]')?.value || '').trim();
+  const num = (document.querySelector('[name="new_card_number"]')?.value || '').replace(/\s/g, '');
+  const exp = (document.querySelector('[name="new_card_expiry"]')?.value || '').trim();
+  const cvv = (document.querySelector('[name="new_card_cvv"]')?.value || '').trim();
+  if (!name || num.length < 13 || !exp || cvv.length < 3) {
+    if (err) { err.textContent = 'Enter complete card details (name, number, expiry, CVV).'; err.style.display = 'block'; }
+    return false;
+  }
+  return true;
 }
 
 // 1. Auto-fill the phone number from the database when the page loads
@@ -192,7 +356,12 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // 2. Validate the phone number before submitting the order
-document.querySelector('.checkout-form form').addEventListener('submit', function(e) {
+document.getElementById('checkout-form').addEventListener('submit', function(e) {
+    if (!validateCardPayment()) {
+      e.preventDefault();
+      document.getElementById('saved-cards-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     const countryCode = document.getElementById('country-code').value;
     const rawPhone = document.getElementById('raw-phone').value.trim();
     const finalPhoneInput = document.getElementById('final-phone');

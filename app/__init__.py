@@ -73,6 +73,7 @@ def create_app(config_name='development'):
     from app.routes.main import main_bp
     from app.routes.order import order_bp, api_order_bp
     from app.routes.profile import profile_bp
+    from app.routes.notifications import notifications_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp, url_prefix='/')
@@ -80,6 +81,7 @@ def create_app(config_name='development'):
     app.register_blueprint(order_bp, url_prefix='/order')
     app.register_blueprint(api_order_bp)
     app.register_blueprint(profile_bp)
+    app.register_blueprint(notifications_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(delivery_bp)
     
@@ -101,6 +103,10 @@ def create_app(config_name='development'):
         from app.bootstrap.schema_compat import ensure_users_schema_compat
 
         ensure_users_schema_compat()
+
+        from app.bootstrap.rewards_compat import ensure_rewards_compat
+
+        ensure_rewards_compat()
 
         from app.bootstrap.rbac import ensure_rbac_initialized
 

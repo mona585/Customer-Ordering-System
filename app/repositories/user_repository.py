@@ -37,6 +37,10 @@ class UserRepository:
     @staticmethod
     def get_by_phone(phone: str) -> User | None:
         return User.query.filter_by(phone=phone).first()
+
+    @staticmethod
+    def get_by_referral_code(code: str) -> User | None:
+        return User.query.filter_by(referral_code=(code or "").strip().upper()).first()
     
     @staticmethod
     def create(user: User) -> User:

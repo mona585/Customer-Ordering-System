@@ -67,8 +67,20 @@
             </div>
 
             <div class="form-group">
+                <label>DATE OF BIRTH <span style="font-weight:400">(optional)</span></label>
+                <input type="date" name="date_of_birth" id="date_of_birth" class="auth-input">
+                <p class="hint">Used for birthday rewards and promotions.</p>
+            </div>
+
+            <div class="form-group">
                 <label>DELIVERY ADDRESS <span style="font-weight:400">(optional)</span></label>
                 <textarea name="address" class="auth-input" style="height:60px; resize:vertical;"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>REFERRAL CODE <span style="font-weight:400">(optional)</span></label>
+                <input type="text" name="referral_code" class="auth-input" placeholder="e.g. AURA-1020" autocomplete="off">
+                <p class="hint">Have a friend's code? Enter it to link your accounts.</p>
             </div>
 
             <button type="submit" class="auth-btn" id="submitBtn">Create Account</button>
@@ -81,6 +93,14 @@
 </div>
 
 <script>
+(function () {
+    const dob = document.getElementById('date_of_birth');
+    if (dob) {
+        const today = new Date().toISOString().split('T')[0];
+        dob.setAttribute('max', today);
+    }
+})();
+
 document.getElementById('toggleRegPwd').addEventListener('click', function () {
     const pwd    = document.getElementById('regPassword');
     const isHide = pwd.type === 'password';

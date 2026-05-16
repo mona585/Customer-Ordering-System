@@ -159,6 +159,8 @@ def register():
         password = request.form.get('password', '')
         phone    = request.form.get('phone', '').strip()
         address  = request.form.get('address', '').strip()
+        referral_code = request.form.get('referral_code', '').strip()
+        dob_raw = request.form.get('date_of_birth', '').strip()
 
         error = _validate_registration(username, email, password, phone)
         if error:
@@ -172,6 +174,12 @@ def register():
 
         if phone and UserRepository.get_by_phone(phone):
             return jsonify({'status': 'error', 'message': 'This phone number is already registered.'}), 400
+
+        if referral_code:
+            from app.services.referral_service import ReferralService
+            referrer = ReferralService.get_by_referral_code(referral_code)
+            if not referrer:
+                return jsonify({'status': 'error', 'message': 'Invalid referral code.'}), 400
 
         if not _firebase_api_key():
             return jsonify({'status': 'error', 'message': 'Firebase not configured.'}), 500
@@ -191,8 +199,16 @@ def register():
                 phone=phone or None,
                 address=address or None,
             )
+            if dob_raw:
+                try:
+                    from datetime import datetime as dt
+                    new_user.date_of_birth = dt.strptime(dob_raw, '%Y-%m-%d').date()
+                except ValueError:
+                    return jsonify({'status': 'error', 'message': 'Invalid date of birth. Use YYYY-MM-DD.'}), 400
             UserRepository.create(new_user)
             RoleRepository.attach_role_to_user(new_user, ROLE_CUSTOMER)
+            from app.services.user_onboarding_service import UserOnboardingService
+            UserOnboardingService.setup_new_customer(new_user, referral_code or None)
         except Exception as e:
             # Firebase account was created but SQLite failed — log it
             current_app.logger.error(

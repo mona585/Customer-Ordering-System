@@ -10,6 +10,7 @@ from app.models.orders import Order, OrderStatus
 from app.models.order_status_history import OrderStatusHistory
 from app.repositories.order_repository import OrderRepository
 from app.services.base_service import BaseService, ServiceResult
+from app.services.order_lifecycle_service import OrderLifecycleService
 
 
 # The subset of statuses that belong to the delivery pipeline
@@ -87,6 +88,7 @@ class DeliveryService(BaseService):
             )
 
             if OrderRepository.commit():
+                OrderLifecycleService.on_status_change(order, next_status)
                 return ServiceResult.ok(
                     message=f"Order #{order_id} updated to '{next_status.value}'."
                 )
