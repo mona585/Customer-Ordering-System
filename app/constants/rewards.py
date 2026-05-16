@@ -1,5 +1,7 @@
 """Rewards, vouchers, and referral configuration."""
 
+from datetime import datetime
+
 POINTS_PER_DOLLAR = 10
 
 TIER_THRESHOLDS = {
@@ -19,13 +21,15 @@ WELCOME_VOUCHER = {
     "days_valid": 30,
 }
 
+REFERRAL_SIGNUP_REWARD = {
+    "code": "REFER25",
+    "discount_percent": 25,
+    "min_order_amount": 20,
+    "days_valid": 60,
+}
+
 REFERRAL_REWARDS = {
-    "referrer": {
-        "code": "REFER25",
-        "discount_percent": 25,
-        "min_order_amount": 20,
-        "days_valid": 60,
-    },
+    "referrer": REFERRAL_SIGNUP_REWARD,
     "referred": {
         "code": "FRIEND15",
         "discount_percent": 15,
@@ -35,8 +39,21 @@ REFERRAL_REWARDS = {
 }
 
 GLOBAL_PROMO_CODES = {
-    "SAVE10": {"discount_percent": 10, "min_order": 0},
-    "AURA20": {"discount_percent": 20, "min_order": 30},
+    "SAVE10": {
+        "discount_percent": 10,
+        "min_order": 0,
+        "expires_at": datetime(2026, 12, 31, 23, 59, 59),
+    },
+    "AURA20": {
+        "discount_percent": 20,
+        "min_order": 30,
+        "expires_at": datetime(2026, 12, 31, 23, 59, 59),
+    },
+    "SPRING15": {
+        "discount_percent": 15,
+        "min_order": 25,
+        "expires_at": datetime(2026, 8, 31, 23, 59, 59),
+    },
 }
 
 DELIVERY_FEE = 5.0

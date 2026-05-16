@@ -140,15 +140,15 @@ def cart():
         if promo_result.success:
             discount = promo_result.data['discount']
             applied_code = promo_result.data['code']
-            # حفظ في السيشين
             session['promo_discount'] = discount
             session['applied_promo'] = applied_code
+            session['promo_code'] = applied_code
             flash(promo_result.message, 'success')
         else:
             promo_error = promo_result.error
-            # مسح الخصم القديم لو الكود الجديد غلط
             session.pop('promo_discount', None)
             session.pop('applied_promo', None)
+            session.pop('promo_code', None)
             discount = 0
             applied_code = ""
 
@@ -341,7 +341,11 @@ def checkout():
     cart_data = session.get('cart', {})
 
     prefill_voucher = request.args.get('voucher') or session.pop('checkout_voucher', None)
-    promo_code = request.args.get('promo') or session.get('promo_code')
+    promo_code = (
+        request.args.get('promo')
+        or session.get('promo_code')
+        or session.get('applied_promo')
+    )
 
     pricing = CheckoutService.calculate_totals(
         cart_data,
@@ -357,12 +361,32 @@ def checkout():
 
     if request.method == 'POST':
         address_id = request.form.get('address_id', type=int)
-        address = request.form.get('delivery_address', '')
+        address = (request.form.get('delivery_address') or '').strip()
+        save_address = request.form.get('save_address') == '1'
+
         if address_id:
             from app.repositories.address_repository import AddressRepository
             addr = AddressRepository.get_by_id(address_id, current_user.id)
             if addr:
                 address = addr.formatted()
+        elif save_address and address:
+            label = (request.form.get('new_address_label') or 'Home').strip()[:50] or 'Home'
+            created = AddressService.create_address(
+                current_user.id,
+                label=label,
+                street=address,
+                set_default=False,
+            )
+            if created.success:
+                address = created.data.get('formatted', address)
+            else:
+                flash(created.error, 'warning')
+        phone = (request.form.get('phone') or '').strip()
+        if phone:
+            from app.extensions import db
+            current_user.phone = phone
+            db.session.commit()
+
         special_instructions = request.form.get('special_instructions', '')
         payment_method = request.form.get('payment_method', 'CREDIT_CARD')
         promo = request.form.get('promo_code', '').strip() or None
@@ -413,6 +437,8 @@ def checkout():
         if result.success:
             session.pop('cart', None)
             session.pop('promo_code', None)
+            session.pop('applied_promo', None)
+            session.pop('promo_discount', None)
             session.pop('checkout_voucher', None)
             session.modified = True
             flash(result.message, 'success')

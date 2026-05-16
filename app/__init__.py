@@ -74,6 +74,7 @@ def create_app(config_name='development'):
     from app.routes.order import order_bp, api_order_bp
     from app.routes.profile import profile_bp
     from app.routes.notifications import notifications_bp
+    from app.routes.pages import pages_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp, url_prefix='/')
@@ -84,7 +85,8 @@ def create_app(config_name='development'):
     app.register_blueprint(notifications_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(delivery_bp)
-    
+    app.register_blueprint(pages_bp)
+
     # Ensure SQLite database directory exists
     db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
     if db_uri.startswith("sqlite:///") and not db_uri.endswith(":memory:"):

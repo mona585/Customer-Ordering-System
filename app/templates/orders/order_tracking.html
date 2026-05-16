@@ -341,7 +341,7 @@
 
   var status = panel.dataset.status || {{ order.status.name | tojson }};
   var advanceUrl = panel.dataset.advanceUrl;
-  var nextLabels = { CONFIRMED: 'Preparation', PREPARING: 'Shipping', READY: 'Delivery' };
+  var nextLabels = { CONFIRMED: 'Preparation', PREPARING: 'Out for delivery', READY: 'Delivered' };
   var nextLabelEl = document.getElementById('demo-next-label');
   var countdownEl = document.getElementById('demo-countdown');
   var errorEl = document.getElementById('demo-error');
