@@ -45,7 +45,54 @@
 </div>
 
 <style>
-.edit-input { width: 100%; padding: 13px 16px; border-radius: 12px; border: 1.5px solid var(--cb); background: var(--bg); font-size: 14px; color: var(--c1); box-sizing: border-box; }
+.edit-input { width: 100%; padding: 13px 16px; border-radius: 12px; border: 1.5px solid var(--cb); background: var(--bg); font-size: 16px; color: var(--c1); box-sizing: border-box; }
 .edit-input:focus { outline: none; border-color: #6366f1; }
+#cardFeedback { display: none; margin-bottom: 14px; padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; }
+#cardFeedback[data-type="success"] { background: #dcfce7; color: #16a34a; }
+#cardFeedback[data-type="error"] { background: #fee2e2; color: #dc2626; }
+#cardFeedback[data-type="loading"] { background: #e0e7ff; color: #4338ca; }
 </style>
+<script src="{{ url_for('static', filename='js/account-api.js') }}"></script>
+<script>
+document.getElementById('addCardForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = this.querySelector('button[type="submit"]');
+  const feedback = document.getElementById('cardFeedback') || (() => {
+    const el = document.createElement('div');
+    el.id = 'cardFeedback';
+    this.parentElement.insertBefore(el, this);
+    return el;
+  })();
+
+  const original = btn.innerHTML;
+  feedback.style.display = 'block';
+  feedback.dataset.type = 'loading';
+  feedback.textContent = 'Saving card…';
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+  try {
+    const { response, data } = await AuraAccount.postForm(
+      "{{ url_for('profile.add_card') }}",
+      new FormData(this)
+    );
+    if (response.ok && data.status === 'success') {
+      feedback.dataset.type = 'success';
+      feedback.textContent = data.message || 'Card saved!';
+      setTimeout(() => { window.location.href = "{{ url_for('profile.view_profile') }}"; }, 900);
+      return;
+    }
+    feedback.dataset.type = 'error';
+    feedback.textContent = data.message || 'Could not save card.';
+    btn.disabled = false;
+    btn.innerHTML = original;
+  } catch (err) {
+    console.error('[profile] add card failed:', err);
+    feedback.dataset.type = 'error';
+    feedback.textContent = AuraAccount.networkMessage(err);
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+});
+</script>
 {% endblock %}
