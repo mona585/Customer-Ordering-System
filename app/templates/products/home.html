@@ -172,9 +172,11 @@
 .food-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:4px;gap:12px;flex-wrap:wrap}
 .food-price{font-size:22px;font-weight:700;color:var(--text-primary)}
 .food-cal{font-size:13px;color:var(--text-muted)}
-.add-btn{width:44px;height:44px;min-width:44px;min-height:44px;background:var(--c2);color:#fff;border:none;border-radius:50%;font-size:22px;cursor:pointer;transition:var(--tr);display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.add-btn:hover{background:var(--c1);transform:scale(1.1)}
+.add-btn{width:44px;height:44px;min-width:44px;min-height:44px;background:var(--c2);color:var(--on-accent,#fff);border:none;border-radius:50%;font-size:22px;font-weight:700;line-height:1;cursor:pointer;transition:var(--tr);display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.add-btn:hover{background:#4f46e5;color:var(--on-accent,#fff);transform:scale(1.08)}
 .add-btn:disabled{background:var(--cb);cursor:not-allowed;transform:none;color:var(--text-muted)}
+[data-theme="dark"] .add-btn{color:#fff}
+[data-theme="dark"] .add-btn:hover{background:#818cf8;color:#fff}
 .add-btn.adding {animation: spin 0.5s linear;pointer-events:none}
 @keyframes spin {from {transform: rotate(0deg);} to {transform: rotate(360deg);}}
 

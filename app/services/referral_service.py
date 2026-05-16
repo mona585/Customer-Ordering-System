@@ -1,6 +1,6 @@
 import secrets
 
-from app.constants.rewards import REFERRAL_REWARDS
+from app.constants.rewards import REFERRAL_REWARDS, REFERRAL_SIGNUP_REWARD
 from app.extensions import db
 from app.models.referral import Referral
 from app.models.user import User
@@ -46,11 +46,22 @@ class ReferralService(BaseService):
         ref = Referral(referrer_id=referrer.id, referred_id=referred_user.id, status="pending")
         ReferralRepository.create(ref)
         ReferralRepository.commit()
+
+        signup_reward = REFERRAL_SIGNUP_REWARD
+        VoucherService.issue_voucher(
+            user_id=referrer.id,
+            code=signup_reward["code"],
+            discount_percent=signup_reward["discount_percent"],
+            min_order_amount=signup_reward["min_order_amount"],
+            days_valid=signup_reward["days_valid"],
+            source="referral_signup",
+        )
         NotificationService.notify(
             referrer.id,
-            "New referral signup!",
+            "Referral reward credited!",
             f"{referred_user.username} signed up using your referral code. "
-            "You'll earn rewards when they complete their first delivered order.",
+            f"A {signup_reward['discount_percent']}% voucher ({signup_reward['code']}) "
+            "has been added to your account.",
             category="referral",
         )
         return ServiceResult.ok(message="Referral linked")
@@ -73,19 +84,19 @@ class ReferralService(BaseService):
         ref.completed_at = datetime.utcnow()
         ReferralRepository.commit()
 
-        for role, cfg in REFERRAL_REWARDS.items():
-            user_id = ref.referrer_id if role == "referrer" else ref.referred_id
-            VoucherService.issue_voucher(
-                user_id=user_id,
-                code=cfg["code"] if role == "referrer" else f"{cfg['code']}-{referred_user_id}",
-                discount_percent=cfg["discount_percent"],
-                min_order_amount=cfg["min_order_amount"],
-                days_valid=cfg["days_valid"],
-                source="referral",
-            )
-            NotificationService.notify(
-                user_id,
-                "Referral reward unlocked!",
-                f"You received a {cfg['discount_percent']}% discount voucher from the referral program.",
-                category="rewards",
-            )
+        referred_cfg = REFERRAL_REWARDS["referred"]
+        VoucherService.issue_voucher(
+            user_id=ref.referred_id,
+            code=f"{referred_cfg['code']}-{referred_user_id}",
+            discount_percent=referred_cfg["discount_percent"],
+            min_order_amount=referred_cfg["min_order_amount"],
+            days_valid=referred_cfg["days_valid"],
+            source="referral",
+        )
+        NotificationService.notify(
+            ref.referred_id,
+            "Referral reward unlocked!",
+            f"You received a {referred_cfg['discount_percent']}% discount voucher "
+            "for completing your first order.",
+            category="rewards",
+        )

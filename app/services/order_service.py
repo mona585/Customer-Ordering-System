@@ -203,8 +203,8 @@ class OrderService(BaseService):
             'active_statuses': ('PREPARING',),
         },
         {
-            'id': 'shipping',
-            'label': 'Shipping',
+            'id': 'delivery',
+            'label': 'Out for delivery',
             'description': 'On the way to you',
             'status_key': 'READY',
             'active_statuses': ('READY', 'OUT_FOR_DELIVERY'),
