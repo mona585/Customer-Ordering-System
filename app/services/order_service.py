@@ -179,7 +179,7 @@ class OrderService(BaseService):
             'label': 'Shipping',
             'description': 'On the way to you',
             'status_key': 'READY',
-            'active_statuses': ('READY',),
+            'active_statuses': ('READY', 'OUT_FOR_DELIVERY'),
         },
         {
             'id': 'delivery',
@@ -195,6 +195,7 @@ class OrderService(BaseService):
         'CONFIRMED': 0,
         'PREPARING': 1,
         'READY': 2,
+        'OUT_FOR_DELIVERY': 2,
         'DELIVERED': 3,
     }
 
@@ -369,7 +370,8 @@ class OrderService(BaseService):
     DEMO_NEXT = {
         'CONFIRMED': OrderStatus.PREPARING,
         'PREPARING': OrderStatus.READY,
-        'READY': OrderStatus.DELIVERED,
+        'READY': OrderStatus.OUT_FOR_DELIVERY,
+        'OUT_FOR_DELIVERY': OrderStatus.DELIVERED,
     }
 
     @staticmethod

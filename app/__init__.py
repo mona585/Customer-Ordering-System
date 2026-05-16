@@ -71,6 +71,16 @@ def create_app(config_name='development'):
     app.register_blueprint(admin_bp)
     app.register_blueprint(delivery_bp)
     
+    # Ensure SQLite database directory exists
+    db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+    if db_uri.startswith("sqlite:///") and not db_uri.endswith(":memory:"):
+        db_path = db_uri.replace("sqlite:///", "", 1)
+        if db_path and not os.path.isabs(db_path):
+            db_path = os.path.join(app.root_path, "..", db_path)
+        db_dir = os.path.dirname(os.path.abspath(db_path))
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
+
     # Create tables if they don't exist; seed RBAC rows
     with app.app_context():
         os.makedirs(os.path.join(os.path.dirname(app.root_path), "instance"), exist_ok=True)
@@ -78,6 +88,10 @@ def create_app(config_name='development'):
         from app.bootstrap.rbac import ensure_rbac_initialized
 
         ensure_rbac_initialized()
+
+        from app.bootstrap.seed import ensure_startup_seed
+
+        ensure_startup_seed(config_name)
 
     @app.errorhandler(403)
     def forbidden_page(_error):

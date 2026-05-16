@@ -294,7 +294,10 @@ def seed_dev_staff_accounts() -> None:
 
     RoleRepository.ensure_default_roles()
 
-    if not UserRepository.get_by_username("aura_admin"):
+    admin_user = UserRepository.get_by_username("aura_admin") or UserRepository.get_by_email(
+        "admin@aura.local"
+    )
+    if not admin_user:
         admin_user = User(
             username="aura_admin",
             email="admin@aura.local",
@@ -305,14 +308,15 @@ def seed_dev_staff_accounts() -> None:
         )
         UserRepository.create(admin_user)
         RoleRepository.attach_role_to_user(admin_user, ROLE_ADMIN)
-        print("✅ Dev admin created: aura_admin / AdminPass!123")
-    else:
-        admin_user = UserRepository.get_by_username("aura_admin")
-        if admin_user and not admin_user.has_role(ROLE_ADMIN):
-            RoleRepository.attach_role_to_user(admin_user, ROLE_ADMIN)
-            print("✅ Dev admin role repaired: aura_admin → admin")
+        print("Dev admin created: aura_admin / AdminPass!123")
+    elif not admin_user.has_role(ROLE_ADMIN):
+        RoleRepository.attach_role_to_user(admin_user, ROLE_ADMIN)
+        print("Dev admin role repaired: aura_admin -> admin")
 
-    if not UserRepository.get_by_username("aura_delivery"):
+    delivery_user = UserRepository.get_by_username("aura_delivery") or UserRepository.get_by_email(
+        "delivery@aura.local"
+    )
+    if not delivery_user:
         delivery_user = User(
             username="aura_delivery",
             email="delivery@aura.local",
@@ -323,9 +327,7 @@ def seed_dev_staff_accounts() -> None:
         )
         UserRepository.create(delivery_user)
         RoleRepository.attach_role_to_user(delivery_user, ROLE_DELIVERY)
-        print("✅ Dev delivery created: aura_delivery / DeliveryPass!123")
-    else:
-        delivery_user = UserRepository.get_by_username("aura_delivery")
-        if delivery_user and not delivery_user.has_role(ROLE_DELIVERY):
-            RoleRepository.attach_role_to_user(delivery_user, ROLE_DELIVERY)
-            print("✅ Dev delivery role repaired: aura_delivery → delivery")
+        print("Dev delivery created: aura_delivery / DeliveryPass!123")
+    elif not delivery_user.has_role(ROLE_DELIVERY):
+        RoleRepository.attach_role_to_user(delivery_user, ROLE_DELIVERY)
+        print("Dev delivery role repaired: aura_delivery -> delivery")
