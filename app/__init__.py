@@ -40,6 +40,18 @@ def create_app(config_name='development'):
     login_manager.login_message = 'Please log in to access this page.'
     login_manager.login_message_category = 'info'
 
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        from flask import jsonify, redirect, request, url_for
+
+        wants_json = (
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            or 'application/json' in (request.headers.get('Accept') or '')
+        )
+        if wants_json:
+            return jsonify({'status': 'error', 'message': 'Please log in to continue.'}), 401
+        return redirect(url_for('auth.login', next=request.url))
+
     # User loader (eager-load roles for RBAC checks)
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
@@ -85,6 +97,11 @@ def create_app(config_name='development'):
     with app.app_context():
         os.makedirs(os.path.join(os.path.dirname(app.root_path), "instance"), exist_ok=True)
         db.create_all()
+
+        from app.bootstrap.schema_compat import ensure_users_schema_compat
+
+        ensure_users_schema_compat()
+
         from app.bootstrap.rbac import ensure_rbac_initialized
 
         ensure_rbac_initialized()
