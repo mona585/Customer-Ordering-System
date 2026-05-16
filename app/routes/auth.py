@@ -16,7 +16,6 @@ auth_bp = Blueprint('auth', __name__)
 
 
 def _firebase_api_key() -> str | None:
-    """Read API key at request time so .env / app config is always applied."""
     return current_app.config.get('FIREBASE_WEB_API_KEY') or os.environ.get('FIREBASE_WEB_API_KEY')
 
 
@@ -45,7 +44,6 @@ def _validate_registration(username, email, password, phone='') -> str | None:
 
 def _firebase_register(email, password):
     """Create user in Firebase and send verification email."""
-    # Step 1: Create user in Firebase
     api_key = _firebase_api_key()
     if not api_key:
         return None, None, 'Firebase not configured.'
@@ -59,7 +57,6 @@ def _firebase_register(email, password):
 
     if 'error' in data:
         msg = data['error'].get('message', 'Registration failed.')
-        # Make Firebase error messages user-friendly
         if msg == 'EMAIL_EXISTS':
             return None, None, 'Email already registered.'
         if msg == 'WEAK_PASSWORD : Password should be at least 6 characters':
@@ -69,7 +66,6 @@ def _firebase_register(email, password):
     id_token = data['idToken']
     firebase_uid = data['localId']
 
-    # Step 2: Send verification email
     verify_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={api_key}"
     requests.post(verify_url, json={
         "requestType": "VERIFY_EMAIL",
@@ -98,7 +94,6 @@ def _firebase_login(email, password):
     id_token = data['idToken']
     firebase_uid = data['localId']
 
-    # Check if email is verified
     lookup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={api_key}"
     lookup_resp = requests.post(lookup_url, json={"idToken": id_token})
     lookup_data = lookup_resp.json()
@@ -122,23 +117,19 @@ def register():
         phone    = request.form.get('phone', '').strip()
         address  = request.form.get('address', '').strip()
 
-        # Validate inputs
         error = _validate_registration(username, email, password, phone)
         if error:
             return jsonify({'status': 'error', 'message': error}), 400
 
-        # Check username uniqueness in SQLite
         if UserRepository.get_by_username(username):
             return jsonify({'status': 'error', 'message': 'Username is already taken.'}), 400
 
-        # Check email uniqueness in SQLite
         if UserRepository.get_by_email(email):
             return jsonify({'status': 'error', 'message': 'Email already registered.'}), 400
 
         if phone and UserRepository.get_by_phone(phone):
-             return jsonify({'status': 'error', 'message': 'This phone number is already registered.'}), 400
+            return jsonify({'status': 'error', 'message': 'This phone number is already registered.'}), 400
 
-        # Register in Firebase + send verification email
         if not _firebase_api_key():
             return jsonify({'status': 'error', 'message': 'Firebase not configured.'}), 500
 
@@ -146,18 +137,28 @@ def register():
         if firebase_error:
             return jsonify({'status': 'error', 'message': firebase_error}), 400
 
-        # Save user in SQLite (unverified for now — no login yet)
-        new_user = User(
-            username=username,
-            email=email,
-            firebase_uid=firebase_uid,
-            password_hash=generate_password_hash(password),
-            phone=phone or None,
-            address=address or None,
-        )
-        UserRepository.create(new_user)
-
-        RoleRepository.attach_role_to_user(new_user, ROLE_CUSTOMER)
+        # ── Save to SQLite immediately after Firebase success ──────────
+        # If this fails, we catch it and return an error so the user knows
+        try:
+            new_user = User(
+                username=username,
+                email=email,
+                firebase_uid=firebase_uid,
+                password_hash=generate_password_hash(password),
+                phone=phone or None,
+                address=address or None,
+            )
+            UserRepository.create(new_user)
+            RoleRepository.attach_role_to_user(new_user, ROLE_CUSTOMER)
+        except Exception as e:
+            # Firebase account was created but SQLite failed — log it
+            current_app.logger.error(
+                f"[register] SQLite save failed for {email} (firebase_uid={firebase_uid}): {e}"
+            )
+            return jsonify({
+                'status': 'error',
+                'message': 'Account creation failed. Please contact support.'
+            }), 500
 
         return jsonify({
             'status':   'success',
@@ -183,29 +184,37 @@ def login():
                 'message': 'Email or username and password are required.',
             }), 400
 
+        # ── Find user in SQLite ────────────────────────────────────────
         user = UserRepository.get_by_login_identifier(identifier)
 
-        if not user or not user.is_active:
+        # ── Resolve the email to authenticate with Firebase ───────────
+        if user:
+            login_email = user.email
+        elif '@' in identifier:
+            # User exists in Firebase but not SQLite — we'll handle below
+            login_email = identifier.lower()
+        else:
+            # Username not found anywhere — can't resolve to email
             return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
 
-        # ----- Staff (admin / delivery / chef): Flask + password_hash only -----
-        if user.uses_staff_authentication():
+        # ── Staff: local password check only, no Firebase ─────────────
+        if user and user.uses_staff_authentication():
+            if not user.is_active:
+                return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
             if not user.password_hash or not check_password_hash(user.password_hash, password):
                 return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
-
             login_user(user, remember=False)
-
             return jsonify({
                 'status': 'success',
                 'message': 'Welcome back!',
                 'redirect': get_post_login_redirect(user),
             }), 200
 
-        # ----- Customer: Firebase unchanged (uses account email) -----
+        # ── Customer: Firebase authentication ─────────────────────────
         if not _firebase_api_key():
             return jsonify({'status': 'error', 'message': 'Firebase not configured.'}), 500
 
-        _, firebase_uid, email_verified, firebase_error = _firebase_login(user.email, password)
+        _, firebase_uid, email_verified, firebase_error = _firebase_login(login_email, password)
 
         if firebase_error:
             return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
@@ -216,11 +225,47 @@ def login():
                 'message': 'Please verify your email before logging in. Check your inbox.',
             }), 401
 
-        if user.firebase_uid and firebase_uid != user.firebase_uid:
+        # ── Auto-sync: create SQLite record if missing ─────────────────
+        # This fixes anyone who registered before this patch,
+        # or whose SQLite record was lost for any reason.
+        if not user:
+            base_username = login_email.split('@')[0]
+            username = base_username
+            counter = 1
+            while UserRepository.get_by_username(username):
+                username = f"{base_username}{counter}"
+                counter += 1
+
+            try:
+                user = User(
+                    username=username,
+                    email=login_email,
+                    firebase_uid=firebase_uid,
+                    is_active=True,
+                )
+                UserRepository.create(user)
+                RoleRepository.attach_role_to_user(user, ROLE_CUSTOMER)
+                current_app.logger.info(
+                    f"[login] Auto-synced Firebase user {login_email} into SQLite."
+                )
+            except Exception as e:
+                current_app.logger.error(f"[login] Auto-sync failed for {login_email}: {e}")
+                return jsonify({'status': 'error', 'message': 'Login failed. Please try again.'}), 500
+
+        # ── Sync firebase_uid if it was missing ───────────────────────
+        if not user.firebase_uid:
+            user.firebase_uid = firebase_uid
+            from app.extensions import db
+            db.session.commit()
+
+        # ── UID mismatch = someone tampered with data ──────────────────
+        if user.firebase_uid != firebase_uid:
+            return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
+
+        if not user.is_active:
             return jsonify({'status': 'error', 'message': 'Invalid credentials.'}), 401
 
         login_user(user, remember=False)
-
         return jsonify({
             'status': 'success',
             'message': 'Welcome back! Entering AURA...',
