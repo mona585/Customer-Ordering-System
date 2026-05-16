@@ -1,0 +1,92 @@
+[33mb08dd08[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Resolved merge conflict in app init
+[33m2748ac2[m UI of quickview
+[33mc2cf9e2[m fix(profile): fix add_card form submission
+[33m7c2e735[m fix(profile): load recent orders and fix add-card POST
+[33m8604175[m fix(nav): add Account link to bottom mobile navigation
+[33madc573b[m fix(profile): make profile page mobile responsive
+[33md3fff5f[m fix(profile): improve edit_profile form with retry button
+[33md782071[m feat(js): add shared account-api.js with proper error handling
+[33m9d201a4[m chore(db): ensure schema_compat runs before RBAC init
+[33mae35436[m feat(db): add SQLite migration for missing profile columns
+[33m3dbfb87[m feat(models): add missing profile fields to User model
+[33ma62f390[m fix(profile): update UserRepository.update() to accept (user_id, updates)
+[33m96ea770[m fix(mobile): change product grid from 1-column to 2-column on mobile
+[33m5e3c512[m add delivery service
+[33m8c5fc51[m fix: add gunicorn for Render deployment
+[33m1cf26bd[m Merge pull request #16 from mona585/delivery-dashboard
+[33m4151141[m[33m ([m[1;31morigin/delivery-dashboard[m[33m)[m feat: add delivery dashboard
+[33mf5d8dfb[m Merge pull request #15 from mona585/firebase
+[33m882ce44[m[33m ([m[1;31morigin/firebase[m[33m)[m Merge branch 'main' into firebase
+[33mc22b605[m[33m ([m[1;32mfirebase[m[33m)[m fix: resolve login authentication issue causing 401 error
+[33ma7d8f88[m docs: add professional README for Customer Ordering System
+[33me05e2b7[m feat(ui): add demo mode with 4-stage timeline
+[33me153df8[m feat(service): add demo_start() and demo_advance() methods
+[33md24453b[m feat(routes): add POST /api/order/<id>/advance for 4-stage demo
+[33m008f9ab[m chore(init): register demo advance API route
+[33m9b1bed0[m style(product_details.html): adjust breadcrumb and section padding with safe-area insets for mobile screens
+[33mc8d9368[m feat(home.html): add mobile-responsive layout with horizontal category scroll, responsive grid (single column below 480px), fluid typography, 44px touch targets, and disabled hover on touch devices
+[33me18262a[m feat(auth/base.html): add responsive viewport, safe-area padding, 100dvh min-height, and iOS zoom prevention with 16px inputs
+[33m3f95f7b[m feat(base.html): implement comprehensive mobile responsiveness with viewport, touch optimizations, safe-area insets, and bottom navigation spacing
+[33m9848bb8[m fix(main.py): adjust logic to support new homepage animation features
+[33m08b68fb[m refactor(home.html): replace background color with animated product images moving in smooth, coordinated motion
+[33me048d3b[m Merge pull request #14 from mona585/admin-dashboard
+[33m0328960[m Merge pull request #13 from mona585/auth-role-based-login
+[33m9784ec1[m[33m ([m[1;31morigin/admin-dashboard[m[33m, [m[1;32madmin-dashboard[m[33m)[m admin statistics and a persistent 'Manager' link in the main navbar when an admin is logged in so we can return from the storefront without logging out
+[33m4ed6064[m feat(admin): manager dashboard, orders, and menu management UI
+[33mcbc5483[m[33m ([m[1;31morigin/auth-role-based-login[m[33m, [m[1;32mauth-role-based-login[m[33m)[m feat(rbac): roles, user_roles, decorators, bootstrap, and split customer/staff login
+[33me35eaeb[m UI: add promo code input and free delivery progress bar to cart page
+[33md77a8e9[m Controller: update cart route to handle promo code and sessions
+[33m10188da[m Logic: add apply_promo_code method to CartService
+[33mf2687a4[m updated shopping cart by adding promo code and progress bar for free delivery
+[33mef69c69[m Update checkout.html
+[33mba0b213[m Solve a Bug in Profile Page
+[33mec1f5bc[m Merge pull request #12 from mona585/FireBase
+[33m51cbb63[m  resolve cart count bug
+[33mdeac1e4[m Merge pull request #11 from mona585/nancy
+[33mdebac94[m[33m ([m[1;31morigin/nancy[m[33m)[m Add profile page and user features
+[33m02b05da[m Merge pull request #10 from mona585/FireBase
+[33m22834ab[m firebase
+[33m9205c64[m protect user actions and improve gitignore setup
+[33m9c4c510[m wishlist feature
+[33m7d4970b[m Update auth.py
+[33m739b1e8[m Update base.html
+[33maccf9cb[m Base HTML For LogIN and Register Pages
+[33m7b73386[m Register Page
+[33mb0093d4[m LogIN Page
+[33m33b9299[m Profile Updates page
+[33m18908bd[m Update user_repository.py
+[33mae374a1[m Update user.py
+[33m4b3d2cd[m Updated app for profile Update page
+[33mc29b36a[m Merge pull request #8 from mona585/data-seeding
+[33ma0d6069[m architecture repairing ( move logic from route layer to service layer and connect it to the repository layer )
+[33m31a6f59[m Merge pull request #7 from mona585/data-seeding
+[33m9d5f3d2[m database tables and added data seeding functionality
+[33m3b4b5fb[m Merge pull request #6 from mona585/data-seeding
+[33m0100deb[m seeding more data
+[33m91c2b6d[m making search can find categories
+[33m136a27a[m place order and nav bar handling
+[33m391ef4b[m solve base.html bug
+[33m6810186[m resolve conflict
+[33m5150b84[m fixing order page bug
+[33m628fba6[m fixing order page bug
+[33m8eed601[m Add wishlist feature
+[33m9f45de8[m Add .gitignore and remove cached/binary files
+[33m9a50970[m Merge remote changes
+[33m195ae4a[m work in progress before switching to main
+[33mf2e21c1[m[33m ([m[1;31morigin/debugger[m[33m)[m modified UI images
+[33m743c2ee[m[33m ([m[1;31morigin/product[m[33m)[m Merge pull request #4 from mona585/product
+[33m2a08a67[m Ajax cart, dark mode colors, navbar cleanup
+[33m06a39de[m Resolve merge conflicts - keep product branch changes
+[33me99a958[m  Add AJAX cart, dark mode, quick view modal, mobile nav, and toast notifications
+[33m2c2dcb0[m Merge pull request #3 from mona585/debugger
+[33me551de4[m modified shopping cart
+[33m26c44d4[m Merge pull request #2 from mona585/debugger
+[33m456b1c9[m modified UI categories, cart ,and review
+[33ma6c6557[m[33m ([m[1;31morigin/Order-tracking[m[33m)[m modified customer.py
+[33m9b046b3[m Merge pull request #1 from mona585/product
+[33m6803e39[m cart route handling
+[33m30c5b30[m home page ui handling
+[33m688eb57[m removing venv
+[33mbe842ec[m fixing product_details page errr
+[33mc29f73d[m feat: complete customer ordering system with cart, checkout & order tracking
+[33m1176d04[m Initial commit

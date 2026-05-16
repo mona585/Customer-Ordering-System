@@ -137,14 +137,14 @@ button,.nav-icon-btn,.theme-toggle,.profile-btn,input[type="button"],input[type=
 /* ===== QUICK VIEW MODAL ===== */
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all 0.3s ease;backdrop-filter:blur(4px)}
 .modal-overlay.active{opacity:1;visibility:visible}
-.modal-content{background:var(--cw);border-radius:20px;max-width:900px;width:90%;max-height:90vh;overflow-y:auto;position:relative;transform:scale(0.9);transition:transform 0.3s ease;box-shadow:var(--shadow-lg)}
+.modal-content{background:var(--cw);border-radius:20px;max-width:860px;width:90%;max-height:88vh;overflow:hidden;position:relative;transform:scale(0.9);transition:transform 0.3s ease;box-shadow:var(--shadow-lg)}
 .modal-overlay.active .modal-content{transform:scale(1)}
 .modal-close{position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;z-index:10;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:var(--tr)}
 .modal-close:hover{background:var(--bg)}
 .modal-close svg{width:20px;height:20px;stroke:var(--text-primary);fill:none;stroke-width:2}
 
 .qv-layout{display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:stretch}
-.qv-media{aspect-ratio:4/3;background:#e8e8e8;overflow:hidden;min-height:0}
+.qv-media{overflow:hidden;background:#e8e8e8;min-height:400px;max-height:600px}
 [data-theme="dark"] .qv-media{background:#333}
 .qv-media img{width:100%;height:100%;object-fit:cover;display:block}
 .qv-panel{padding:32px;min-width:0}
