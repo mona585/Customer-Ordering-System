@@ -15,7 +15,7 @@
             
             <div class="quick-stats">
                 <div class="q-stat">
-                    <strong>{{ current_user.orders|length if current_user.orders else 0 }}</strong>
+                    <strong>{{ order_count }}</strong>
                     <span>Orders</span>
                 </div>
                 <div class="q-stat">
@@ -95,13 +95,30 @@
         </div>
 
         <div id="orders" class="tabcontent">
-            <div class="section-header"><h3>Recent Orders</h3></div>
-            {% if current_user.orders %}
-                {% else %}
+            <div class="section-header">
+                <h3>Recent Orders</h3>
+                {% if recent_orders %}<a href="{{ url_for('customer.orders') }}" class="btn-primary-outline">View All</a>{% endif %}
+            </div>
+            {% if recent_orders %}
+            <div class="profile-orders-list">
+                {% for order in recent_orders %}
+                <a href="{{ url_for('order.order_tracking', order_id=order.id) }}" class="profile-order-row">
+                    <div>
+                        <strong>Order #{{ order.id }}</strong>
+                        <span class="profile-order-date">{{ order.created_at.strftime('%b %d, %Y') if order.created_at else '' }}</span>
+                    </div>
+                    <div class="profile-order-meta">
+                        <span class="profile-order-status">{{ order.status.value }}</span>
+                        <span class="profile-order-total">${{ "%.2f"|format(order.total_amount|float) }}</span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
                 <div class="empty-state">
                     <i class="fas fa-utensils"></i>
                     <p>You haven't placed any orders yet.</p>
-                    <a href="/" class="btn-primary" style="text-decoration:none;">Order Now</a>
+                    <a href="{{ url_for('main.home') }}" class="btn-primary" style="text-decoration:none;">Order Now</a>
                 </div>
             {% endif %}
         </div>
@@ -211,6 +228,48 @@
 .empty-state { text-align: center; padding: 40px; color: var(--cl); }
 .empty-state i { font-size: 40px; margin-bottom: 10px; display: block; opacity: 0.3; }
 .wallet-box { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 25px; border-radius: 20px; }
+.profile-orders-list { display: flex; flex-direction: column; gap: 10px; }
+.profile-order-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 14px 16px; border: 1px solid var(--cb); border-radius: 14px;
+    text-decoration: none; color: inherit; transition: background .2s, border-color .2s;
+    min-height: 44px;
+}
+.profile-order-row:hover { background: var(--bg); border-color: var(--c2); }
+.profile-order-date { display: block; font-size: 12px; color: var(--cl); font-weight: 500; margin-top: 2px; }
+.profile-order-meta { text-align: right; }
+.profile-order-status {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 20px; background: var(--c2-light); color: var(--c2);
+}
+.profile-order-total { display: block; font-size: 14px; font-weight: 700; margin-top: 4px; color: var(--c1); }
+
+@media (max-width: 768px) {
+    .profile-container {
+        grid-template-columns: 1fr;
+        margin: 16px auto 0;
+        padding: 0 12px calc(88px + env(safe-area-inset-bottom, 0px));
+        gap: 16px;
+    }
+    .profile-sidebar, .profile-main { border-radius: 18px; padding: 18px; }
+    .profile-nav {
+        display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 8px;
+        margin: 0 -4px; padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .profile-nav::-webkit-scrollbar { display: none; }
+    .nav-btn {
+        flex: 0 0 auto; width: auto; white-space: nowrap;
+        padding: 10px 14px; font-size: 13px; min-height: 44px;
+    }
+    .section-header { flex-wrap: wrap; gap: 10px; }
+    .info-grid { grid-template-columns: 1fr; }
+    .info-item[style*="span 2"] { grid-column: span 1 !important; }
+    .voucher { flex-direction: column; }
+    .v-type { writing-mode: horizontal-tb; transform: none; padding: 8px 12px; }
+    .profile-order-row { flex-direction: column; align-items: flex-start; }
+    .profile-order-meta { text-align: left; width: 100%; display: flex; justify-content: space-between; align-items: center; }
+}
 </style>
 
 <script>
