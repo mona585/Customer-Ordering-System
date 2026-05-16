@@ -3,7 +3,6 @@ from flask import Blueprint, request, jsonify, render_template, redirect, url_fo
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 from app.repositories.user_repository import UserRepository
-from app.services.cart_service import CartService
 from app.services.order_service import OrderService
 from datetime import datetime
 
@@ -33,10 +32,20 @@ def _referral_stats(user) -> dict:
 def view_profile():
     points = _calculate_points(current_user)
     ref_stats = _referral_stats(current_user)
+    orders_result = OrderService.get_user_orders(current_user.id)
+    all_orders = (
+        orders_result.data.get('all', [])
+        if orders_result.success and orders_result.data
+        else []
+    )
+    recent_orders = all_orders[:8]
+    order_count = len(all_orders)
     return render_template(
         'profile/profile.html',
         user=current_user,
         points=points,
+        recent_orders=recent_orders,
+        order_count=order_count,
         **ref_stats
     )
 
@@ -115,9 +124,10 @@ def update_preferences():
 
 @profile_bp.route('/profile/add-card', methods=['GET', 'POST'])
 @login_required
+@csrf.exempt
 def add_card():
     if request.method == 'POST':
-        card_number = request.form.get('card_number', '').replace(' ', '')
+        card_number = (request.form.get('card_number') or '').replace(' ', '')
         if not card_number or len(card_number) < 16:
             return jsonify({'status': 'error', 'message': 'Invalid card number.'}), 400
         return jsonify({'status': 'success', 'message': 'Card saved successfully!'}), 200
