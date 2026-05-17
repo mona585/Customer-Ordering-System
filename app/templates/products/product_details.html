@@ -40,6 +40,15 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
 .quantity{margin-bottom:24px}
 .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
 .qty-input{width:80px;padding:10px;border:1.5px solid var(--cb);border-radius:6px;font-size:14px;text-align:center;background:var(--card-bg);color:var(--text-primary)}
+/* Hide the default number input spin buttons */
+.qty-input::-webkit-inner-spin-button, 
+.qty-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.qty-input[type=number] {
+  -moz-appearance: textfield;
+}
 .qty-step-btn{width:32px;height:32px;border:1.5px solid var(--cb);background:var(--card-bg);border-radius:6px;cursor:pointer;font-size:16px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;justify-content:center}
 [data-theme="dark"] .qty-step-btn{background:#2a2a2a;color:#fff;border-color:#444}
 [data-theme="dark"] .qty-step-btn:hover{background:var(--c2);border-color:var(--c2)}
