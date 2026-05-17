@@ -119,20 +119,6 @@
     }
 })();
 
-document.getElementById('toggleRegPwd').addEventListener('click', function () {
-    const pwd = document.getElementById('regPassword');
-
-    pwd.type = pwd.type === 'password' ? 'text' : 'password';
-   // this.textContent = pwd.type === 'password' ? '👁' : '⊘';
-});
-
-document.getElementById('toggleConfirmPwd').addEventListener('click', function () {
-    const pwd = document.getElementById('regPasswordConfirm');
-
-    pwd.type = pwd.type === 'password' ? 'text' : 'password';
-   // this.textContent = pwd.type === 'password' ? '👁' : '⊘';
-});
-
 document.getElementById('regForm').addEventListener('submit', async function (e) {
     e.preventDefault();
 
@@ -166,7 +152,6 @@ document.getElementById('regForm').addEventListener('submit', async function (e)
         msgHandler.innerHTML = `<div class="msg-banner error">Passwords do not match.</div>`;
         return;
     }
-});
 
     const countryCode     = document.getElementById('country-code').value;
     const rawPhone        = document.getElementById('raw-phone').value.trim();
@@ -224,6 +209,7 @@ document.getElementById('regForm').addEventListener('submit', async function (e)
         btn.disabled    = false;
         btn.textContent = 'Create Account';
     }
+});
 
 </script>
 {% endblock %}
