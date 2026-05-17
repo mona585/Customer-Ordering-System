@@ -1,476 +1,305 @@
-# Customer Ordering System
+# AURA — Customer Ordering System
 
-A full-stack **order management platform** for restaurants and food services, built with Flask. Customers browse the menu, manage a cart, place orders, and track delivery in real time. Admins manage products and order statuses through a dedicated dashboard. The app is branded **AURA** in the UI and codebase.
+**CSE323 · Customer Ordering subsystem** — a Flask web app where customers browse the menu, place orders, and track delivery; staff manage orders, the catalog, and fulfillment.
+
+![AURA menu — category browsing and hero](docs/screenshots/menu.png)
 
 ---
 
-## Table of Contents
+## Table of contents
 
-- [Key Features](#key-features)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [Installation & Setup](#installation--setup)
-- [Environment Variables](#environment-variables)
-- [Database Schema](#database-schema)
-- [API Endpoints](#api-endpoints)
-- [Demo Mode](#demo-mode)
-- [Folder Structure](#folder-structure)
+- [Overview](#overview)
 - [Screenshots](#screenshots)
-- [Future Improvements](#future-improvements)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Architecture](#architecture)
+- [Quick start](#quick-start)
+- [Environment variables](#environment-variables)
+- [Roles & demo accounts](#roles--demo-accounts)
+- [Demo mode (order tracking)](#demo-mode-order-tracking)
+- [Promo codes](#promo-codes)
+- [Project structure](#project-structure)
+- [API overview](#api-overview)
+- [Known limitations](#known-limitations)
+- [Related docs](#related-docs)
 - [License](#license)
 
 ---
 
-## Key Features
+## Overview
 
-### Authentication & authorization
+AURA is a layered **Routes → Services → Repositories → Models** application:
 
-| Feature | Description |
-|--------|-------------|
-| **Register / Login** | Customer registration with Firebase (email verification required). Staff accounts use local password authentication. |
-| **Role-based access (RBAC)** | Roles: `customer`, `admin`, `delivery`, `chef`. Routes protected via `@role_required()`. |
-| **Post-login routing** | Admins → `/admin/`, delivery → `/delivery/`, customers → `/customer/menu`. |
+| Role | What they do |
+|------|----------------|
+| **Customer** | Firebase sign-up/login, menu, cart, checkout, order history, tracking, profile & rewards |
+| **Admin** | Dashboard, order status updates, menu CRUD-style management |
+| **Delivery** | Pick up **READY** orders and advance to **OUT_FOR_DELIVERY** → **DELIVERED** |
 
-### Customer experience
-
-| Feature | Description |
-|--------|-------------|
-| **Menu browsing** | Browse by category (Appetizers, Main Course, Desserts, Beverages, Sides) or view all items. |
-| **Search** | Full-text style search across menu items (`/customer/search?q=...`). |
-| **Product details** | Individual product pages with related items, reviews, and wishlist toggle. |
-| **Shopping cart** | Session-based cart: add, update quantity, remove, special requests per item. |
-| **Promo codes** | `SAVE10` (10% off), `AURA20` (20% off) applied at checkout. |
-| **Wishlist** | Save favorite menu items; toggle via UI or AJAX. |
-| **Checkout** | Delivery address, special instructions, payment method selection. |
-| **Order placement** | Creates `Order`, `OrderItem`, `Payment`, and initial `OrderStatusHistory` in one transaction. |
-| **Order history** | View and cancel orders (cancel allowed while `PENDING` or `CONFIRMED`). |
-| **Reviews** | Rate products 1–5 stars with optional comments. |
-
-### Order tracking (4 stages)
-
-Visual timeline with live timers:
-
-1. **Confirmation** — order received (`PENDING` / `CONFIRMED`)
-2. **Preparation** — kitchen preparing (`PREPARING`)
-3. **Shipping** — ready for delivery (`READY`)
-4. **Delivery** — completed (`DELIVERED`)
-
-Additional tracking capabilities:
-
-- **Status history** — every status change stored in `order_status_history` with timestamps.
-- **Live stage timers** — elapsed time updates every second for active stages and the blue “gap” period.
-- **Blue gap animation** — animated connector between Confirmation and Preparation while status is `CONFIRMED` (waiting for preparation).
-- **Demo mode** — `?demo=1` auto-advances stages every 10 seconds (see [Demo Mode](#demo-mode)).
-- **Responsive UI** — mobile and desktop layouts via Tailwind CSS and custom CSS.
-
-### Admin panel
-
-| Feature | Description |
-|--------|-------------|
-| **Dashboard** | Order and revenue statistics. |
-| **Order management** | List, filter by status, view details, update status. |
-| **Product management** | List menu items, edit details, toggle availability (CRUD-style via admin UI). |
-
-### Profile
-
-| Feature | Description |
-|--------|-------------|
-| **View / edit profile** | Username, email, phone, address, password. |
-| **Loyalty points** | Calculated from order totals and reviews. |
-| **Payment cards** | Add-card UI (placeholder validation). |
-| **Dietary preferences** | JSON API for preferences and allergies. |
-
-### Staff roles (partial)
-
-- **Delivery** — placeholder dashboard at `/delivery/` (role-protected).
-- **Chef** — role defined; kitchen dashboard planned (redirects to home for now).
+Payment is recorded in the database (no live payment gateway). Card data stores **last four digits** only.
 
 ---
 
-## Tech Stack
+## Screenshots
+
+> **First time setup:** If images do not show on GitHub, run `COPY_SCREENSHOTS.bat` once (copies PNGs from your Downloads folder into `docs/screenshots/`).
+
+### Customer flow
+
+| | |
+|:---:|:---:|
+| **Menu & categories** | **Product details** |
+| ![Menu](docs/screenshots/menu.png) | ![Product details](docs/screenshots/product-details.png) |
+| **Shopping cart** (dark mode) | **Checkout** |
+| ![Cart](docs/screenshots/cart.png) | ![Checkout](docs/screenshots/checkout.png) |
+| **Order tracking** (live timers) | **Profile & preferences** |
+| ![Order tracking](docs/screenshots/order-tracking.png) | ![Profile](docs/screenshots/profile.png) |
+| **Notifications** | |
+| ![Notifications](docs/screenshots/notifications.png) | |
+
+### Staff
+
+| | |
+|:---:|:---:|
+| **Admin dashboard** | **Admin orders** |
+| ![Admin dashboard](docs/screenshots/admin-dashboard.png) | ![Admin orders](docs/screenshots/admin-orders.png) |
+| **Order detail & status** | **Menu management** |
+| ![Admin order detail](docs/screenshots/admin-order-detail.png) | ![Admin menu](docs/screenshots/admin-menu.png) |
+| **Delivery dashboard** | |
+| ![Delivery](docs/screenshots/delivery-dashboard.png) | |
+
+---
+
+## Features
+
+### Customers
+
+- Browse menu by category, search, and open product pages (reviews, wishlist when logged in)
+- Session cart: add / update quantity / remove / special requests
+- Checkout: saved addresses, phone, instructions, card or cash on delivery
+- Pricing: promo or voucher, **$5 delivery**, **8% tax**, free-delivery progress on cart
+- Order lifecycle with **4-stage tracking** and per-stage elapsed timers
+- In-app **notifications** on status changes
+- Profile: edit details, dietary preferences, saved cards & addresses, **AURA Rewards**
+
+### Admin
+
+- KPI dashboard (orders, revenue, catalog counts)
+- Filter orders by status; open order detail and update status
+- Edit menu items, stock, and availability toggle
+
+### Delivery
+
+- Filter orders: ready → out for delivery → delivered
+- One-click status advance from the delivery dashboard
+
+### Security
+
+- Customers: **Firebase** (email verification)
+- Staff: local password hash (**Werkzeug**)
+- **RBAC** via `@role_required()` — `customer`, `admin`, `delivery`, `chef`
+
+---
+
+## Tech stack
 
 | Layer | Technology |
 |-------|------------|
-| **Backend** | [Flask](https://flask.palletsprojects.com/) 3.0, [SQLAlchemy](https://www.sqlalchemy.org/) 2.0, [Flask-Login](https://flask-login.readthedocs.io/), Flask-Migrate, Flask-WTF |
-| **Database** | **SQLite** by default (`instance/app.db`). Production-ready via `DATABASE_URL` — supports **PostgreSQL** and **MySQL** (any SQLAlchemy-compatible URI). |
-| **Auth** | Firebase Identity Toolkit (customers) + Werkzeug password hashing (staff) |
-| **Frontend** | Jinja2 templates, [Tailwind CSS](https://tailwindcss.com/) (CDN on tracking page), vanilla JavaScript |
-| **Styling / animations** | Custom CSS (`style.css`, `admin.css`) — `pulse-blue`, `shimmer`, `slide-dot` keyframes on order tracking |
-| **Architecture** | Layered: **Routes → Services → Repositories → Models** |
+| Backend | Flask 3, SQLAlchemy 2, Flask-Login, Flask-Migrate, Flask-WTF |
+| Database | SQLite (`instance/app.db`) — override with `DATABASE_URL` |
+| Auth | Firebase Admin + Identity Toolkit (customers) |
+| Frontend | Jinja2, custom CSS (`style.css`, `admin.css`), vanilla JS |
+| UI extras | Tailwind CDN on cart & order-tracking pages; light/dark theme toggle |
+| Tooling | pytest, coverage (see `requirements.txt`) |
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌──────────────────┐     ┌────────────┐
-│   Routes    │ ──► │  Services   │ ──► │  Repositories    │ ──► │   Models   │
-│  (thin)     │     │ (business)  │     │  (data access)   │     │ (SQLAlchemy)│
-└─────────────┘     └─────────────┘     └──────────────────┘     └────────────┘
+Routes (blueprints)  →  Services (business rules)  →  Repositories  →  Models
 ```
 
-Blueprints are registered in `app/__init__.py` via the application factory (`create_app`).
+Blueprints registered in `app/__init__.py`: `auth`, `main`, `customer`, `order`, `admin`, `delivery`, `profile`, `notifications`, `pages`.
 
 ---
 
-## Installation & Setup
+## Quick start
 
 ### Prerequisites
 
-- Python 3.10+
+- Python **3.10+**
 - pip
-- (Optional) Firebase project for customer registration/login
+- Firebase project (for customer register/login) — see [SETUP.md](SETUP.md)
 
-### 1. Clone the repository
+### Install & run
 
 ```bash
-git clone https://github.com/your-username/Customer-Ordering-System.git
+git clone <your-repo-url>
 cd Customer-Ordering-System
-```
 
-### 2. Create a virtual environment
-
-```bash
 python -m venv .venv
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # macOS / Linux
 
-# Windows
-.venv\Scripts\activate
-
-# macOS / Linux
-source .venv/bin/activate
-```
-
-### 3. Install dependencies
-
-```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure environment variables
-
-Create a `.env` file in the project root (see [Environment Variables](#environment-variables)).
-
-For Firebase setup details, see [SETUP.md](SETUP.md).
-
-### 5. Initialize the database
-
-Tables are created automatically on first run via `db.create_all()` in the app factory. To seed sample data:
+Create `.env` (see [Environment variables](#environment-variables)), then:
 
 ```bash
 python seed.py
-```
+set SEED_DEV_STAFF=1            # Windows CMD — optional admin/delivery users
+python seed.py
 
-Optional dev staff accounts (admin + delivery):
-
-```bash
-# Windows PowerShell
-$env:SEED_DEV_STAFF="1"; python seed.py
-
-# macOS / Linux
-SEED_DEV_STAFF=1 python seed.py
-```
-
-### 6. Run the application
-
-**Development:**
-
-```bash
 python run.py
 ```
 
-Or:
+Open **http://127.0.0.1:5000**
+
+**Production:** `gunicorn wsgi:app`
+
+### README images (local / GitHub)
+
+Screenshots are stored under `docs/screenshots/`. To copy from `C:\Users\TECHNO\Downloads`:
 
 ```bash
-flask --app run.py run --debug
-```
-
-Open [http://localhost:5000](http://localhost:5000).
-
-**Production (WSGI):**
-
-```bash
-gunicorn wsgi:app
+COPY_SCREENSHOTS.bat
+# or: powershell -File scripts/copy_screenshots.ps1
 ```
 
 ---
 
-## Environment Variables
+## Environment variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `SECRET_KEY` | Recommended | Flask session secret |
-| `DATABASE_URL` | No | Override SQLite default (e.g. `postgresql://user:pass@host/db`) |
+| `DATABASE_URL` | No | Default SQLite; use Postgres/MySQL URI in production |
 | `FIREBASE_WEB_API_KEY` | For customers | Firebase Web API key |
-| `FIREBASE_CREDENTIALS` | For Firebase Admin | Path to service account JSON (default: `firebase-service-account.json`) |
-| `WTF_CSRF_SECRET_KEY` | No | CSRF token secret |
-| `SEED_DEV_STAFF` | No | Set to `1` to create dev admin/delivery users when running `seed.py` |
-
-Default SQLite path: `instance/app.db` (created automatically).
+| `FIREBASE_CREDENTIALS` | For Firebase Admin | Path to service account JSON |
+| `WTF_CSRF_SECRET_KEY` | No | CSRF secret if CSRF is enabled |
+| `SEED_DEV_STAFF` | No | Set to `1` when running `seed.py` to create dev staff users |
 
 ---
 
-## Database Schema
+## Roles & demo accounts
 
-### Entity relationship overview
+After `SEED_DEV_STAFF=1 python seed.py`:
 
-```mermaid
-erDiagram
-    User ||--o{ Order : places
-    User }o--o{ Role : has
-    User ||--o{ Review : writes
-    User ||--o{ Wishlist : saves
-    Order ||--|{ OrderItem : contains
-    Order ||--o| Payment : has
-    Order ||--o{ OrderStatusHistory : tracks
-    MenuItem ||--o{ OrderItem : referenced_by
-    MenuItem ||--o{ Review : receives
-    MenuItem ||--o{ Wishlist : favorited_in
-```
+| Account | Password | Role |
+|---------|----------|------|
+| `aura_admin` | `AdminPass!123` | Admin |
+| `aura_delivery` | `DeliveryPass!123` | Delivery |
 
-### Main tables
-
-| Table | Purpose |
-|-------|---------|
-| `users` | Accounts (Firebase UID for customers, password hash for staff) |
-| `roles` | Role definitions (`customer`, `admin`, `delivery`, `chef`) |
-| `user_roles` | Many-to-many user ↔ role |
-| `menu_items` | Products (name, price, category, stock, images, etc.) |
-| `orders` | Orders (customer, total, status, delivery info) |
-| `order_items` | Line items (quantity, unit price, special requests) |
-| `payments` | Payment record per order (method, status, transaction ID) |
-| `order_status_history` | Timestamped status changes |
-| `reviews` | Product ratings and comments |
-| `wishlists` | Customer saved items |
-
-### Order status enum
-
-| Status | Customer-facing stage |
-|--------|------------------------|
-| `PENDING` | Confirmation (placed, awaiting confirm) |
-| `CONFIRMED` | Confirmation (blue gap — waiting for preparation) |
-| `PREPARING` | Preparation |
-| `READY` | Shipping |
-| `DELIVERED` | Delivery |
-| `CANCELLED` | Order cancelled |
+Customers register through Firebase (email verification). Use your own test account for screenshots and demos.
 
 ---
 
-## API Endpoints
+## Demo mode (order tracking)
 
-All JSON APIs require login unless noted. Base URL: `http://localhost:5000`.
-
-### Order (demo & tracking)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/order/order/<id>/track` | Order tracking page (`?demo=1` enables demo) |
-| `POST` | `/api/order/<id>/advance` | Advance demo stage (JSON response) |
-| `POST` | `/order/order/<id>/demo-advance` | Legacy form POST → redirect with `demo=1` |
-| `GET` | `/order/my-orders` | Customer order history page |
-
-**`POST /api/order/<id>/advance` — example response**
-
-```json
-{
-  "success": true,
-  "status": "PREPARING",
-  "done": false
-}
-```
-
-### Cart & wishlist
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/customer/api/cart/add` | Add item to cart (JSON or form) |
-| `GET` | `/customer/api/cart/count` | Cart item count (0 if logged out) |
-| `GET` | `/customer/api/product/<item_id>` | Product JSON for quick-view modal |
-| `POST` | `/customer/api/wishlist/toggle/<item_id>` | Add/remove wishlist item |
-
-### Profile
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/update` | Update profile (JSON) |
-| `POST` | `/profile/update-preferences` | Dietary preferences (JSON) |
-
-### Auth (JSON on POST)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET/POST` | `/auth/register` | Register customer |
-| `GET/POST` | `/auth/login` | Login |
-| `GET` | `/auth/logout` | Logout |
-
-### Web routes (selected)
-
-| Area | Prefix | Examples |
-|------|--------|----------|
-| Main | `/` | Home / menu landing |
-| Customer | `/customer` | `/menu`, `/cart`, `/checkout`, `/orders`, `/product/<id>` |
-| Admin | `/admin` | `/`, `/orders`, `/menu`, `/menu/<id>/edit` |
-| Profile | `/` | `/profile`, `/profile/edit` |
-| Delivery | `/delivery` | Staff dashboard (placeholder) |
-
----
-
-## Demo Mode
-
-Use demo mode to present the order tracking timeline without manual admin updates.
-
-### How to enable
-
-Append `?demo=1` to any order tracking URL:
+Auto-advance the timeline for presentations (mutates DB — use test orders only):
 
 ```
-http://localhost:5000/order/order/42/track?demo=1
+http://127.0.0.1:5000/order/order/<id>/track?demo=1
 ```
 
-Restart the demo from the beginning:
+Restart from the beginning:
 
 ```
-http://localhost:5000/order/order/42/track?demo=1&restart=1
+http://127.0.0.1:5000/order/order/<id>/track?demo=1&restart=1
 ```
-
-### Behavior
 
 | Setting | Value |
 |---------|--------|
-| **Auto-advance interval** | 10 seconds per stage |
-| **Progression** | `CONFIRMED` → `PREPARING` → `READY` → `DELIVERED` |
-| **On first visit** | Order resets to `CONFIRMED` (so the blue gap is visible) |
-| **Blue gap** | Shown only while status is `CONFIRMED` (connector between Confirmation and Preparation) |
-| **Manual advance** | “Force next stage” button in the demo panel |
-| **API** | `POST /api/order/<id>/advance` called by JavaScript; page reloads after each step |
-
-> **Note:** Demo mode mutates order status in the database. Use test orders, not production data.
-
-### Default seed accounts (development)
-
-| Account | Credentials | Role |
-|---------|-------------|------|
-| `test@aura.com` | `password123` | Customer (local DB; Firebase may be required for login) |
-| `aura_admin` | `AdminPass!123` | Admin (`SEED_DEV_STAFF=1`) |
-| `aura_delivery` | `DeliveryPass!123` | Delivery (`SEED_DEV_STAFF=1`) |
+| Interval | 10 seconds per stage |
+| Flow | `CONFIRMED` → `PREPARING` → `READY` → `DELIVERED` |
+| Manual step | “Force next stage” in the demo panel |
+| API | `POST /api/order/<id>/advance` |
 
 ---
 
-## Folder Structure
+## Promo codes
+
+Applied at checkout (validated in `CheckoutService`):
+
+| Code | Discount | Min. order |
+|------|----------|------------|
+| `SAVE10` | 10% | — |
+| `AURA20` | 20% | $30 |
+| `SPRING15` | 15% | $25 |
+
+Vouchers and referral codes are also supported via the rewards system (`app/constants/rewards.py`).
+
+---
+
+## Project structure
 
 ```
 Customer-Ordering-System/
 ├── app/
-│   ├── __init__.py              # Application factory (create_app)
-│   ├── config.py                # App-level config (duplicate of root; factory uses root config)
-│   ├── extensions.py            # db, login_manager, migrate, csrf
-│   ├── bootstrap/
-│   │   └── rbac.py              # Seed default roles on startup
-│   ├── constants/
-│   │   └── roles.py             # Role slug constants
-│   ├── models/                  # SQLAlchemy models
-│   │   ├── user.py
-│   │   ├── role.py
-│   │   ├── menu_item.py
-│   │   ├── orders.py
-│   │   ├── order_item.py
-│   │   ├── order_status_history.py
-│   │   ├── payment.py
-│   │   ├── review.py
-│   │   └── wishlist.py
-│   ├── repositories/            # Data access layer
-│   ├── services/                # Business logic
-│   ├── routes/                  # Blueprints (thin controllers)
-│   │   ├── auth.py
-│   │   ├── main.py
-│   │   ├── customer.py
-│   │   ├── order.py
-│   │   ├── admin.py
-│   │   ├── profile.py
-│   │   └── delivery.py
-│   ├── security/
-│   │   └── rbac.py              # role_required, post-login redirect
-│   ├── templates/               # Jinja2 HTML
-│   │   ├── auth/
-│   │   ├── products/
-│   │   ├── cart/
-│   │   ├── orders/
-│   │   ├── admin/
-│   │   └── profile/
-│   ├── static/
-│   │   ├── css/                 # style.css, admin.css
-│   │   └── images/              # Menu item images
-│   └── utils/
-│       ├── seed_data.py
-│       └── seed_data_new.py
-├── config.py                    # Environment config (development/production/testing)
-├── run.py                       # Dev server entry point
-├── wsgi.py                      # Production WSGI entry point
-├── seed.py                      # Database seeding script
+│   ├── __init__.py          # Application factory
+│   ├── models/              # SQLAlchemy models
+│   ├── repositories/        # Data access
+│   ├── services/            # Business logic
+│   ├── routes/              # Blueprints
+│   ├── templates/           # Jinja2 HTML
+│   ├── static/css/          # Global & admin styles
+│   └── constants/           # Promos, rewards, roles
+├── config.py
+├── run.py                   # Dev server
+├── wsgi.py                  # Production entry
+├── seed.py
 ├── requirements.txt
-├── schema.sql                   # Legacy SQL reference schema
-├── firebase_config.py           # Firebase Admin SDK init
-├── SETUP.md                     # Firebase setup guide
-├── instance/                    # SQLite DB (gitignored)
-└── README.md
+├── SETUP.md                 # Firebase setup
+├── docs/screenshots/        # README images
+└── scripts/copy_screenshots.ps1
 ```
 
 ---
 
-## Screenshots
+## API overview
 
-> Add screenshots to `docs/screenshots/` and reference them here.
+| Area | Examples |
+|------|----------|
+| Auth | `POST /auth/register`, `POST /auth/login`, `GET /auth/logout` |
+| Customer | `/customer/menu`, `/customer/cart`, `/customer/checkout`, `/customer/orders` |
+| Order | `GET /order/order/<id>/track`, `POST /api/order/<id>/advance` |
+| Admin | `/admin/`, `/admin/orders`, `/admin/menu` |
+| Profile | `/profile`, `/api/addresses`, `/api/cards`, `/api/rewards/redeem` |
+| Notifications | `/notifications`, `/api/notifications` |
 
-### Home / Menu
-
-<!-- ![Menu](docs/screenshots/menu.png) -->
-*Placeholder: menu browsing with categories*
-
-### Shopping cart & checkout
-
-<!-- ![Cart](docs/screenshots/cart.png) -->
-*Placeholder: cart with promo code and checkout*
-
-### Order tracking
-
-<!-- ![Tracking](docs/screenshots/order-tracking.png) -->
-*Placeholder: 4-stage timeline with live timers*
-
-### Demo mode
-
-<!-- ![Demo](docs/screenshots/demo-mode.png) -->
-*Placeholder: demo panel with countdown and blue gap animation*
-
-### Admin dashboard
-
-<!-- ![Admin](docs/screenshots/admin-dashboard.png) -->
-*Placeholder: admin orders and menu management*
+Most JSON endpoints require login. See route modules under `app/routes/` for full detail.
 
 ---
 
-## Future Improvements
+## Known limitations
 
-- [ ] Full **chef/kitchen** dashboard for `PREPARING` → `READY` workflow
-- [ ] Complete **delivery driver** UI (map, assign orders, mark delivered)
-- [ ] **Email/SMS notifications** on status changes
-- [ ] **Payment gateway** integration (Stripe/PayPal) instead of placeholder card form
-- [ ] **Alembic migrations** committed to repo (currently `migrations/` is gitignored)
-- [ ] **Promo codes** stored in database with expiry and usage limits
-- [ ] **Order rating** after delivery (order-level, not only product reviews)
-- [ ] **REST API** versioning and OpenAPI/Swagger documentation
-- [ ] **Docker Compose** for one-command local and production deploy
-- [ ] **Automated tests** (pytest coverage for services and routes)
-- [ ] **i18n** / multi-language support
-- [ ] **Dark mode** toggle across all pages (partial on tracking page)
+- No real payment processor (payments stay **PENDING**)
+- **Chef** role exists; no dedicated kitchen display UI yet
+- `product_bp` route module exists but is not registered in the factory
+- End-to-end browser tests (e.g. Playwright) not included in this repo
+- Demo mode changes real order rows — do not use on production data
+
+---
+
+## Related docs
+
+- [SETUP.md](SETUP.md) — Firebase configuration
+- [schema.sql](schema.sql) — legacy SQL reference (ORM models are authoritative)
 
 ---
 
 ## License
 
-This project is provided for educational and demonstration purposes. Add your license file (`LICENSE`) before public distribution.
+Educational / course project (CSE323). Add a `LICENSE` file before public distribution.
 
 ---
 
-## Related documentation
+### Team
 
-- [SETUP.md](SETUP.md) — Firebase authentication setup
-- [schema.sql](schema.sql) — Reference SQL schema (legacy; ORM models are authoritative)
+<!-- Add your names, IDs, and section -->
+
+| Name | ID | Role |
+|------|-----|------|
+| *Your name* | *ID* | *e.g. Developer / PM* |
