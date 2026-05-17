@@ -158,12 +158,15 @@
       <span class="summary-label">Total</span>
       {% set del_fee = 0.0 if cart_total >= free_limit else 5.0 %}
       {% set disc_amt = discount if discount else 0 %}
-      <span>${{ "%.2f"|format(cart_total - disc_amt + del_fee + (cart_total * 0.08)) }}</span>
+      {% set after_discount = cart_total - disc_amt %}
+      {% if after_discount < 0 %}{% set after_discount = 0 %}{% endif %}
+      {% set tax = after_discount * 0.08 %}
+      <span>${{ "%.2f"|format(after_discount + del_fee + tax) }}</span>
     </div>
 
     <div class="promo-container max-md:!mt-4 max-md:!p-4 dark:!bg-[#1a1a1a] dark:!border-[#333]">
         <span class="summary-label dark:!text-white" style="font-size: 13px; font-weight: 600; color: var(--c1);">Apply Coupon Code</span>
-        <form class="promo-form dark:!border dark:!border-[#444]" method="POST">
+        <form class="promo-form dark:!border dark:!border-[#444]" method="POST" action="{{ url_for('customer.cart') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="text" name="promo_code" class="promo-input dark:!bg-[#222] dark:!text-white dark:!border-[#444]" placeholder="e.g. SAVE10" value="{{ applied_code if applied_code else '' }}">
             <button type="submit" class="promo-apply-btn dark:!text-white">Apply</button>

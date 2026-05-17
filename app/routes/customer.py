@@ -151,6 +151,19 @@ def cart():
             session.pop('promo_code', None)
             discount = 0
             applied_code = ""
+    else:
+        # Recalculate discount based on current cart_total in case it changed
+        if applied_code and cart_total > 0:
+            promo_result = CartService.apply_promo_code(cart_total, applied_code)
+            if promo_result.success:
+                discount = promo_result.data['discount']
+                session['promo_discount'] = discount
+            else:
+                session.pop('promo_discount', None)
+                session.pop('applied_promo', None)
+                session.pop('promo_code', None)
+                discount = 0
+                applied_code = ""
 
     return render_template('cart/cart.html',
                          cart_items=result.data['items'],

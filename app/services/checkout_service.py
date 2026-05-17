@@ -20,7 +20,9 @@ class CheckoutService(BaseService):
 
     def _validate_promo(code: str, subtotal: float):
 
-        promo = GLOBAL_PROMO_CODES.get(code)
+        code_upper = code.upper()
+
+        promo = next((p for k, p in GLOBAL_PROMO_CODES.items() if k.upper() == code_upper), None)
 
         if not promo:
 
