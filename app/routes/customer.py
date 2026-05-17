@@ -481,7 +481,12 @@ def api_checkout_validate():
         voucher_code=data.get('voucher_code'),
     )
     if result.success:
-        return jsonify({'status': 'success', 'totals': result.data})
+        totals = {
+            k: v
+            for k, v in result.data.items()
+            if k != 'items'
+        }
+        return jsonify({'status': 'success', 'totals': totals})
     return jsonify({'status': 'error', 'message': result.error}), 400
 
 
