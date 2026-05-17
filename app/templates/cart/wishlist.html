@@ -40,7 +40,7 @@
       {% else %}
       <img src="https://via.placeholder.com/80x80?text=Food" alt="" style="width:100%;height:100%;object-fit:cover">
       {% endif %}
-    </section>
+    </div>
     <div class="wishlist-body">
       <h3>
         {% if mi %}
@@ -55,7 +55,7 @@
       {% if mi %}
       <p class="wishlist-price">${{ "%.2f"|format(mi.price|float) }}</p>
       {% endif %}
-    </section>
+    </div>
     <div class="wishlist-actions">
       {% if mi and mi.available_stock > 0 %}
       <form action="{{ url_for('customer.add_to_cart') }}" method="POST">
@@ -71,7 +71,7 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn-remove">Remove</button>
       </form>
-    </section>
+    </div>
   </article>
   {% endfor %}
 
@@ -83,7 +83,7 @@
     <p style="font-size:18px;font-weight:600;color:var(--text-primary)">Your wishlist is empty</p>
     <p>Save items you love and find them here later</p>
     <a href="{{ url_for('customer.menu') }}">Browse Menu</a>
-  </section>
+  </div>
   {% endif %}
-</section>
+</div>
 {% endblock %}
