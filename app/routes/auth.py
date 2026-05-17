@@ -258,15 +258,12 @@ def register():
                 'message': 'Account creation failed. Please contact support.'
             }), 500
 
-        if current_app.config.get('SKIP_FIREBASE_EMAIL_VERIFICATION'):
-            success_message = 'Account created! You can sign in now.'
-        else:
-            success_message = (
-                'Account created! Please check your email to verify your account before logging in.'
-            )
         return jsonify({
             'status':   'success',
-            'message':  success_message,
+            'message':  (
+                'Account created! Please check your email and click the verification link '
+                'before signing in.'
+            ),
             'redirect': url_for('auth.login'),
         }), 200
 

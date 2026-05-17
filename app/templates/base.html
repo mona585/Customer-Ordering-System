@@ -506,7 +506,18 @@ function toggleProfileDropdown(e) {
         }
     });
 })();
+const AURA_AUTH = {
+    isLoggedIn: {{ current_user.is_authenticated|tojson }},
+    loginUrl: {{ url_for('auth.login')|tojson }},
+};
+
+function redirectToLogin() {
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `${AURA_AUTH.loginUrl}?next=${next}`;
+}
+
 function updateCartCounter() {
+    if (!AURA_AUTH.isLoggedIn) return;
     fetch('/customer/api/cart/count')
         .then(res => res.json())
         .then(data => {
@@ -526,16 +537,39 @@ function animateCartCounter() {
     });
 }
 function addToCart(itemId, quantity = 1, specialRequests = '') {
+    if (!AURA_AUTH.isLoggedIn) {
+        redirectToLogin();
+        return;
+    }
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     fetch('/customer/api/cart/add', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
         body: JSON.stringify({item_id: itemId, quantity, special_requests: specialRequests})
     })
-    .then(res => { if (!res.ok) return res.json().then(d => { throw new Error(d.message || 'Failed'); }); return res.json(); })
+    .then(res => {
+        if (res.status === 401) {
+            redirectToLogin();
+            return null;
+        }
+        if (!res.ok) {
+            return res.json().then(d => { throw new Error(d.message || 'Failed'); });
+        }
+        return res.json();
+    })
     .then(data => {
-        if (data.success) { showToast('success', 'Added to Cart', data.message); updateCartCounter(); animateCartCounter(); }
-        else showToast('error', 'Error', data.message);
+        if (!data) return;
+        if (data.success) {
+            showToast('success', 'Added to Cart', data.message);
+            updateCartCounter();
+            animateCartCounter();
+        } else {
+            showToast('error', 'Error', data.message);
+        }
     })
     .catch(err => showToast('error', 'Error', err.message || 'Failed to add item'));
 }
@@ -555,7 +589,30 @@ function openQuickView(itemId) {
                 ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;font-size:12px;font-weight:600;color:#ff9800;"><span style="width:8px;height:8px;border-radius:50%;background:#ff9800;"></span> LOW STOCK - Only ${available} left!</div>`
                 : `<div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;font-size:12px;font-weight:600;color:#f44336;"><span style="width:8px;height:8px;border-radius:50%;background:#f44336;"></span> OUT OF STOCK</div>`;
             const imageUrl = item.image_url ? (item.image_url.startsWith('static/') ? '/' + item.image_url : item.image_url) : `https://via.placeholder.com/600x450?text=${encodeURIComponent(item.name)}`;
+            let actionHtml;
+            if (available > 0) {
+                if (AURA_AUTH.isLoggedIn) {
+                    actionHtml = '<div class="qv-qty-row"><div class="qv-qty-controls"><button type="button" class="qv-qty-btn" onclick="adjustModalQty(-1)">\u2212</button><input type="number" class="qv-modal-input" id="modalQty" value="1" min="1" max="' + available + '" inputmode="numeric"><button type="button" class="qv-qty-btn" onclick="adjustModalQty(1)">+</button></div><button type="button" class="qv-add-btn" onclick="addToCartFromModal(' + item.id + ')">Add to Cart</button></div>';
+                } else {
+                    actionHtml = '<button type="button" class="qv-add-btn" onclick="redirectToLogin()">Sign In to Add to Cart</button>';
+                }
+                actionHtml += '<div style="margin-top:12px;"><a href="/customer/product/' + item.id + '" style="color:var(--c2);font-size:13px;font-weight:600;">View Full Details &rarr;</a></div>';
+            } else {
+                actionHtml = '<button type="button" disabled style="width:100%;min-height:48px;padding:12px;background:#ccc;color:white;border:none;border-radius:8px;font-weight:700;cursor:not-allowed;">Out of Stock</button>';
+            }
+            function applyGuestQuickViewUi() {
+                if (AURA_AUTH.isLoggedIn) return;
+                const qtyRow = modalBody.querySelector('.qv-qty-row');
+                if (qtyRow) qtyRow.remove();
+                modalBody.querySelectorAll('.qv-add-btn').forEach((btn) => {
+                    if (btn.textContent.trim() === 'Add to Cart') {
+                        btn.textContent = 'Sign In to Add to Cart';
+                        btn.onclick = () => redirectToLogin();
+                    }
+                });
+            }
             modalBody.innerHTML = `<div class="qv-layout"><div class="qv-media"><img src="${imageUrl}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/600x450?text=${encodeURIComponent(item.name)}'"></div><div class="qv-panel"><h1 style="font-size:24px;font-weight:700;margin-bottom:12px;color:var(--text-primary);">${item.name}</h1><div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;color:var(--text-secondary);"><span style="color:var(--c2);font-weight:700;">★ ${item.average_rating}</span><span>(${item.review_count} reviews)</span></div><div style="margin-bottom:16px;"><span style="font-size:28px;font-weight:700;color:var(--text-primary);">$${item.price.toFixed(2)}</span></div>${stockHtml}<p style="color:var(--text-secondary);font-size:14px;line-height:1.7;margin:16px 0;">${item.description || 'Delicious food crafted with passion.'}</p><div style="display:flex;gap:12px;margin-bottom:16px;font-size:12px;color:var(--text-muted);"><span>⏱ ${item.preparation_time} min</span><span>🔥 ${item.calories || 'N/A'} kcal</span></div>${item.ingredients ? `<div style="background:var(--bg);padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px;color:var(--text-secondary);"><strong style="color:var(--text-primary);">Ingredients:</strong> ${item.ingredients}</div>` : ''}${available > 0 ? `<div class="qv-qty-row"><div class="qv-qty-controls"><button type="button" class="qv-qty-btn" onclick="adjustModalQty(-1)">−</button><input type="number" class="qv-modal-input" id="modalQty" value="1" min="1" max="${available}" inputmode="numeric"><button type="button" class="qv-qty-btn" onclick="adjustModalQty(1)">+</button></div><button type="button" class="qv-add-btn" onclick="addToCartFromModal(${item.id})">Add to Cart</button></div><div style="margin-top:12px;"><a href="/customer/product/${item.id}" style="color:var(--c2);font-size:13px;font-weight:600;">View Full Details &rarr;</a></div>` : `<button type="button" disabled style="width:100%;min-height:48px;padding:12px;background:#ccc;color:white;border:none;border-radius:8px;font-weight:700;cursor:not-allowed;">Out of Stock</button>`}</div></div>`;
+            applyGuestQuickViewUi();
         })
         .catch(() => { modalBody.innerHTML = '<div style="padding:40px;text-align:center;"><p style="color:#f44336;">Error loading product details.</p></div>'; });
 }
@@ -570,6 +627,10 @@ function adjustModalQty(delta) {
     if (newVal >= 1 && newVal <= parseInt(input.max)) input.value = newVal;
 }
 function addToCartFromModal(itemId) {
+    if (!AURA_AUTH.isLoggedIn) {
+        redirectToLogin();
+        return;
+    }
     const qty = parseInt(document.getElementById('modalQty')?.value) || 1;
     addToCart(itemId, qty);
     closeModal();

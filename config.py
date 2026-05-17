@@ -19,11 +19,14 @@ class Config:
     MAX_ORDER_AMOUNT = 10000.00
     MAX_ITEMS_PER_ORDER = 100
 
+    # Customers must verify email in Firebase before login (set SKIP_FIREBASE_EMAIL_VERIFICATION=1 to override).
+    SKIP_FIREBASE_EMAIL_VERIFICATION = os.environ.get(
+        'SKIP_FIREBASE_EMAIL_VERIFICATION', ''
+    ).lower() in ('1', 'true', 'yes')
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    # Let customers log in right after register without email verification (demo / video).
-    SKIP_FIREBASE_EMAIL_VERIFICATION = True
 
 
 class ProductionConfig(Config):
@@ -34,6 +37,7 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     WTF_CSRF_ENABLED = False
+    SKIP_FIREBASE_EMAIL_VERIFICATION = True
 
 
 config = {
