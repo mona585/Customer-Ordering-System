@@ -17,7 +17,9 @@
 .order-card{background:var(--card-bg);padding:28px;border-radius:16px;border:1px solid var(--cb);margin-bottom:20px;transition:all 0.3s ease;position:relative;overflow:hidden}
 .order-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
 .order-card.cancelled{opacity:0.6;background:#fafafa}
+[data-theme="dark"] .order-card.cancelled{background:#252525}
 .order-card.cancelled .order-status{background:#ffebee !important;color:#c62828 !important}
+[data-theme="dark"] .order-card.cancelled .order-status{background:rgba(229, 57, 53, 0.15) !important;color:#ef5350 !important}
 
 .order-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px}
 .order-id-section{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
