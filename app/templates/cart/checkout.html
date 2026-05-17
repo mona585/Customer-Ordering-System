@@ -478,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('final-phone').value = countryCode + digits;
   });
   {% if prefill_promo or prefill_voucher %}
-  recalcCheckout();
+  recalcCheckout(false);
   {% endif %}
 });
 </script>

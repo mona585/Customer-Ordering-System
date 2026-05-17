@@ -39,7 +39,7 @@ REFERRAL_REWARDS = {
 }
 
 GLOBAL_PROMO_CODES = {
-    "SAVE10": {
+    "Gharoba": {
         "discount_percent": 10,
         "min_order": 0,
         "expires_at": datetime(2026, 12, 31, 23, 59, 59),

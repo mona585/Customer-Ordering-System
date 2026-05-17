@@ -263,7 +263,7 @@ button,.nav-icon-btn,.theme-toggle,.profile-btn,input[type="button"],input[type=
     {% if current_user.is_authenticated %}
     <a href="{{ url_for('notifications.list_page') }}" class="nav-icon-btn" title="Notifications" id="notifBell">
       <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-      <span class="cart-counter" id="notifCounter">0</span>
+      <span class="cart-counter notif-counter" id="notifCounter">0</span>
     </a>
     <a href="{{ url_for('customer.wishlist') }}" class="nav-icon-btn wishlist-btn {% if request.endpoint == 'customer.wishlist' %}active{% endif %}" title="My Wishlist">
       <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -276,7 +276,7 @@ button,.nav-icon-btn,.theme-toggle,.profile-btn,input[type="button"],input[type=
     <a href="{{ url_for('auth.login') }}" class="nav-icon-btn cart-icon-wrap" title="Cart">
     {% endif %}
       <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-      <span class="cart-counter" id="cartCounter">0</span>
+      <span class="cart-counter" id="cartCounter" data-cart-badge>0</span>
     </a>
 
     <button class="nav-icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
@@ -372,7 +372,7 @@ button,.nav-icon-btn,.theme-toggle,.profile-btn,input[type="button"],input[type=
     <a href="{{ url_for('auth.login') }}" style="position:relative;">
     {% endif %}
         <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-        <span class="cart-counter" id="cartCounterMobile">0</span>
+        <span class="cart-counter" id="cartCounterMobile" data-cart-badge>0</span>
         Cart
     </a>
     {% if current_user.is_authenticated %}
@@ -473,15 +473,16 @@ function updateCartCounter() {
     fetch('/customer/api/cart/count')
         .then(res => res.json())
         .then(data => {
-            document.querySelectorAll('.cart-counter').forEach(counter => {
-                counter.textContent = data.count;
-                counter.classList.toggle('show', data.count > 0);
+            const count = data.count || 0;
+            document.querySelectorAll('[data-cart-badge]').forEach(counter => {
+                counter.textContent = count;
+                counter.classList.toggle('show', count > 0);
             });
         })
         .catch(err => console.error('Error fetching cart count:', err));
 }
 function animateCartCounter() {
-    document.querySelectorAll('.cart-counter').forEach(counter => {
+    document.querySelectorAll('[data-cart-badge]').forEach(counter => {
         counter.classList.remove('bounce');
         void counter.offsetWidth;
         counter.classList.add('bounce');
