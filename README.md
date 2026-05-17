@@ -22,7 +22,7 @@
 - [API overview](#api-overview)
 - [Known limitations](#known-limitations)
 - [Related docs](#related-docs)
-- [License](#license)
+  
 
 ---
 
