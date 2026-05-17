@@ -121,25 +121,11 @@
     }
 })();
 
-function bindPwdToggle(btnId, inputId) {
-    const btn = document.getElementById(btnId);
-    const inp = document.getElementById(inputId);
-    if (!btn || !inp) return;
-    btn.addEventListener('click', function () {
-        const isHide = inp.type === 'password';
-        inp.type = isHide ? 'text' : 'password';
-        this.textContent = isHide ? '🙈' : '👁';
-    });
-}
-bindPwdToggle('toggleRegPwd', 'regPassword');
-bindPwdToggle('toggleRegPwdConfirm', 'regPasswordConfirm');
-
-AuraPasswordPolicy.bindPasswordChecker({
-    passwordSelector: '#regPassword',
-    confirmSelector: '#regPasswordConfirm',
-    checklistSelector: '#pwdRules',
-    usernameSelector: '#regUsername',
-    emailSelector: '#regEmail',
+document.getElementById('toggleRegPwd').addEventListener('click', function () {
+    const pwd    = document.getElementById('regPassword');
+    const isHide = pwd.type === 'password';
+    pwd.type     = isHide ? 'text' : 'password';
+    this.textContent = isHide ? '⊘' : '👁';
 });
 
 document.getElementById('regForm').addEventListener('submit', async function (e) {

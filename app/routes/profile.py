@@ -92,13 +92,8 @@ def update_profile():
         except ValueError:
             return jsonify({"status": "error", "message": "Invalid date format. Use YYYY-MM-DD."}), 400
     if password:
-        pwd_error = validate_password_strength(
-            password, username=username, email=email
-        )
-        if pwd_error:
-            return jsonify({"status": "error", "message": pwd_error}), 400
-        if password != password_confirm:
-            return jsonify({"status": "error", "message": "Passwords do not match."}), 400
+        if len(password) < 8:
+            return jsonify({"status": "error", "message": "Password must be at least 8 characters."}), 400
         updates["password_hash"] = generate_password_hash(password)
 
     try:
