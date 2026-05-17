@@ -14,6 +14,8 @@
     "aura", "aura123", "customer", "test1234", "changeme",
   ]);
 
+  const MIN_SEQUENCE_RUN = 6;
+
   const SEQUENCES = [
     "0123456789", "9876543210",
     "abcdefghijklmnopqrstuvwxyz", "zyxwvutsrqponmlkjihgfedcba",
@@ -21,9 +23,10 @@
   ];
 
   function hasSequence(lower) {
+    const n = MIN_SEQUENCE_RUN;
     for (const seq of SEQUENCES) {
-      for (let i = 0; i < seq.length - 3; i++) {
-        if (lower.includes(seq.slice(i, i + 4))) return true;
+      for (let i = 0; i <= seq.length - n; i++) {
+        if (lower.includes(seq.slice(i, i + n))) return true;
       }
     }
     return false;
@@ -73,7 +76,10 @@
       return { ok: false, message: "Avoid four or more identical characters in a row." };
     }
     if (!r.notSeq) {
-      return { ok: false, message: "Avoid simple sequences (e.g. 1234 or abcd)." };
+      return {
+        ok: false,
+        message: `Avoid ${MIN_SEQUENCE_RUN}+ characters in a row from a simple sequence (e.g. 123456 or qwerty).`,
+      };
     }
     if (!r.notPersonal) {
       return { ok: false, message: "Password cannot include your username or email." };

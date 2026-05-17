@@ -22,6 +22,8 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    # Let customers log in right after register without email verification (demo / video).
+    SKIP_FIREBASE_EMAIL_VERIFICATION = True
 
 
 class ProductionConfig(Config):

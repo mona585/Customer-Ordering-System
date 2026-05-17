@@ -36,7 +36,6 @@
         </div>
       </div>
 
-      {# ── Status filter tabs ── #}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
         <a href="{{ url_for('delivery.dashboard') }}"
            class="admin-btn {% if not current_status %}admin-btn-primary{% else %}admin-btn-outline{% endif %} admin-btn-sm">
@@ -50,7 +49,6 @@
         {% endfor %}
       </div>
 
-      {# ── Orders table ── #}
       <div class="admin-table-wrap">
         <table class="admin-table">
           <thead>
@@ -107,7 +105,11 @@
             {% else %}
             <tr>
               <td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px;">
-                No orders found{% if current_status %} for this status{% endif %}.
+                <p>No orders in the delivery queue{% if current_status %} for this filter{% endif %}.</p>
+                <p style="font-size:13px;margin-top:12px;max-width:480px;margin-left:auto;margin-right:auto;">
+                  New customer orders start as <strong>Confirmed</strong>. In the admin
+                  <strong>Orders</strong> panel, move an order to <strong>Ready</strong> before it appears here.
+                </p>
               </td>
             </tr>
             {% endfor %}
@@ -115,7 +117,7 @@
         </table>
       </div>
 
-    </div>{# end admin-main #}
-  </div>{# end admin-layout #}
-</div>{# end admin-shell #}
+    </div>
+  </div>
+</div>
 {% endblock %}

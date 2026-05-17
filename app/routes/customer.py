@@ -510,7 +510,20 @@ def api_checkout_validate():
 def orders():
     """Display order history"""
     result = OrderService.get_user_orders(current_user.id)
-    return render_template('orders/orders_list.html', orders=result.data['all'])
+    if not result.success or not result.data:
+        flash(result.error or 'Could not load your orders.', 'warning')
+        return render_template(
+            'orders/orders_list.html',
+            orders=[],
+            active_orders=[],
+            cancelled_orders=[],
+        )
+    return render_template(
+        'orders/orders_list.html',
+        orders=result.data.get('all', []),
+        active_orders=result.data.get('active', []),
+        cancelled_orders=result.data.get('cancelled', []),
+    )
 
 
 @customer_bp.route('/order/cancel/<int:order_id>', methods=['POST'])

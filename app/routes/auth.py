@@ -62,12 +62,28 @@ def _firebase_register(email, password):
     if not api_key:
         return None, None, 'Firebase not configured.'
     signup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}"
-    resp = requests.post(signup_url, json={
-        "email": email,
-        "password": password,
-        "returnSecureToken": True
-    })
-    data = resp.json()
+    verify_ssl = False  # Windows Store Python SSL; see _firebase_login
+    try:
+        resp = requests.post(
+            signup_url,
+            json={
+                "email": email,
+                "password": password,
+                "returnSecureToken": True,
+            },
+            verify=verify_ssl,
+            timeout=30,
+        )
+        data = resp.json()
+    except requests.exceptions.SSLError:
+        current_app.logger.exception('[register] Firebase SSL error during sign-up')
+        return None, None, 'Registration is temporarily unavailable. Please try again in a moment.'
+    except requests.exceptions.RequestException:
+        current_app.logger.exception('[register] Firebase network error during sign-up')
+        return None, None, 'Could not reach the registration service. Check your connection and try again.'
+    except ValueError:
+        current_app.logger.exception('[register] Firebase returned invalid JSON during sign-up')
+        return None, None, 'Registration failed. Please try again.'
 
     if 'error' in data:
         msg = data['error'].get('message', 'Registration failed.')
@@ -81,10 +97,15 @@ def _firebase_register(email, password):
     firebase_uid = data['localId']
 
     verify_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={api_key}"
-    requests.post(verify_url, json={
-        "requestType": "VERIFY_EMAIL",
-        "idToken": id_token
-    })
+    try:
+        requests.post(
+            verify_url,
+            json={"requestType": "VERIFY_EMAIL", "idToken": id_token},
+            verify=verify_ssl,
+            timeout=30,
+        )
+    except requests.exceptions.RequestException:
+        current_app.logger.warning('[register] Could not send verification email for %s', email)
 
     return id_token, firebase_uid, None
 
@@ -220,8 +241,13 @@ def register():
                     return jsonify({'status': 'error', 'message': 'Invalid date of birth. Use YYYY-MM-DD.'}), 400
             UserRepository.create(new_user)
             RoleRepository.attach_role_to_user(new_user, ROLE_CUSTOMER)
-            from app.services.user_onboarding_service import UserOnboardingService
-            UserOnboardingService.setup_new_customer(new_user, referral_code or None)
+            try:
+                from app.services.user_onboarding_service import UserOnboardingService
+                UserOnboardingService.setup_new_customer(new_user, referral_code or None)
+            except Exception as onboarding_err:
+                current_app.logger.warning(
+                    "[register] Onboarding partial failure for %s: %s", email, onboarding_err
+                )
         except Exception as e:
             # Firebase account was created but SQLite failed — log it
             current_app.logger.error(
@@ -232,9 +258,15 @@ def register():
                 'message': 'Account creation failed. Please contact support.'
             }), 500
 
+        if current_app.config.get('SKIP_FIREBASE_EMAIL_VERIFICATION'):
+            success_message = 'Account created! You can sign in now.'
+        else:
+            success_message = (
+                'Account created! Please check your email to verify your account before logging in.'
+            )
         return jsonify({
             'status':   'success',
-            'message':  'Account created! Please check your email to verify your account before logging in.',
+            'message':  success_message,
             'redirect': url_for('auth.login'),
         }), 200
 
@@ -292,7 +324,8 @@ def login():
             status = 503 if 'unavailable' in firebase_error.lower() or 'connection' in firebase_error.lower() else 401
             return jsonify({'status': 'error', 'message': firebase_error}), status
 
-        if not email_verified:
+        skip_verify = current_app.config.get('SKIP_FIREBASE_EMAIL_VERIFICATION', False)
+        if not email_verified and not skip_verify:
             return jsonify({
                 'status': 'error',
                 'message': 'Please verify your email before logging in. Check your inbox.',

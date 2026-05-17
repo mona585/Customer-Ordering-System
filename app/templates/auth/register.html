@@ -194,13 +194,21 @@ document.getElementById('regForm').addEventListener('submit', async function (e)
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         });
 
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch {
+            msgHandler.innerHTML = `<div class="msg-banner error">Unexpected server response. Please try again.</div>`;
+            btn.disabled    = false;
+            btn.textContent = 'Create Account';
+            return;
+        }
 
         if (response.ok) {
             msgHandler.innerHTML = `<div class="msg-banner success">${data.message}</div>`;
             setTimeout(() => { window.location.href = data.redirect; }, 1500);
         } else {
-            msgHandler.innerHTML = `<div class="msg-banner error">${data.message}</div>`;
+            msgHandler.innerHTML = `<div class="msg-banner error">${data.message || 'Registration failed.'}</div>`;
             btn.disabled    = false;
             btn.textContent = 'Create Account';
         }

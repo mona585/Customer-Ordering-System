@@ -43,6 +43,9 @@ _COMMON_PASSWORDS = frozenset({
     "changeme",
 })
 
+# Consecutive run length from these alphabets before rejecting (e.g. 123456, qwerty).
+_MIN_SEQUENCE_RUN = 6
+
 _SEQUENCES = (
     "0123456789",
     "9876543210",
@@ -94,7 +97,10 @@ def validate_password_strength(
         return "Password cannot contain four or more identical characters in a row."
 
     if _contains_simple_sequence(lowered):
-        return "Password cannot be a simple keyboard or numeric sequence."
+        return (
+            f"Password cannot contain {_MIN_SEQUENCE_RUN} or more characters "
+            "in a row from a simple sequence (e.g. 123456 or qwerty)."
+        )
 
     uname = (username or "").strip().lower()
     if len(uname) >= 3 and uname in lowered:
@@ -109,8 +115,9 @@ def validate_password_strength(
 
 
 def _contains_simple_sequence(lower_password: str) -> bool:
+    n = _MIN_SEQUENCE_RUN
     for seq in _SEQUENCES:
-        for i in range(len(seq) - 3):
-            if seq[i : i + 4] in lower_password:
+        for i in range(len(seq) - n + 1):
+            if seq[i : i + n] in lower_password:
                 return True
     return False

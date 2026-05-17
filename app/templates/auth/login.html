@@ -70,13 +70,21 @@ document.getElementById('loginForm').addEventListener('submit', async function (
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         });
 
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch {
+            msgHandler.innerHTML = `<div class="msg-banner error">Unexpected server response. Please try again.</div>`;
+            btn.disabled    = false;
+            btn.textContent = 'Sign In';
+            return;
+        }
 
         if (response.ok) {
             msgHandler.innerHTML = `<div class="msg-banner success">${data.message}</div>`;
             setTimeout(() => { window.location.href = data.redirect; }, 1000);
         } else {
-            msgHandler.innerHTML = `<div class="msg-banner error">${data.message}</div>`;
+            msgHandler.innerHTML = `<div class="msg-banner error">${data.message || 'Sign in failed.'}</div>`;
             document.getElementById('password').value = '';
             btn.disabled    = false;
             btn.textContent = 'Sign In';

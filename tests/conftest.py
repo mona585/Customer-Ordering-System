@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 def app():
     application = create_app("testing")
     application.config["FIREBASE_WEB_API_KEY"] = "test-key-not-used-in-unit-tests"
+    application.config["SKIP_FIREBASE_EMAIL_VERIFICATION"] = True
     with application.app_context():
         db.create_all()
         yield application

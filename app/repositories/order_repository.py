@@ -59,8 +59,14 @@ class OrderRepository:
 
     @staticmethod
     def get_by_customer(customer_id):
-        return Order.query.filter_by(customer_id=customer_id)\
-                         .order_by(Order.created_at.desc()).all()
+        return (
+            Order.query.options(
+                selectinload(Order.items).joinedload(OrderItem.menu_item),
+            )
+            .filter_by(customer_id=customer_id)
+            .order_by(Order.created_at.desc())
+            .all()
+        )
 
     @staticmethod
     def create(order):

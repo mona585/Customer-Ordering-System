@@ -37,7 +37,7 @@ def order_tracking(order_id):
             start = OrderService.demo_start(order_id, current_user.id)
             if not start.success:
                 flash(start.error, "danger")
-                return redirect(url_for("order.my_orders"))
+                return redirect(url_for("customer.orders"))
 
     result = OrderService.get_tracking_info(order_id, current_user.id)
 
@@ -46,7 +46,7 @@ def order_tracking(order_id):
             flash('Access denied', 'danger')
         else:
             flash(result.error, 'danger')
-        return redirect(url_for('order.my_orders'))
+        return redirect(url_for('customer.orders'))
 
     return render_template(
         "orders/order_tracking.html",
@@ -83,12 +83,8 @@ def api_order_advance(order_id):
         done=result.data.get("done", False),
     )
 
-# --- New Route for Order History ---
 @order_bp.route("/my-orders")
 @login_required
 def my_orders():
-    # Retrieve orders from the current_user object and sort them by date (Newest First)
-    user_orders = current_user.orders if current_user.orders else []
-    orders = sorted(user_orders, key=lambda x: x.created_at, reverse=True)    
-    # Render the history template and pass the orders list
-    return render_template("orders/my_orders.html", orders=orders)
+    """Legacy URL — orders list lives under customer blueprint."""
+    return redirect(url_for("customer.orders"))

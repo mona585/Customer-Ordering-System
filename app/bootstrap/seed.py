@@ -21,3 +21,14 @@ def ensure_startup_seed(config_name: str = "development") -> None:
         logger.info("[seed] Dev accounts ensured (config=%s)", config_name)
     except Exception as e:
         logger.warning("[seed] ensure_dev_accounts failed: %s", e)
+
+    if config_name == "development":
+        try:
+            from app.models.menu_item import MenuItem
+            from app.utils.seed_data import seed_menu_items
+
+            if MenuItem.query.count() == 0:
+                seed_menu_items()
+                logger.info("[seed] Menu items seeded (empty catalog)")
+        except Exception as e:
+            logger.warning("[seed] menu seed failed: %s", e)
