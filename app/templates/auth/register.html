@@ -50,6 +50,7 @@
                 <label>PASSWORD</label>
                 <div class="field-wrap">
                     <input type="password" name="password" id="regPassword" class="auth-input" required minlength="8" maxlength="128" autocomplete="new-password" aria-describedby="pwdRules">
+                    <button type="button" class="eye-btn" id="toggleRegPwd" aria-label="Show password">👁</button>
                 </div>
                 <ul class="pwd-checklist" id="pwdRules" aria-live="polite">
                     <li data-rule="length">8–128 characters, no spaces</li>
@@ -65,6 +66,7 @@
                 <label>CONFIRM PASSWORD</label>
                 <div class="field-wrap">
                     <input type="password" name="password_confirm" id="regPasswordConfirm" class="auth-input" required minlength="8" maxlength="128" autocomplete="new-password">
+                    <button type="button" class="eye-btn" id="toggleRegPwdConfirm" aria-label="Show confirm password">👁</button>
                 </div>
             </div>
 
@@ -118,6 +120,22 @@
         dob.setAttribute('max', today);
     }
 })();
+
+// Toggle Main Password Visibility
+document.getElementById('toggleRegPwd').addEventListener('click', function () {
+    const pwd = document.getElementById('regPassword');
+    const isHide = pwd.type === 'password';
+    pwd.type = isHide ? 'text' : 'password';
+    this.textContent = isHide ? '⊘' : '👁';
+});
+
+// Toggle Confirm Password Visibility (Fixed ID mapping)
+document.getElementById('toggleRegPwdConfirm').addEventListener('click', function () {
+    const pwdConfirm = document.getElementById('regPasswordConfirm');
+    const isHide = pwdConfirm.type === 'password';
+    pwdConfirm.type = isHide ? 'text' : 'password';
+    this.textContent = isHide ? '⊘' : '👁';
+});
 
 document.getElementById('regForm').addEventListener('submit', async function (e) {
     e.preventDefault();
