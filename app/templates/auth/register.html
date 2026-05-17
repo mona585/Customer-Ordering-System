@@ -50,7 +50,6 @@
                 <label>PASSWORD</label>
                 <div class="field-wrap">
                     <input type="password" name="password" id="regPassword" class="auth-input" required minlength="8" maxlength="128" autocomplete="new-password" aria-describedby="pwdRules">
-                    <button type="button" class="eye-btn" id="toggleRegPwd" aria-label="Show password">👁</button>
                 </div>
                 <ul class="pwd-checklist" id="pwdRules" aria-live="polite">
                     <li data-rule="length">8–128 characters, no spaces</li>
@@ -66,7 +65,6 @@
                 <label>CONFIRM PASSWORD</label>
                 <div class="field-wrap">
                     <input type="password" name="password_confirm" id="regPasswordConfirm" class="auth-input" required minlength="8" maxlength="128" autocomplete="new-password">
-                    <button type="button" class="eye-btn" id="toggleRegPwdConfirm" aria-label="Show confirm password">👁</button>
                 </div>
             </div>
 
@@ -122,10 +120,17 @@
 })();
 
 document.getElementById('toggleRegPwd').addEventListener('click', function () {
-    const pwd    = document.getElementById('regPassword');
-    const isHide = pwd.type === 'password';
-    pwd.type     = isHide ? 'text' : 'password';
-    this.textContent = isHide ? '⊘' : '👁';
+    const pwd = document.getElementById('regPassword');
+
+    pwd.type = pwd.type === 'password' ? 'text' : 'password';
+   // this.textContent = pwd.type === 'password' ? '👁' : '⊘';
+});
+
+document.getElementById('toggleConfirmPwd').addEventListener('click', function () {
+    const pwd = document.getElementById('regPasswordConfirm');
+
+    pwd.type = pwd.type === 'password' ? 'text' : 'password';
+   // this.textContent = pwd.type === 'password' ? '👁' : '⊘';
 });
 
 document.getElementById('regForm').addEventListener('submit', async function (e) {
@@ -144,19 +149,24 @@ document.getElementById('regForm').addEventListener('submit', async function (e)
         msgHandler.innerHTML = `<div class="msg-banner error">Username, email, and password are required.</div>`;
         return;
     }
+
     if (username.length < 3) {
         msgHandler.innerHTML = `<div class="msg-banner error">Username must be at least 3 characters.</div>`;
         return;
     }
+
     const pwdCheck = AuraPasswordPolicy.validatePassword(password, username, email);
+
     if (!pwdCheck.ok) {
         msgHandler.innerHTML = `<div class="msg-banner error">${pwdCheck.message}</div>`;
         return;
     }
+
     if (password !== passwordConfirm) {
         msgHandler.innerHTML = `<div class="msg-banner error">Passwords do not match.</div>`;
         return;
     }
+});
 
     const countryCode     = document.getElementById('country-code').value;
     const rawPhone        = document.getElementById('raw-phone').value.trim();
@@ -214,6 +224,6 @@ document.getElementById('regForm').addEventListener('submit', async function (e)
         btn.disabled    = false;
         btn.textContent = 'Create Account';
     }
-});
+
 </script>
 {% endblock %}
