@@ -294,21 +294,22 @@
 
 @media (max-width: 768px) {
     .profile-container {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
         margin: 16px auto 0;
         padding: 0 12px calc(88px + env(safe-area-inset-bottom, 0px));
         gap: 16px;
     }
     .profile-sidebar, .profile-main { border-radius: 18px; padding: 18px; }
     .profile-nav {
-        display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 8px;
-        margin: 0 -4px; padding-bottom: 4px;
-        -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
-    .profile-nav::-webkit-scrollbar { display: none; }
     .nav-btn {
-        flex: 0 0 auto; width: auto; white-space: nowrap;
-        padding: 10px 14px; font-size: 13px; min-height: 44px;
+        width: 100%;
+        white-space: normal;
+        padding: 12px 14px; font-size: 14px; min-height: 44px;
     }
     .section-header { flex-wrap: wrap; gap: 10px; }
     .info-grid { grid-template-columns: 1fr; }
