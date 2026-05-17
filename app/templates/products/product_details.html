@@ -39,7 +39,10 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
 
 .quantity{margin-bottom:24px}
 .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
-.qty-input{width:80px;padding:10px;border:1.5px solid var(--cb);border-radius:6px;font-size:14px;text-align:center}
+.qty-input{width:80px;padding:10px;border:1.5px solid var(--cb);border-radius:6px;font-size:14px;text-align:center;background:var(--card-bg);color:var(--text-primary)}
+.qty-step-btn{width:32px;height:32px;border:1.5px solid var(--cb);background:var(--card-bg);border-radius:6px;cursor:pointer;font-size:16px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;justify-content:center}
+[data-theme="dark"] .qty-step-btn{background:#2a2a2a;color:#fff;border-color:#444}
+[data-theme="dark"] .qty-step-btn:hover{background:var(--c2);border-color:var(--c2)}
 
 .stock-limit{color:#f44336;font-size:12px;margin-top:6px}
 
@@ -239,9 +242,9 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
         <div class="quantity">
           <div class="label">Quantity</div>
           <div style="display:flex;align-items:center;gap:8px;">
-              <button type="button" onclick="adjustDetailQty(-1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;">-</button>
+              <button type="button" class="qty-step-btn" onclick="adjustDetailQty(-1)">-</button>
               <input type="number" name="quantity" id="detailQty" class="qty-input" value="1" min="1" max="{{ available }}" required>
-              <button type="button" onclick="adjustDetailQty(1)" style="width:32px;height:32px;border:1.5px solid var(--cb);background:none;border-radius:6px;cursor:pointer;font-size:16px;">+</button>
+              <button type="button" class="qty-step-btn" onclick="adjustDetailQty(1)">+</button>
           </div>
           <div class="stock-limit">Max: {{ available }} items</div>
         </div>
@@ -379,9 +382,9 @@ h1{font-size:24px;font-weight:700;margin-bottom:12px}
     </div>
     {% endif %}
   {% else %}
-    <div style="background:#fff3e0;padding:16px;border-radius:var(--r);margin-bottom:24px;">
-      <a href="{{ url_for('auth.login') }}" style="color:var(--c1);font-weight:600;">Login</a> to write a review
-    </div>
+    <div class="product-details-alert" style="background:#fff3e0;padding:16px;border-radius:var(--r);margin-bottom:24px;">
+      <a href="{{ url_for('auth.login') }}" style="color:var(--text-primary);font-weight:600;">Login</a> to write a review
+    </section>
   {% endif %}
 
   {% if item.reviews %}

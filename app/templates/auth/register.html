@@ -17,6 +17,12 @@
     .msg-banner.error   { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
     .msg-banner.success { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
     .hint           { font-size:11px; color:var(--cl); margin-top:4px; }
+    .pwd-checklist  { list-style:none; margin:10px 0 0; padding:0; font-size:11px; }
+    .pwd-checklist li { padding:3px 0; color:var(--cl); }
+    .pwd-checklist li::before { content:'○ '; opacity:.6; }
+    .pwd-checklist li.pwd-ok { color:#15803d; }
+    .pwd-checklist li.pwd-ok::before { content:'✓ '; }
+    .pwd-checklist li.pwd-bad::before { content:'○ '; }
 </style>
 {% endblock %}
 
@@ -31,22 +37,37 @@
 
             <div class="form-group">
                 <label>USERNAME</label>
-                <input type="text" name="username" class="auth-input" required autofocus minlength="3">
+                <input type="text" name="username" id="regUsername" class="auth-input" required autofocus minlength="3">
                 <p class="hint">At least 3 characters.</p>
             </div>
 
             <div class="form-group">
                 <label>EMAIL ADDRESS</label>
-                <input type="email" name="email" class="auth-input" required>
+                <input type="email" name="email" id="regEmail" class="auth-input" required>
             </div>
 
             <div class="form-group">
                 <label>PASSWORD</label>
                 <div class="field-wrap">
-                    <input type="password" name="password" id="regPassword" class="auth-input" required minlength="8">
+                    <input type="password" name="password" id="regPassword" class="auth-input" required minlength="8" maxlength="128" autocomplete="new-password" aria-describedby="pwdRules">
                     <button type="button" class="eye-btn" id="toggleRegPwd" aria-label="Show password">👁</button>
                 </div>
-                <p class="hint">At least 8 characters.</p>
+                <ul class="pwd-checklist" id="pwdRules" aria-live="polite">
+                    <li data-rule="length">8–128 characters, no spaces</li>
+                    <li data-rule="upper">One uppercase letter</li>
+                    <li data-rule="lower">One lowercase letter</li>
+                    <li data-rule="digit">One number</li>
+                    <li data-rule="special">One special character (!@#$…)</li>
+                    <li data-rule="match">Passwords match</li>
+                </ul>
+            </div>
+
+            <div class="form-group">
+                <label>CONFIRM PASSWORD</label>
+                <div class="field-wrap">
+                    <input type="password" name="password_confirm" id="regPasswordConfirm" class="auth-input" required minlength="8" maxlength="128" autocomplete="new-password">
+                    <button type="button" class="eye-btn" id="toggleRegPwdConfirm" aria-label="Show confirm password">👁</button>
+                </div>
             </div>
 
             <div class="form-group">
@@ -59,16 +80,26 @@
                         <option value="+966">🇸🇦 +966</option>
                         <option value="+971">🇦🇪 +971</option>
                     </select>
-                    
                     <input type="tel" id="raw-phone" class="auth-input" placeholder="1012345678" style="flex: 1;">
-                    
                     <input type="hidden" name="phone" id="final-phone">
                 </div>
             </div>
 
             <div class="form-group">
+                <label>DATE OF BIRTH <span style="font-weight:400">(optional)</span></label>
+                <input type="date" name="date_of_birth" id="date_of_birth" class="auth-input">
+                <p class="hint">Used for birthday rewards and promotions.</p>
+            </div>
+
+            <div class="form-group">
                 <label>DELIVERY ADDRESS <span style="font-weight:400">(optional)</span></label>
                 <textarea name="address" class="auth-input" style="height:60px; resize:vertical;"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>REFERRAL CODE <span style="font-weight:400">(optional)</span></label>
+                <input type="text" name="referral_code" class="auth-input" placeholder="e.g. AURA-1020" autocomplete="off">
+                <p class="hint">Have a friend's code? Enter it to link your accounts.</p>
             </div>
 
             <button type="submit" class="auth-btn" id="submitBtn">Create Account</button>
@@ -80,12 +111,35 @@
     </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/password_policy.js') }}"></script>
 <script>
-document.getElementById('toggleRegPwd').addEventListener('click', function () {
-    const pwd    = document.getElementById('regPassword');
-    const isHide = pwd.type === 'password';
-    pwd.type     = isHide ? 'text' : 'password';
-    this.textContent = isHide ? '🙈' : '👁';
+(function () {
+    const dob = document.getElementById('date_of_birth');
+    if (dob) {
+        const today = new Date().toISOString().split('T')[0];
+        dob.setAttribute('max', today);
+    }
+})();
+
+function bindPwdToggle(btnId, inputId) {
+    const btn = document.getElementById(btnId);
+    const inp = document.getElementById(inputId);
+    if (!btn || !inp) return;
+    btn.addEventListener('click', function () {
+        const isHide = inp.type === 'password';
+        inp.type = isHide ? 'text' : 'password';
+        this.textContent = isHide ? '🙈' : '👁';
+    });
+}
+bindPwdToggle('toggleRegPwd', 'regPassword');
+bindPwdToggle('toggleRegPwdConfirm', 'regPasswordConfirm');
+
+AuraPasswordPolicy.bindPasswordChecker({
+    passwordSelector: '#regPassword',
+    confirmSelector: '#regPasswordConfirm',
+    checklistSelector: '#pwdRules',
+    usernameSelector: '#regUsername',
+    emailSelector: '#regEmail',
 });
 
 document.getElementById('regForm').addEventListener('submit', async function (e) {
@@ -95,10 +149,10 @@ document.getElementById('regForm').addEventListener('submit', async function (e)
     const btn        = document.getElementById('submitBtn');
     const formData   = new FormData(this);
 
-    // Client-side validation before hitting the server
-    const username = formData.get('username').trim();
-    const email    = formData.get('email').trim();
-    const password = formData.get('password');
+    const username = (formData.get('username') || '').trim();
+    const email    = (formData.get('email') || '').trim();
+    const password = formData.get('password') || '';
+    const passwordConfirm = formData.get('password_confirm') || '';
 
     if (!username || !email || !password) {
         msgHandler.innerHTML = `<div class="msg-banner error">Username, email, and password are required.</div>`;
@@ -108,42 +162,42 @@ document.getElementById('regForm').addEventListener('submit', async function (e)
         msgHandler.innerHTML = `<div class="msg-banner error">Username must be at least 3 characters.</div>`;
         return;
     }
-    if (password.length < 8) {
-        msgHandler.innerHTML = `<div class="msg-banner error">Password must be at least 8 characters.</div>`;
+    const pwdCheck = AuraPasswordPolicy.validatePassword(password, username, email);
+    if (!pwdCheck.ok) {
+        msgHandler.innerHTML = `<div class="msg-banner error">${pwdCheck.message}</div>`;
         return;
     }
-// 2. --- PHONE VALIDATION ---
+    if (password !== passwordConfirm) {
+        msgHandler.innerHTML = `<div class="msg-banner error">Passwords do not match.</div>`;
+        return;
+    }
+
     const countryCode     = document.getElementById('country-code').value;
     const rawPhone        = document.getElementById('raw-phone').value.trim();
     const finalPhoneInput = document.getElementById('final-phone');
 
     if (rawPhone) {
-        let digits = rawPhone.replace(/\D/g, ''); 
+        let digits = rawPhone.replace(/\D/g, '');
 
         if (countryCode === '+20') {
             if (digits.startsWith('0')) digits = digits.substring(1);
-            
             const egyptRegex = /^1[0125][0-9]{8}$/;
             if (!egyptRegex.test(digits)) {
                 msgHandler.innerHTML = `<div class="msg-banner error">Invalid Egyptian number. Try dropping the leading 0 (e.g., 1012345678).</div>`;
                 return;
             }
-        } 
-        else if (countryCode === '+1') {
+        } else if (countryCode === '+1') {
             if (digits.length !== 10) {
                 msgHandler.innerHTML = `<div class="msg-banner error">US/CA numbers must be exactly 10 digits.</div>`;
                 return;
             }
-        }
-        else {
-            if (digits.length < 7 || digits.length > 15) {
-                msgHandler.innerHTML = `<div class="msg-banner error">Invalid phone length for this region.</div>`;
-                return;
-            }
+        } else if (digits.length < 7 || digits.length > 15) {
+            msgHandler.innerHTML = `<div class="msg-banner error">Invalid phone length for this region.</div>`;
+            return;
         }
 
         finalPhoneInput.value = countryCode + digits;
-        formData.set('phone', finalPhoneInput.value); 
+        formData.set('phone', finalPhoneInput.value);
     } else {
         finalPhoneInput.value = '';
         formData.set('phone', '');

@@ -10,6 +10,11 @@ from .payment import Payment, PaymentStatus, PaymentMethod
 from .review import Review
 from .wishlist import Wishlist
 from .order_status_history import OrderStatusHistory
+from .address import UserAddress
+from .saved_card import SavedCard
+from .voucher import UserVoucher
+from .referral import Referral
+from .notification import Notification
 
 # List all models for Flask-Migrate
 __all__ = [
@@ -22,5 +27,10 @@ __all__ = [
     'Payment', 'PaymentStatus', 'PaymentMethod',
     'Review',
     'Wishlist',
-    'OrderStatusHistory'
+    'OrderStatusHistory',
+    'UserAddress',
+    'SavedCard',
+    'UserVoucher',
+    'Referral',
+    'Notification',
 ]

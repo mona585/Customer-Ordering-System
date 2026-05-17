@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Notifications — AURA{% endblock %}
+
+{% block content %}
+<div style="max-width:720px;margin:40px auto;padding:0 20px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+    <h1 style="font-size:28px;font-weight:700">Notifications</h1>
+    <button type="button" onclick="markAllRead()" style="padding:10px 16px;border-radius:10px;border:1px solid var(--cb);background:var(--cw);cursor:pointer;font-weight:600">Mark all read</button>
+  </div>
+
+  {% if notifications %}
+  <div style="display:flex;flex-direction:column;gap:12px">
+    {% for n in notifications %}
+    <div class="notif-item" data-id="{{ n.id }}" style="padding:16px 18px;border-radius:14px;border:1px solid var(--cb);background:{% if n.is_read %}var(--cw){% else %}#f5f5ff{% endif %}">
+      <div style="display:flex;justify-content:space-between;gap:12px">
+        <strong>{{ n.title }}</strong>
+        <span style="font-size:12px;color:var(--cl)">{{ n.created_at[:16].replace('T',' ') if n.created_at else '' }}</span>
+      </div>
+      <p style="margin:8px 0 0;font-size:14px;color:var(--cg)">{{ n.message }}</p>
+      {% if not n.is_read %}
+      <button type="button" onclick="markRead({{ n.id }})" style="margin-top:10px;font-size:12px;color:var(--c2);background:none;border:none;cursor:pointer;font-weight:600">Mark as read</button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p style="text-align:center;color:var(--cl);padding:60px 0">No notifications yet.</p>
+  {% endif %}
+</div>
+
+<script>
+async function markRead(id) {
+  await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+  location.reload();
+}
+async function markAllRead() {
+  await fetch('/api/notifications/read-all', { method: 'POST' });
+  location.reload();
+}
+</script>
+{% endblock %}

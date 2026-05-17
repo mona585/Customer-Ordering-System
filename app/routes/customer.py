@@ -140,15 +140,15 @@ def cart():
         if promo_result.success:
             discount = promo_result.data['discount']
             applied_code = promo_result.data['code']
-            # حفظ في السيشين
             session['promo_discount'] = discount
             session['applied_promo'] = applied_code
+            session['promo_code'] = applied_code
             flash(promo_result.message, 'success')
         else:
             promo_error = promo_result.error
-            # مسح الخصم القديم لو الكود الجديد غلط
             session.pop('promo_discount', None)
             session.pop('applied_promo', None)
+            session.pop('promo_code', None)
             discount = 0
             applied_code = ""
 
@@ -333,40 +333,161 @@ def api_product_details(item_id):
 @login_required
 def checkout():
     """Checkout page with stock validation"""
+    from app.services.address_service import AddressService
+    from app.services.card_service import CardService
+    from app.services.checkout_service import CheckoutService
+    from app.services.voucher_service import VoucherService
+
     cart_data = session.get('cart', {})
 
-    result = OrderService.prepare_checkout(cart_data)
-    if not result.success:
-        flash(result.error, 'warning')
+    prefill_voucher = request.args.get('voucher') or session.pop('checkout_voucher', None)
+    promo_code = (
+        request.args.get('promo')
+        or session.get('promo_code')
+        or session.get('applied_promo')
+    )
+
+    pricing = CheckoutService.calculate_totals(
+        cart_data,
+        user_id=current_user.id,
+        promo_code=promo_code,
+        voucher_code=prefill_voucher,
+    )
+    if not pricing.success:
+        flash(pricing.error, 'warning')
         return redirect(url_for('customer.menu'))
 
-    cart_result = result.data
+    totals = pricing.data
 
     if request.method == 'POST':
-        address = request.form.get('delivery_address', '')
+        address_id = request.form.get('address_id', type=int)
+        address = (request.form.get('delivery_address') or '').strip()
+        save_address = request.form.get('save_address') == '1'
+
+        if address_id:
+            from app.repositories.address_repository import AddressRepository
+            addr = AddressRepository.get_by_id(address_id, current_user.id)
+            if addr:
+                address = addr.formatted()
+        elif save_address and address:
+            label = (request.form.get('new_address_label') or 'Home').strip()[:50] or 'Home'
+            created = AddressService.create_address(
+                current_user.id,
+                label=label,
+                street=address,
+                set_default=False,
+            )
+            if created.success:
+                address = created.data.get('formatted', address)
+            else:
+                flash(created.error, 'warning')
+        phone = (request.form.get('phone') or '').strip()
+        if phone:
+            from app.extensions import db
+            current_user.phone = phone
+            db.session.commit()
+
         special_instructions = request.form.get('special_instructions', '')
         payment_method = request.form.get('payment_method', 'CREDIT_CARD')
+        promo = request.form.get('promo_code', '').strip() or None
+        voucher = request.form.get('voucher_code', '').strip() or None
+        saved_card_id = request.form.get('saved_card_id', type=int)
+
+        if payment_method == 'CREDIT_CARD':
+            from app.services.card_service import CardService
+
+            if not saved_card_id:
+                new_number = request.form.get('new_card_number', '')
+                new_expiry = request.form.get('new_card_expiry', '')
+                new_cvv = request.form.get('new_card_cvv', '')
+                new_name = request.form.get('new_card_name', '')
+                if new_number and new_expiry and new_cvv:
+                    add_result = CardService.add_card(
+                        current_user.id,
+                        new_number,
+                        set_default=True,
+                        expiry_raw=new_expiry,
+                        cvv=new_cvv,
+                        cardholder_name=new_name,
+                    )
+                    if not add_result.success:
+                        flash(add_result.error, 'danger')
+                        return redirect(url_for('customer.checkout'))
+                    saved_card_id = add_result.data.get('id')
+                else:
+                    flash('Please select a saved card or enter new card details.', 'danger')
+                    return redirect(url_for('customer.checkout'))
+            else:
+                card = CardService.get_card_for_user(current_user.id, saved_card_id)
+                if not card:
+                    flash('Selected payment card is invalid. Choose another card.', 'danger')
+                    return redirect(url_for('customer.checkout'))
 
         result = OrderService.create_order(
             customer_id=current_user.id,
             cart_data=cart_data,
             delivery_address=address,
             special_instructions=special_instructions,
-            payment_method=payment_method
+            payment_method=payment_method,
+            promo_code=promo,
+            voucher_code=voucher,
+            saved_card_id=saved_card_id,
         )
 
         if result.success:
             session.pop('cart', None)
+            session.pop('promo_code', None)
+            session.pop('applied_promo', None)
+            session.pop('promo_discount', None)
+            session.pop('checkout_voucher', None)
             session.modified = True
             flash(result.message, 'success')
             return redirect(url_for('order.order_tracking', order_id=result.data['order_id']))
-        else:
-            flash(result.error, 'danger')
-            return redirect(url_for('customer.checkout'))
+        flash(result.error, 'danger')
+        return redirect(url_for('customer.checkout'))
 
-    return render_template('cart/checkout.html',
-                         items=cart_result['items'],
-                         total=cart_result['total'])
+    addresses = AddressService.list_addresses(current_user.id)
+    cards = CardService.list_cards(current_user.id)
+    vouchers = VoucherService.list_active(current_user.id)
+
+    return render_template(
+        'cart/checkout.html',
+        items=totals['items'],
+        total=totals['total'],
+        subtotal=totals['subtotal'],
+        discount=totals['discount'],
+        delivery_fee=totals['delivery_fee'],
+        tax=totals['tax'],
+        addresses=addresses.data if addresses.success else [],
+        saved_cards=cards.data if cards.success else [],
+        vouchers=vouchers.data if vouchers.success else [],
+        prefill_voucher=prefill_voucher,
+        prefill_promo=promo_code,
+    )
+
+
+@customer_bp.route('/api/checkout/validate', methods=['POST'])
+@login_required
+@csrf.exempt
+def api_checkout_validate():
+    from app.services.checkout_service import CheckoutService
+
+    cart_data = session.get('cart', {})
+    data = request.get_json(silent=True) or {}
+    result = CheckoutService.calculate_totals(
+        cart_data,
+        user_id=current_user.id,
+        promo_code=data.get('promo_code'),
+        voucher_code=data.get('voucher_code'),
+    )
+    if result.success:
+        totals = {
+            k: v
+            for k, v in result.data.items()
+            if k != 'items'
+        }
+        return jsonify({'status': 'success', 'totals': totals})
+    return jsonify({'status': 'error', 'message': result.error}), 400
 
 
 # ==================== ORDERS & REVIEWS ====================

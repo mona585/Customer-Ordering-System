@@ -291,8 +291,8 @@
       <span class="value">{{ order.payment.method.value if order.payment else 'N/A' }}</span>
     </div>
     <div class="detail-row">
-      <span class="label">Total Amount</span>
-      <span class="value">${{ "%.2f"|format(order.total_amount|float) }}</span>
+      <span class="label">Order total</span>
+      <span class="value" id="order-total-amount">${{ "%.2f"|format(order.total_amount|float) }}</span>
     </div>
   </div>
 
@@ -341,7 +341,7 @@
 
   var status = panel.dataset.status || {{ order.status.name | tojson }};
   var advanceUrl = panel.dataset.advanceUrl;
-  var nextLabels = { CONFIRMED: 'Preparation', PREPARING: 'Shipping', READY: 'Delivery' };
+  var nextLabels = { CONFIRMED: 'Preparation', PREPARING: 'Out for delivery', READY: 'Delivered' };
   var nextLabelEl = document.getElementById('demo-next-label');
   var countdownEl = document.getElementById('demo-countdown');
   var errorEl = document.getElementById('demo-error');

@@ -8,6 +8,7 @@ from app.models.user import User
 from app.repositories.role_repository import RoleRepository
 from app.repositories.user_repository import UserRepository
 from app.security.rbac import get_post_login_redirect
+from app.security.password_policy import password_requirements_hint, validate_password_strength
 import re
 import requests
 import os
@@ -31,15 +32,24 @@ def _validate_phone(phone: str) -> str | None:
     return None
 
 
-def _validate_registration(username, email, password, phone='') -> str | None:
+def _validate_registration(
+    username,
+    email,
+    password,
+    phone='',
+    password_confirm='',
+) -> str | None:
     if not username or not email or not password:
         return 'All fields are required.'
     if len(username) < 3:
         return 'Username must be at least 3 characters.'
     if '@' not in email or '.' not in email.split('@')[-1]:
         return 'Please enter a valid email address.'
-    if len(password) < 8:
-        return 'Password must be at least 8 characters.'
+    pwd_error = validate_password_strength(password, username=username, email=email)
+    if pwd_error:
+        return pwd_error
+    if password != (password_confirm or ''):
+        return 'Passwords do not match.'
     phone_error = _validate_phone(phone)
     if phone_error:
         return phone_error
@@ -63,8 +73,8 @@ def _firebase_register(email, password):
         msg = data['error'].get('message', 'Registration failed.')
         if msg == 'EMAIL_EXISTS':
             return None, None, 'Email already registered.'
-        if msg == 'WEAK_PASSWORD : Password should be at least 6 characters':
-            return None, None, 'Password must be at least 8 characters.'
+        if 'WEAK_PASSWORD' in msg:
+            return None, None, password_requirements_hint()
         return None, None, msg
 
     id_token = data['idToken']
@@ -157,10 +167,15 @@ def register():
         username = request.form.get('username', '').strip()
         email    = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
+        password_confirm = request.form.get('password_confirm', '')
         phone    = request.form.get('phone', '').strip()
         address  = request.form.get('address', '').strip()
+        referral_code = request.form.get('referral_code', '').strip()
+        dob_raw = request.form.get('date_of_birth', '').strip()
 
-        error = _validate_registration(username, email, password, phone)
+        error = _validate_registration(
+            username, email, password, phone, password_confirm
+        )
         if error:
             return jsonify({'status': 'error', 'message': error}), 400
 
@@ -172,6 +187,12 @@ def register():
 
         if phone and UserRepository.get_by_phone(phone):
             return jsonify({'status': 'error', 'message': 'This phone number is already registered.'}), 400
+
+        if referral_code:
+            from app.services.referral_service import ReferralService
+            referrer = ReferralService.get_by_referral_code(referral_code)
+            if not referrer:
+                return jsonify({'status': 'error', 'message': 'Invalid referral code.'}), 400
 
         if not _firebase_api_key():
             return jsonify({'status': 'error', 'message': 'Firebase not configured.'}), 500
@@ -191,8 +212,16 @@ def register():
                 phone=phone or None,
                 address=address or None,
             )
+            if dob_raw:
+                try:
+                    from datetime import datetime as dt
+                    new_user.date_of_birth = dt.strptime(dob_raw, '%Y-%m-%d').date()
+                except ValueError:
+                    return jsonify({'status': 'error', 'message': 'Invalid date of birth. Use YYYY-MM-DD.'}), 400
             UserRepository.create(new_user)
             RoleRepository.attach_role_to_user(new_user, ROLE_CUSTOMER)
+            from app.services.user_onboarding_service import UserOnboardingService
+            UserOnboardingService.setup_new_customer(new_user, referral_code or None)
         except Exception as e:
             # Firebase account was created but SQLite failed — log it
             current_app.logger.error(

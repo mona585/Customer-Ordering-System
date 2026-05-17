@@ -27,7 +27,7 @@ class CartService(BaseService):
             quantity = item_data.get('quantity', 1)
             available = menu_item.available_stock
 
-            if quantity > available + quantity:
+            if quantity > available:
                 stock_errors.append(f"{menu_item.name}: Only {available} available")
                 quantity = min(quantity, available)
 
@@ -53,25 +53,22 @@ class CartService(BaseService):
 
     @staticmethod
     def apply_promo_code(cart_total, promo_code):
-        """التحقق من كود الخصم وحساب القيمة (New Modification)"""
-        valid_promos = {
-            'SAVE10': 0.10,  # 10% discount
-            'AURA20': 0.20   # 20% discount
-        }
-        
+        """Validate public promo code against shared checkout rules."""
+        from app.services.checkout_service import CheckoutService
+
         if not promo_code:
             return ServiceResult.fail("Please enter a code")
 
         code = promo_code.strip().upper()
-        if code in valid_promos:
-            discount_percent = valid_promos[code]
-            discount_amount = cart_total * discount_percent
-            return ServiceResult.ok(data={
-                'discount': discount_amount,
-                'code': code
-            }, message=f"Code {code} applied!")
-        
-        return ServiceResult.fail("Invalid or expired promo code")
+        result = CheckoutService._validate_promo(code, float(cart_total))
+        if not result.success:
+            return result
+
+        discount_amount = result.data["discount"]
+        return ServiceResult.ok(
+            data={"discount": discount_amount, "code": code},
+            message=f"Code {code} applied!",
+        )
 
     @staticmethod
     def add_to_cart(cart_data, item_id, quantity=1, special_requests=''):

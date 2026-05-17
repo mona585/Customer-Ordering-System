@@ -29,7 +29,19 @@ class User(UserMixin, db.Model):
 
     orders = db.relationship("Order", back_populates="customer", lazy=True, cascade="all, delete-orphan")
     reviews = db.relationship("Review", back_populates="customer", lazy=True, cascade="all, delete-orphan")
+    addresses = db.relationship("UserAddress", back_populates="user", lazy=True, cascade="all, delete-orphan")
+    saved_cards = db.relationship("SavedCard", back_populates="user", lazy=True, cascade="all, delete-orphan")
+    vouchers = db.relationship("UserVoucher", back_populates="user", lazy=True, cascade="all, delete-orphan")
+    notifications = db.relationship("Notification", back_populates="user", lazy=True, cascade="all, delete-orphan")
+    referrals_made = db.relationship(
+        "Referral", foreign_keys="Referral.referrer_id", back_populates="referrer", lazy=True
+    )
+    referral_received = db.relationship(
+        "Referral", foreign_keys="Referral.referred_id", back_populates="referred", uselist=False
+    )
     points = db.Column(db.Integer, default=0)
+    referral_code = db.Column(db.String(20), unique=True, nullable=True)
+    wallet_balance = db.Column(db.Numeric(10, 2), default=0)
 
     roles = db.relationship(
         "Role",

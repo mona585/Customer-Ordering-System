@@ -4,245 +4,482 @@
 
 {% block content %}
 <style>
-.checkout-container{max-width:900px;margin:0 auto;padding:40px 20px}
-.checkout-title{font-size:32px;font-weight:700;margin-bottom:8px;letter-spacing:-0.5px}
-.checkout-subtitle{color:var(--cg);margin-bottom:40px;font-size:15px}
-
-.checkout-grid{display:grid;grid-template-columns:1.2fr 0.8fr;gap:40px}
-
-.checkout-form h2{font-size:18px;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:10px}
-.checkout-form h2 svg{width:22px;height:22px;stroke:var(--c1);fill:none;stroke-width:2}
-.form-group{margin-bottom:24px}
-.form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary)}
-.form-group input,.form-group textarea{width:100%;padding:14px;border:1.5px solid var(--cb);border-radius:12px;font-size:15px;transition:var(--tr);background:var(--cw);color:var(--text-primary)}
-.form-group input:focus,.form-group textarea:focus{outline:none;border-color:var(--c2);box-shadow:0 0 0 3px rgba(99,102,241,0.1)}
-.form-group textarea{resize:vertical;min-height:100px}
-
-.order-summary{background:var(--card-bg);padding:28px;border-radius:16px;border:1px solid var(--cb);height:fit-content;position:sticky;top:100px}
-.order-summary h2{font-size:18px;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:10px}
-.order-summary h2 svg{width:22px;height:22px;stroke:var(--c1);fill:none;stroke-width:2}
-
-.order-item{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--cb);font-size:14px}
-.order-item:last-child{border-bottom:none}
+.checkout-page{max-width:1040px;margin:0 auto;padding:32px 20px 80px}
+.checkout-header{margin-bottom:32px}
+.checkout-header h1{font-size:clamp(26px,4vw,34px);font-weight:800;letter-spacing:-0.5px;margin-bottom:6px;color:var(--text-primary)}
+.checkout-header p{color:var(--text-secondary);font-size:15px}
+.checkout-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,0.85fr);gap:28px;align-items:start}
+.checkout-panel{background:var(--card-bg);border:1px solid var(--cb);border-radius:18px;padding:28px;margin-bottom:20px}
+.checkout-panel h2{font-size:17px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px;color:var(--text-primary)}
+.checkout-panel h2 svg{width:20px;height:20px;stroke:var(--c2);fill:none;stroke-width:2;flex-shrink:0}
+.form-group{margin-bottom:20px}
+.form-group label{display:block;font-size:12px;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-secondary)}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:13px 14px;border:1.5px solid var(--cb);border-radius:12px;font-size:15px;transition:var(--tr);background:var(--card-bg);color:var(--text-primary);font-family:inherit}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:var(--c2);box-shadow:0 0 0 3px rgba(99,102,241,0.15)}
+.form-group textarea{resize:vertical;min-height:96px}
+.phone-row{display:flex;gap:10px}
+.phone-row select{flex:0 0 118px}
+.phone-row input{flex:1}
+.field-error{color:#b91c1c;font-size:13px;margin-top:6px;font-weight:500;display:none}
+[data-theme="dark"] .field-error{color:#fca5a5}
+.address-pick{display:flex;align-items:flex-start;gap:12px;padding:14px;border:1.5px solid var(--cb);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:var(--tr);background:var(--bg)}
+.address-pick:has(input:checked){border-color:var(--c2);background:rgba(99,102,241,0.08)}
+.address-pick input{margin-top:3px;accent-color:var(--c2);flex-shrink:0}
+.address-pick strong{display:block;font-size:14px;color:var(--text-primary);margin-bottom:4px}
+.address-pick span{font-size:13px;color:var(--text-secondary);line-height:1.5}
+.address-select-row{margin-bottom:12px}
+.address-preview{font-size:14px;color:var(--text-secondary);line-height:1.5;padding:12px 14px;background:var(--bg);border-radius:12px;border:1px solid var(--cb);margin-top:8px}
+.new-address-panel{margin-top:12px;padding:16px;border:1px dashed var(--cb);border-radius:12px;background:var(--bg)}
+.new-address-panel.hidden{display:none}
+.save-address-row{display:flex;align-items:flex-start;gap:10px;margin-top:12px;font-size:14px;color:var(--text-secondary);cursor:pointer}
+.save-address-row input{margin-top:3px;accent-color:var(--c2)}
+.save-label-fields{margin-top:12px;display:none}
+.save-label-fields.visible{display:block}
+.payment-methods{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.payment-method{padding:18px 14px;border:2px solid var(--cb);border-radius:12px;cursor:pointer;text-align:center;transition:var(--tr);background:var(--bg)}
+.payment-method:hover{border-color:var(--c2)}
+.payment-method.selected{border-color:var(--c2);background:rgba(99,102,241,0.08)}
+.payment-method svg{width:30px;height:30px;margin:0 auto 8px;stroke:var(--text-primary);fill:none;stroke-width:1.5}
+.payment-method-name{font-size:13px;font-weight:600;color:var(--text-primary)}
+.card-option{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--cb);border-radius:12px;margin-bottom:8px;cursor:pointer;background:var(--bg);transition:var(--tr)}
+.card-option:has(input:checked){border-color:var(--c2);background:rgba(99,102,241,0.08)}
+.card-option input{accent-color:var(--c2)}
+.new-card-panel{margin-top:12px;padding:16px;border:1px dashed var(--cb);border-radius:12px;background:var(--bg);display:none}
+.new-card-panel.visible{display:block}
+.checkout-error{color:#b91c1c;font-size:13px;margin-top:8px;font-weight:600;display:none}
+.discount-feedback{font-size:13px;margin-top:8px;font-weight:600;display:none}
+.discount-feedback.success{color:#15803d}
+.discount-feedback.error{color:#b91c1c}
+[data-theme="dark"] .checkout-error,[data-theme="dark"] .discount-feedback.error{color:#fca5a5}
+[data-theme="dark"] .discount-feedback.success{color:#86efac}
+[data-theme="dark"] .payment-method.selected,[data-theme="dark"] .card-option:has(input:checked),[data-theme="dark"] .address-pick:has(input:checked){background:rgba(99,102,241,0.15)}
+.order-summary{position:sticky;top:96px}
+.order-summary .checkout-panel{margin-bottom:0}
+.order-item{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--cb);font-size:14px}
+.order-item:last-of-type{border-bottom:none}
 .item-name{font-weight:600;color:var(--text-primary)}
-.item-qty{color:var(--cg);font-size:12px;margin-top:2px}
-
-.summary-row{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--cb);font-size:15px}
-.summary-row:last-child{border-bottom:none;font-size:22px;font-weight:700;margin-top:12px;padding-top:16px;border-top:2px solid var(--c1);color:var(--text-primary)}
-.summary-label{color:var(--cg);font-weight:500}
-
-.place-order-btn{display:block;width:100%;padding:16px;background:var(--c2);color:var(--cw);border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-top:24px;transition:var(--tr);display:flex;align-items:center;justify-content:center;gap:10px}
+.item-qty{color:var(--text-muted);font-size:12px;margin-top:2px}
+.summary-row{display:flex;justify-content:space-between;padding:10px 0;font-size:15px;color:var(--text-secondary)}
+.summary-row.total{font-size:20px;font-weight:800;color:var(--text-primary);margin-top:8px;padding-top:14px;border-top:2px solid var(--cb)}
+.place-order-btn{width:100%;padding:16px;background:var(--c2);color:var(--on-accent,#fff);border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:10px;transition:var(--tr)}
 .place-order-btn:hover{background:#4f46e5;transform:translateY(-1px)}
 .place-order-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
-
-.payment-methods{display:flex;gap:12px;margin-bottom:24px}
-.payment-method{flex:1;padding:20px 16px;border:2px solid var(--cb);border-radius:12px;cursor:pointer;text-align:center;transition:var(--tr);background:var(--cw)}
-.payment-method:hover{border-color:var(--c1)}
-.payment-method.selected{border-color:var(--c2);background:#f5f5ff}
-.payment-method svg{width:32px;height:32px;margin-bottom:10px;stroke:var(--c1);fill:none;stroke-width:1.5}
-.payment-method-name{font-size:13px;font-weight:600;color:var(--text-primary)}
-
-@media(max-width:768px){
+.btn-apply{padding:12px 18px;border-radius:10px;border:none;background:var(--c2);color:var(--on-accent,#fff);font-weight:600;cursor:pointer;white-space:nowrap}
+.promo-row{display:flex;gap:8px}
+.checkout-empty{text-align:center;padding:72px 20px}
+.checkout-empty-icon{width:80px;height:80px;margin:0 auto 20px;background:var(--bg);border-radius:50%;display:flex;align-items:center;justify-content:center}
+@media(max-width:900px){
   .checkout-grid{grid-template-columns:1fr}
-  .order-summary{position:static}
+  .order-summary{position:static;order:-1}
 }
 </style>
 
-<div class="checkout-container">
-  <h1 class="checkout-title">Checkout</h1>
-  <p class="checkout-subtitle">Complete your order</p>
+<div class="checkout-page">
+  <div class="checkout-header">
+    <h1>Checkout</h1>
+    <p>Review your order and complete delivery details.</p>
+  </div>
 
   {% if items %}
   <div class="checkout-grid">
-    <div class="checkout-form">
-      <h2>
-        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        Delivery Information
-      </h2>
-      <form method="POST" id="checkout-form">
+    <div class="checkout-main">
+      <form method="POST" id="checkout-form" novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="payment_method" id="payment_method_input" value="CREDIT_CARD">
+        <input type="hidden" name="address_id" id="address_id_input" value="">
 
-        <div class="form-group">
-          <label>Delivery Address</label>
-          <textarea name="delivery_address" placeholder="Enter your full address..." required>{{ current_user.address or '' }}</textarea>
-        </div>
+        <div class="checkout-panel">
+          <h2>
+            <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Delivery destination
+          </h2>
 
-        <div class="form-group">
-          <label>Phone Number</label>
-          <div style="display: flex; gap: 8px;">
-            <select id="country-code" style="width: 110px; padding: 14px; border: 1.5px solid var(--cb); border-radius: 12px; background: var(--cw); color: var(--text-primary); cursor: pointer;">
-              <option value="+20">🇪🇬 +20</option>
-              <option value="+1">🇺🇸 +1</option>
-              <option value="+44">🇬🇧 +44</option>
-              <option value="+966">🇸🇦 +966</option>
-              <option value="+971">🇦🇪 +971</option>
-            </select>
-            
-            <input type="tel" id="raw-phone" placeholder="1012345678" style="flex: 1; padding: 14px; border: 1.5px solid var(--cb); border-radius: 12px; background: var(--cw); color: var(--text-primary); font-size: 15px;" required>
-            
-            <input type="hidden" name="phone" id="final-phone" value="{{ current_user.phone or '' }}">
+          <div class="form-group">
+            <label for="address-selector">Saved addresses</label>
+            {% if addresses %}
+            <div class="address-select-row">
+              <select id="address-selector" onchange="onAddressSelectChange(this)">
+                {% for addr in addresses %}
+                <option value="saved:{{ addr.id }}" data-id="{{ addr.id }}" data-text="{{ addr.formatted|e }}" data-label="{{ addr.label|e }}" {% if addr.is_default %}selected{% endif %}>
+                  {{ addr.label }} — {{ addr.formatted[:60] }}{% if addr.formatted|length > 60 %}…{% endif %}
+                </option>
+                {% endfor %}
+                <option value="new">+ Add new address</option>
+              </select>
+              <div id="address-preview" class="address-preview"></div>
+            </div>
+            {% endif %}
+
+            <div id="new-address-panel" class="new-address-panel {% if addresses %}hidden{% endif %}">
+              <textarea name="delivery_address" id="delivery_address" placeholder="Street, building, area, city..." {% if not addresses %}required{% endif %}>{{ '' if addresses else (current_user.address or '') }}</textarea>
+              <label class="save-address-row">
+                <input type="checkbox" name="save_address" value="1" id="save_address" onchange="toggleSaveLabelFields()">
+                <span>Save this address to my account for future orders</span>
+              </label>
+              <div id="save-label-fields" class="save-label-fields">
+                <input type="text" name="new_address_label" placeholder="Label (e.g. Home, Work, Other)" maxlength="50">
+              </div>
+            </div>
           </div>
-          <div id="phone-error" style="color: #b91c1c; font-size: 13px; margin-top: 6px; font-weight: 500; display: none;"></div>
+
+          <div class="form-group">
+            <label>Phone number</label>
+            <div class="phone-row">
+              <select id="country-code" aria-label="Country code">
+                <option value="+20">+20 Egypt</option>
+                <option value="+1">+1 US</option>
+                <option value="+44">+44 UK</option>
+                <option value="+966">+966 SA</option>
+                <option value="+971">+971 UAE</option>
+              </select>
+              <input type="tel" id="raw-phone" placeholder="1012345678" inputmode="tel" required>
+              <input type="hidden" name="phone" id="final-phone" value="{{ current_user.phone or '' }}">
+            </div>
+            <div id="phone-error" class="field-error" role="alert"></div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0">
+            <label>Special instructions</label>
+            <textarea name="special_instructions" placeholder="Gate code, floor, allergies, etc."></textarea>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label>Special Instructions</label>
-          <textarea name="special_instructions" placeholder="Any special requests for your order..."></textarea>
-        </div>
-
-        <h2 style="margin-top:40px;margin-bottom:24px">
-          <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          Payment Method
-        </h2>
-        <div class="payment-methods">
-          <div class="payment-method selected" onclick="selectPayment(this, 'CREDIT_CARD')">
+        <div class="checkout-panel">
+          <h2>
             <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            <div class="payment-method-name">Credit Card</div>
+            Payment method
+          </h2>
+          <div class="payment-methods">
+            <div class="payment-method selected" data-method="CREDIT_CARD" onclick="selectPayment(this, 'CREDIT_CARD')">
+              <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              <div class="payment-method-name">Credit card</div>
+            </div>
+            <div class="payment-method" data-method="CASH" onclick="selectPayment(this, 'CASH')">
+              <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/></svg>
+              <div class="payment-method-name">Cash on delivery</div>
+            </div>
           </div>
-          <div class="payment-method" onclick="selectPayment(this, 'CASH')">
-            <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M7 12h.01"/><path d="M17 12h.01"/></svg>
-            <div class="payment-method-name">Cash on Delivery</div>
+
+          <div id="saved-cards-panel">
+            <label class="form-group" style="margin-bottom:12px">Payment card</label>
+            {% if saved_cards %}
+            {% for card in saved_cards %}
+            <label class="card-option">
+              <input type="radio" name="saved_card_id" value="{{ card.id }}" {% if card.is_default %}checked{% endif %} onchange="onCardPick()">
+              <span><strong>{{ card.masked_display }}</strong> · Exp {{ '%02d'|format(card.exp_month) }}/{{ card.exp_year }}{% if card.is_default %} · Default{% endif %}</span>
+            </label>
+            {% endfor %}
+            {% endif %}
+            <label class="card-option">
+              <input type="radio" name="saved_card_id" value="" id="pick-new-card" {% if not saved_cards %}checked{% endif %} onchange="onCardPick()">
+              <span>Use a different card</span>
+            </label>
+            <div id="new-card-panel" class="new-card-panel {% if not saved_cards %}visible{% endif %}">
+              <div class="form-group" style="margin-bottom:12px">
+                <label style="text-transform:none;font-size:12px">Cardholder name</label>
+                <input type="text" name="new_card_name" placeholder="Name on card">
+              </div>
+              <div class="form-group" style="margin-bottom:12px">
+                <label style="text-transform:none;font-size:12px">Card number</label>
+                <input type="text" name="new_card_number" id="new_card_number" placeholder="0000 0000 0000 0000" maxlength="19" inputmode="numeric">
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div class="form-group" style="margin-bottom:0">
+                  <label style="text-transform:none;font-size:12px">Expiry MM/YY</label>
+                  <input type="text" name="new_card_expiry" id="new_card_expiry" placeholder="MM/YY" maxlength="5" inputmode="numeric">
+                </div>
+                <div class="form-group" style="margin-bottom:0">
+                  <label style="text-transform:none;font-size:12px">CVV</label>
+                  <input type="password" name="new_card_cvv" placeholder="***" maxlength="4" autocomplete="off">
+                </div>
+              </div>
+              <p style="font-size:11px;color:var(--text-muted);margin-top:10px">Saved securely (last 4 digits only).</p>
+            </div>
+            <p style="font-size:13px;margin-top:12px">
+              <a href="{{ url_for('profile.add_card', next=url_for('customer.checkout')) }}" style="color:var(--c2);font-weight:600">Manage cards in profile</a>
+            </p>
+            <div id="card-pay-error" class="checkout-error" role="alert"></div>
+          </div>
+        </div>
+
+        <div class="checkout-panel">
+          <h2>Discounts</h2>
+          <div class="form-group">
+            <label>Promo code</label>
+            <div class="promo-row">
+              <input type="text" name="promo_code" id="promo_code" placeholder="e.g. SAVE10, AURA20, SPRING15" value="{{ prefill_promo or '' }}">
+              <button type="button" class="btn-apply" onclick="recalcCheckout(true)">Apply</button>
+            </div>
+            <div id="promo-feedback" class="discount-feedback"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Your vouchers <span style="font-weight:400;text-transform:none">(optional)</span></label>
+            <label class="address-pick" style="cursor:pointer">
+              <input type="radio" name="voucher_code" value="" {% if not prefill_voucher %}checked{% endif %} onchange="recalcCheckout()">
+              <span><strong>No voucher</strong><br>Continue without applying a personal voucher.</span>
+            </label>
+            {% if vouchers %}
+            {% for v in vouchers %}
+            <label class="address-pick" style="cursor:pointer">
+              <input type="radio" name="voucher_code" value="{{ v.code }}" {% if prefill_voucher == v.code %}checked{% endif %} onchange="recalcCheckout()">
+              <span>
+                <strong>{{ v.code }}</strong> — {{ v.discount_percent }}% off (min ${{ v.min_order_amount }})
+                {% if v.expires_at %}<br><span style="font-size:12px">Expires {{ v.expires_at[:10] }}</span>{% endif %}
+              </span>
+            </label>
+            {% endfor %}
+            {% else %}
+            <p style="font-size:13px;color:var(--text-muted);margin-top:8px">No active vouchers. Earn rewards from referrals and loyalty points.</p>
+            {% endif %}
+            <div id="voucher-feedback" class="discount-feedback"></div>
           </div>
         </div>
 
         <button type="submit" class="place-order-btn">
           <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          Place Order
+          Place order · <span id="btn-total">${{ "%.2f"|format(total) }}</span>
         </button>
       </form>
     </div>
 
-    <div class="order-summary">
-      <h2>
-        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
-        Order Summary
-      </h2>
-
-      {% for item in items %}
-      <div class="order-item">
-        <div>
-          <div class="item-name">{{ item.menu_item.name }}</div>
-          <div class="item-qty">Qty: {{ item.quantity }}</div>
+    <aside class="order-summary">
+      <div class="checkout-panel">
+        <h2>
+          <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+          Order summary
+        </h2>
+        {% for item in items %}
+        <div class="order-item">
+          <div>
+            <div class="item-name">{{ item.menu_item.name }}</div>
+            <div class="item-qty">Qty {{ item.quantity }}</div>
+          </div>
+          <div style="font-weight:700;color:var(--text-primary)">${{ "%.2f"|format(item.subtotal) }}</div>
         </div>
-        <div style="font-weight:600">${{ "%.2f"|format(item.subtotal) }}</div>
+        {% endfor %}
+        <div class="summary-row"><span>Subtotal</span><span id="sum-subtotal">${{ "%.2f"|format(subtotal) }}</span></div>
+        <div class="summary-row" id="row-discount" style="{% if not discount %}display:none{% endif %}">
+          <span>Discount</span><span id="sum-discount">-${{ "%.2f"|format(discount) }}</span>
+        </div>
+        <div class="summary-row"><span>Delivery fee</span><span id="sum-delivery">${{ "%.2f"|format(delivery_fee) }}</span></div>
+        <div class="summary-row"><span>Tax</span><span id="sum-tax">${{ "%.2f"|format(tax) }}</span></div>
+        <div class="summary-row total"><span>Total</span><span id="sum-total">${{ "%.2f"|format(total) }}</span></div>
       </div>
-      {% endfor %}
-
-      <div class="summary-row">
-        <span class="summary-label">Subtotal</span>
-        <span>${{ "%.2f"|format(total) }}</span>
-      </div>
-      <div class="summary-row">
-        <span class="summary-label">Delivery Fee</span>
-        <span>$5.00</span>
-      </div>
-      <div class="summary-row">
-        <span class="summary-label">Tax</span>
-        <span>${{ "%.2f"|format(total * 0.08) }}</span>
-      </div>
-      <div class="summary-row">
-        <span class="summary-label">Total</span>
-        <span>${{ "%.2f"|format(total + 5.00 + (total * 0.08)) }}</span>
-      </div>
-    </div>
+    </aside>
   </div>
 
   {% else %}
-  <div style="text-align:center;padding:80px 20px">
-    <div style="width:80px;height:80px;margin:0 auto 24px;background:var(--bg);border-radius:50%;display:flex;align-items:center;justify-content:center">
-      <svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:var(--cl);fill:none;stroke-width:1.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+  <div class="checkout-empty">
+    <div class="checkout-empty-icon">
+      <svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:var(--text-muted);fill:none;stroke-width:1.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
     </div>
-    <h2 style="color:var(--cg);margin-bottom:12px;font-size:22px">Your cart is empty</h2>
-    <p style="color:var(--cl);margin-bottom:32px;font-size:15px">Add some items before checking out.</p>
-    <a href="{{ url_for('customer.menu') }}" style="display:inline-block;padding:14px 32px;background:var(--c2);color:var(--cw);border-radius:12px;text-decoration:none;font-weight:600;font-size:15px">Browse Menu</a>
+    <h2 style="font-size:22px;margin-bottom:8px;color:var(--text-primary)">Your cart is empty</h2>
+    <p style="color:var(--text-secondary);margin-bottom:24px">Add items from the menu before checking out.</p>
+    <a href="{{ url_for('customer.menu') }}" class="place-order-btn" style="display:inline-flex;width:auto;padding:14px 28px;text-decoration:none">Browse menu</a>
   </div>
   {% endif %}
 </div>
 
 <script>
-// Handle Payment Selection UI
+function onAddressSelectChange(select) {
+  const panel = document.getElementById('new-address-panel');
+  const textarea = document.getElementById('delivery_address');
+  const idInput = document.getElementById('address_id_input');
+  const preview = document.getElementById('address-preview');
+  const isNew = select.value === 'new';
+  if (panel) panel.classList.toggle('hidden', !isNew);
+  const opt = select.options[select.selectedIndex];
+  if (textarea) {
+    textarea.required = isNew || !select;
+    if (!isNew && opt && opt.dataset.text) {
+      textarea.value = opt.dataset.text;
+      textarea.readOnly = true;
+    } else {
+      textarea.readOnly = false;
+      if (isNew) textarea.value = '';
+    }
+  }
+  if (idInput) idInput.value = isNew ? '' : (opt?.dataset.id || '');
+  if (preview) {
+    if (isNew) {
+      preview.style.display = 'none';
+    } else if (opt && opt.dataset.text) {
+      preview.style.display = 'block';
+      preview.innerHTML = '<strong>' + (opt.dataset.label || 'Address') + '</strong><br>' + opt.dataset.text;
+    }
+  }
+}
+function toggleSaveLabelFields() {
+  const checked = document.getElementById('save_address')?.checked;
+  const fields = document.getElementById('save-label-fields');
+  if (fields) fields.classList.toggle('visible', !!checked);
+}
+function showDiscountFeedback(el, message, isError) {
+  if (!el) return;
+  el.textContent = message;
+  el.className = 'discount-feedback ' + (isError ? 'error' : 'success');
+  el.style.display = message ? 'block' : 'none';
+}
+async function recalcCheckout(fromPromo) {
+  const promo = document.getElementById('promo_code')?.value || '';
+  const voucherEl = document.querySelector('input[name="voucher_code"]:checked');
+  const voucher = voucherEl ? voucherEl.value : '';
+  const promoFb = document.getElementById('promo-feedback');
+  const voucherFb = document.getElementById('voucher-feedback');
+  try {
+    const res = await fetch('/customer/api/checkout/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ promo_code: promo, voucher_code: voucher })
+    });
+    const data = await res.json();
+    if (data.status !== 'success') {
+      if (fromPromo && promo) showDiscountFeedback(promoFb, data.message, true);
+      else if (voucher) showDiscountFeedback(voucherFb, data.message, true);
+      else alert(data.message);
+      return;
+    }
+    const t = data.totals;
+    document.getElementById('sum-subtotal').textContent = '$' + t.subtotal.toFixed(2);
+    document.getElementById('sum-discount').textContent = '-$' + t.discount.toFixed(2);
+    document.getElementById('row-discount').style.display = t.discount > 0 ? 'flex' : 'none';
+    document.getElementById('sum-delivery').textContent = '$' + t.delivery_fee.toFixed(2);
+    document.getElementById('sum-tax').textContent = '$' + t.tax.toFixed(2);
+    document.getElementById('sum-total').textContent = '$' + t.total.toFixed(2);
+    const btnTotal = document.getElementById('btn-total');
+    if (btnTotal) btnTotal.textContent = '$' + t.total.toFixed(2);
+    if (fromPromo && promo) {
+      showDiscountFeedback(promoFb, t.applied_promo ? 'Promo ' + t.applied_promo + ' applied.' : 'Promo code not applied.', !t.applied_promo);
+    }
+    if (voucher) {
+      showDiscountFeedback(voucherFb, t.applied_voucher ? 'Voucher ' + t.applied_voucher + ' applied.' : '', false);
+    } else {
+      showDiscountFeedback(voucherFb, '', false);
+    }
+  } catch (e) {
+    if (fromPromo) showDiscountFeedback(promoFb, 'Could not validate discounts. Try again.', true);
+  }
+}
+function onCardPick() {
+  const useNew = document.getElementById('pick-new-card')?.checked;
+  const panel = document.getElementById('new-card-panel');
+  if (panel) panel.classList.toggle('visible', !!useNew);
+  const err = document.getElementById('card-pay-error');
+  if (err) { err.style.display = 'none'; err.textContent = ''; }
+}
 function selectPayment(el, methodValue) {
+  const panel = document.getElementById('saved-cards-panel');
+  if (panel) panel.style.display = methodValue === 'CREDIT_CARD' ? 'block' : 'none';
   document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById('payment_method_input').value = methodValue;
+  if (methodValue === 'CREDIT_CARD') onCardPick();
 }
-
-// 1. Auto-fill the phone number from the database when the page loads
-window.addEventListener('DOMContentLoaded', () => {
-    const existingPhone = "{{ current_user.phone or '' }}";
-    if (existingPhone) {
-        const selectBox = document.getElementById('country-code');
-        const rawInput = document.getElementById('raw-phone');
-        
-        let foundCode = false;
-        // Check which country code the saved number starts with
-        for (let option of selectBox.options) {
-            if (existingPhone.startsWith(option.value)) {
-                selectBox.value = option.value;
-                // Remove the country code so only the raw digits show in the input box
-                rawInput.value = existingPhone.substring(option.value.length);
-                foundCode = true;
-                break;
-            }
-        }
-        // If it doesn't match our dropdown codes, just put the whole thing in the box
-        if (!foundCode) rawInput.value = existingPhone;
+function validateCardPayment() {
+  const method = document.getElementById('payment_method_input').value;
+  if (method !== 'CREDIT_CARD') return true;
+  const err = document.getElementById('card-pay-error');
+  const useNew = document.getElementById('pick-new-card')?.checked;
+  if (!useNew) {
+    const picked = document.querySelector('input[name="saved_card_id"]:checked');
+    if (!picked || !picked.value) {
+      if (err) { err.textContent = 'Select a saved card or enter new card details.'; err.style.display = 'block'; }
+      return false;
     }
-});
-
-// 2. Validate the phone number before submitting the order
-document.querySelector('.checkout-form form').addEventListener('submit', function(e) {
-    const countryCode = document.getElementById('country-code').value;
-    const rawPhone = document.getElementById('raw-phone').value.trim();
-    const finalPhoneInput = document.getElementById('final-phone');
-    const errorDiv = document.getElementById('phone-error');
-
-    // Reset error state
-    errorDiv.style.display = 'none';
-    errorDiv.textContent = '';
-
-    if (!rawPhone) {
+    return true;
+  }
+  const name = (document.querySelector('[name="new_card_name"]')?.value || '').trim();
+  const num = (document.querySelector('[name="new_card_number"]')?.value || '').replace(/\s/g, '');
+  const exp = (document.querySelector('[name="new_card_expiry"]')?.value || '').trim();
+  const cvv = (document.querySelector('[name="new_card_cvv"]')?.value || '').trim();
+  if (!name || num.length < 13 || !exp || cvv.length < 3) {
+    if (err) { err.textContent = 'Enter complete card details.'; err.style.display = 'block'; }
+    return false;
+  }
+  return true;
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const selector = document.getElementById('address-selector');
+  if (selector) onAddressSelectChange(selector);
+  onCardPick();
+  toggleSaveLabelFields();
+  const nc = document.getElementById('new_card_number');
+  const ne = document.getElementById('new_card_expiry');
+  if (nc) nc.addEventListener('input', function(e) {
+    var v = e.target.value.replace(/\D/g, '').slice(0, 19);
+    e.target.value = v.replace(/(.{4})/g, '$1 ').trim();
+  });
+  if (ne) ne.addEventListener('input', function(e) {
+    var v = e.target.value.replace(/\D/g, '').slice(0, 4);
+    if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2);
+    e.target.value = v;
+  });
+  var existingPhone = "{{ current_user.phone or '' }}";
+  if (existingPhone) {
+    var selectBox = document.getElementById('country-code');
+    var rawInput = document.getElementById('raw-phone');
+    for (var i = 0; i < selectBox.options.length; i++) {
+      var option = selectBox.options[i];
+      if (existingPhone.indexOf(option.value) === 0) {
+        selectBox.value = option.value;
+        rawInput.value = existingPhone.substring(option.value.length);
+        break;
+      }
+    }
+  }
+  var form = document.getElementById('checkout-form');
+  if (!form) return;
+  form.addEventListener('submit', function(e) {
+    if (!validateCardPayment()) {
+      e.preventDefault();
+      document.getElementById('saved-cards-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    const selector = document.getElementById('address-selector');
+    const isNew = selector ? selector.value === 'new' : true;
+    if (isNew) {
+      document.getElementById('address_id_input').value = '';
+      var textarea = document.getElementById('delivery_address');
+      if (textarea && !textarea.value.trim()) {
         e.preventDefault();
-        errorDiv.textContent = 'Phone number is required.';
+        alert('Please enter a delivery address.');
+        textarea.focus();
+        return;
+      }
+    } else if (selector) {
+      const opt = selector.options[selector.selectedIndex];
+      document.getElementById('address_id_input').value = opt?.dataset.id || '';
+    }
+    var countryCode = document.getElementById('country-code').value;
+    var rawPhone = document.getElementById('raw-phone').value.trim();
+    var errorDiv = document.getElementById('phone-error');
+    errorDiv.style.display = 'none';
+    if (!rawPhone) {
+      e.preventDefault();
+      errorDiv.textContent = 'Phone number is required.';
+      errorDiv.style.display = 'block';
+      return;
+    }
+    var digits = rawPhone.replace(/\D/g, '');
+    if (countryCode === '+20') {
+      if (digits.charAt(0) === '0') digits = digits.substring(1);
+      if (!/^1[0125][0-9]{8}$/.test(digits)) {
+        e.preventDefault();
+        errorDiv.textContent = 'Invalid Egyptian number (e.g. 1012345678).';
         errorDiv.style.display = 'block';
         return;
+      }
+    } else if (countryCode === '+1' && digits.length !== 10) {
+      e.preventDefault();
+      errorDiv.textContent = 'US/CA numbers must be 10 digits.';
+      errorDiv.style.display = 'block';
+      return;
     }
-
-    // Strip out spaces or dashes the user might have typed
-    let digits = rawPhone.replace(/\D/g, ''); 
-
-    // Validation rules (Same as register.html)
-    if (countryCode === '+20') {
-        if (digits.startsWith('0')) digits = digits.substring(1); // Remove leading 0 if they typed it
-        
-        const egyptRegex = /^1[0125][0-9]{8}$/;
-        if (!egyptRegex.test(digits)) {
-            e.preventDefault();
-            errorDiv.textContent = 'Invalid Egyptian number. Try dropping the leading 0 (e.g., 1012345678).';
-            errorDiv.style.display = 'block';
-            return;
-        }
-    } 
-    else if (countryCode === '+1') {
-        if (digits.length !== 10) {
-            e.preventDefault();
-            errorDiv.textContent = 'US/CA numbers must be exactly 10 digits.';
-            errorDiv.style.display = 'block';
-            return;
-        }
-    }
-    else {
-        if (digits.length < 7 || digits.length > 15) {
-            e.preventDefault();
-            errorDiv.textContent = 'Invalid phone length for this region.';
-            errorDiv.style.display = 'block';
-            return;
-        }
-    }
-
-    // If it passes validation, combine them into the hidden input and allow submission!
-    finalPhoneInput.value = countryCode + digits;
+    document.getElementById('final-phone').value = countryCode + digits;
+  });
+  {% if prefill_promo or prefill_voucher %}
+  recalcCheckout(false);
+  {% endif %}
 });
 </script>
 {% endblock %}

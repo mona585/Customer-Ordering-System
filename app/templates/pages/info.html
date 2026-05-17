@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} - AURA{% endblock %}
+
+{% block content %}
+<style>
+.info-page{max-width:720px;margin:0 auto;padding:48px 20px 80px}
+.info-page h1{font-size:32px;font-weight:800;margin-bottom:8px;letter-spacing:-0.5px;color:var(--text-primary)}
+.info-page .info-lead{color:var(--text-secondary);font-size:16px;margin-bottom:36px;line-height:1.6}
+.info-section{background:var(--card-bg);border:1px solid var(--cb);border-radius:16px;padding:24px 28px;margin-bottom:16px}
+.info-section h2{font-size:17px;font-weight:700;margin-bottom:10px;color:var(--text-primary)}
+.info-section p{font-size:15px;color:var(--text-secondary);line-height:1.7;white-space:pre-line}
+.info-back{display:inline-flex;align-items:center;gap:6px;margin-top:32px;font-size:14px;font-weight:600;color:var(--c2)}
+.info-back:hover{text-decoration:underline}
+</style>
+
+<article class="info-page">
+  <h1>{{ page.title }}</h1>
+  <p class="info-lead">{{ page.subtitle }}</p>
+
+  {% for section in page.sections %}
+  <section class="info-section">
+    <h2>{{ section.heading }}</h2>
+    <p>{{ section.body }}</p>
+  </section>
+  {% endfor %}
+
+  <a href="{{ url_for('main.home') }}" class="info-back">← Back to home</a>
+</article>
+{% endblock %}
