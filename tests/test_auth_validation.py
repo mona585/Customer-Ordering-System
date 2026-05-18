@@ -5,7 +5,7 @@ from app.routes.auth import _validate_phone, _validate_registration
 
 class TestValidateRegistration:
     def test_valid_fields_return_none(self):
-        assert _validate_registration("alice", "alice@example.com", "password1") is None
+        assert _validate_registration("alice", "alice@example.com", "Password1!", password_confirm="Password1!") is None
 
     def test_short_username_rejected(self):
         err = _validate_registration("ab", "alice@example.com", "password1")
