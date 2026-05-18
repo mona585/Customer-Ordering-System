@@ -324,7 +324,10 @@ button,.nav-icon-btn,.theme-toggle,.profile-btn,input[type="button"],input[type=
     {% if current_user.is_authenticated %}
     <div class="profile-dropdown" id="profileDropdown">
       <button type="button" class="profile-btn" id="profileDropdownBtn" aria-expanded="false" aria-haspopup="true">
-        <div class="profile-avatar">{{ current_user.username[0]|upper }}</div>
+        <div class="profile-avatar" style="overflow: hidden;">
+            <img class="dynamic-profile-img" data-src="{{ url_for('profile.get_profile_image', user_id=current_user.id) }}" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+            <span class="dynamic-profile-fallback" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">{{ current_user.username[0]|upper }}</span>
+        </div>
         <span class="profile-name">{{ current_user.username }}</span>
         <svg class="profile-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
@@ -677,7 +680,30 @@ function toggleTheme() {
         document.querySelector('.moon-icon').style.display = 'block';
     }
 })();
-document.addEventListener('DOMContentLoaded', updateCartCounter);
+function loadProfileImages() {
+    document.querySelectorAll('.dynamic-profile-img').forEach(img => {
+        const src = img.getAttribute('data-src') + '?t=' + new Date().getTime();
+        const temp = new Image();
+        temp.onload = () => { 
+            img.src = src; 
+            img.style.display = 'block'; 
+            if(img.nextElementSibling && img.nextElementSibling.classList.contains('dynamic-profile-fallback')) {
+                img.nextElementSibling.style.display = 'none'; 
+            }
+        };
+        temp.onerror = () => { 
+            img.style.display = 'none'; 
+            if(img.nextElementSibling && img.nextElementSibling.classList.contains('dynamic-profile-fallback')) {
+                img.nextElementSibling.style.display = 'flex'; 
+            }
+        };
+        temp.src = src;
+    });
+}
+document.addEventListener('DOMContentLoaded', () => {
+    updateCartCounter();
+    loadProfileImages();
+});
 
 async function updateNotifCounter() {
   const el = document.getElementById('notifCounter');

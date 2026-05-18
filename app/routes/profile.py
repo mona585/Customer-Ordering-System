@@ -1,6 +1,8 @@
+import os
 from datetime import datetime
 
-from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+from werkzeug.utils import secure_filename
+from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for, current_app, send_from_directory
 from flask_login import current_user, login_required
 from werkzeug.security import generate_password_hash
 from app.security.password_policy import validate_password_strength
@@ -297,3 +299,47 @@ def api_redeem_points():
     if result.success:
         return jsonify({"status": "success", "voucher": result.data, "message": result.message})
     return jsonify({"status": "error", "message": result.error}), 400
+
+
+@profile_bp.route("/profile/image/<int:user_id>", methods=["GET"])
+def get_profile_image(user_id):
+    upload_folder = os.path.join(current_app.static_folder, 'images', 'profiles')
+    if not os.path.exists(upload_folder):
+        return "", 404
+    
+    for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
+        if os.path.exists(os.path.join(upload_folder, f'user_{user_id}{ext}')):
+            return send_from_directory(upload_folder, f'user_{user_id}{ext}')
+            
+    return "", 404
+
+
+@profile_bp.route("/profile/upload-image", methods=["POST"])
+@login_required
+@csrf.exempt
+def upload_profile_image():
+    if 'image' not in request.files:
+        return jsonify({"status": "error", "message": "No image provided"}), 400
+        
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({"status": "error", "message": "No image selected"}), 400
+        
+    if file:
+        ext = os.path.splitext(secure_filename(file.filename))[1].lower()
+        if ext not in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
+            return jsonify({"status": "error", "message": "Invalid file type"}), 400
+            
+        upload_folder = os.path.join(current_app.static_folder, 'images', 'profiles')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Remove old image files for this user to avoid dangling files
+        for old_ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
+            old_path = os.path.join(upload_folder, f'user_{current_user.id}{old_ext}')
+            if os.path.exists(old_path):
+                os.remove(old_path)
+                
+        filename = f'user_{current_user.id}{ext}'
+        file.save(os.path.join(upload_folder, filename))
+        
+        return jsonify({"status": "success", "message": "Profile image updated successfully!"}), 200

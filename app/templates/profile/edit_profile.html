@@ -6,7 +6,10 @@
   <div class="profile-edit-card">
 
     <div class="profile-edit-header">
-      <div class="profile-edit-icon"><i class="fas fa-user-edit"></i></div>
+      <div class="profile-edit-icon" style="overflow: hidden; padding: 0;">
+          <img class="dynamic-profile-img" data-src="{{ url_for('profile.get_profile_image', user_id=current_user.id) }}" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+          <i class="fas fa-user-edit dynamic-profile-fallback" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;"></i>
+      </div>
       <h2>Update Profile</h2>
       <p>Keep your information up to date</p>
     </div>
