@@ -131,5 +131,15 @@ def create_app(config_name='development'):
             ),
             403,
         )
+    @app.errorhandler(500)
+    def internal_error(error):
+        import traceback
+        from flask import jsonify
+        return jsonify({
+            'status': 'error',
+            'message': str(error),
+            'traceback': traceback.format_exc()
+        }), 500
+
 
     return app
