@@ -1,13 +1,20 @@
-# firebase_config.py
+﻿# firebase_config.py
 import os
-from firebase_admin import credentials, initialize_app
+import json
+import firebase_admin
+from firebase_admin import credentials
 
-cred_path = os.environ.get('FIREBASE_CREDENTIALS') or 'firebase-service-account.json'
+firebase_app = None
 
-if os.path.exists(cred_path):
-    cred = credentials.Certificate(cred_path)
-    firebase_app = initialize_app(cred)
+firebase_json = os.environ.get('FIREBASE_CREDENTIALS')
+
+if firebase_json:
+    if firebase_json.strip().startswith('{'):
+        cred_dict = json.loads(firebase_json)
+        cred = credentials.Certificate(cred_dict)
+    else:
+        cred = credentials.Certificate(firebase_json)
+    firebase_app = firebase_admin.initialize_app(cred)
     print("Firebase initialized successfully")
 else:
-    print(f"WARNING: Firebase credentials not found at: {cred_path}")
-    firebase_app = None
+    print("WARNING: Firebase credentials not found")
