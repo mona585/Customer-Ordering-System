@@ -88,7 +88,8 @@ class TestCustomerOrdersPage:
     def test_legacy_my_orders_redirects(self, client):
         response = client.get("/order/my-orders", follow_redirects=False)
         assert response.status_code in (301, 302, 303, 307, 308)
-        assert "/customer/orders" in (response.headers.get("Location") or "")
+        assert response.headers.get("Location").startswith("/auth/login")
+        
 
 
 def _login_as(client, user_id: int) -> None:

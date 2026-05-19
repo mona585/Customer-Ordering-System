@@ -2,6 +2,7 @@
 
 from app.extensions import db
 from app.services.rewards_service import RewardsService
+from tests.conftest import customer_user
 
 
 class TestRedeemPoints:
@@ -13,8 +14,10 @@ class TestRedeemPoints:
         assert "500 points" in result.error
 
     def test_sufficient_points_issues_voucher(self, app, customer_user):
-        result = RewardsService.redeem_points(customer_user.id, option_index=0)
-        assert result.success
-        assert result.data["code"].startswith("PTS10-")
-        db.session.refresh(customer_user)
-        assert customer_user.points == 100
+      customer_user.points = 600 
+      db.session.commit()  
+      result = RewardsService.redeem_points(customer_user.id, option_index=0)
+      assert result.success
+      assert result.data["code"].startswith("PTS10-")
+      db.session.refresh(customer_user)
+      assert customer_user.points == 100
