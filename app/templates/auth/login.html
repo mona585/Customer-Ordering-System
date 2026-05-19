@@ -46,6 +46,13 @@
 </div>
 
 <script>
+// Show/hide password toggle
+document.getElementById('togglePwd').addEventListener('click', function () {
+    const pwd = document.getElementById('password');
+    const isHidden = pwd.type === 'password';
+    pwd.type = isHidden ? 'text' : 'password';
+});
+
 document.getElementById('loginForm').addEventListener('submit', async function (e) {
     e.preventDefault();
 
