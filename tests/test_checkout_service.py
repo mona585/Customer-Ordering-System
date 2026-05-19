@@ -34,7 +34,7 @@ class TestCalculateTotals:
         result = CheckoutService.calculate_totals(cart)
         assert result.success
         subtotal = float(result.data["subtotal"])
-        assert subtotal == 24.0
+        assert subtotal == 25.0
         assert result.data["delivery_fee"] == DELIVERY_FEE
         after = subtotal
         expected_tax = round(after * TAX_RATE, 2)

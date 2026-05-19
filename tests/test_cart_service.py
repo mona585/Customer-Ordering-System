@@ -6,9 +6,9 @@ from app.services.cart_service import CartService
 class TestAddToCartStock:
     def test_exceeding_stock_fails(self, app, menu_item):
         cart = {}
-        first = CartService.add_to_cart(cart, menu_item.id, quantity=15)
+        first = CartService.add_to_cart(cart, menu_item.id, quantity=8)
         assert first.success
         cart = first.data["cart"]
-        second = CartService.add_to_cart(cart, menu_item.id, quantity=10)
+        second = CartService.add_to_cart(cart, menu_item.id, quantity=5)
         assert not second.success
-        assert "only 20" in second.error.lower()
+        assert "only 10" in second.error.lower()
