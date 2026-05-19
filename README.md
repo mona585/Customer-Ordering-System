@@ -288,13 +288,18 @@ Most JSON endpoints require login. See route modules under `app/routes/` for ful
 - [SETUP.md](SETUP.md) — Firebase configuration
 - [schema.sql](schema.sql) — legacy SQL reference (ORM models are authoritative)
 
+---
+
+## License
+
+Educational / course project (CSE323). Add a `LICENSE` file before public distribution.
+
+---
 
 ### Team
 
-| Name | ID |
-|------|-----|
-| Mona Mohamed | 120230016 |
-| Mariam Gamal Elsayed  | 120230012 |
-| Nancy Ahmed | 120230045 |
-| Marisia Micheal | 120230233 |
-| Kirolos Khairy Shawkey | 120230237 | 
+<!-- Add your names, IDs, and section -->
+
+| Name | ID | Role |
+|------|-----|------|
+| *Your name* | *ID* | *e.g. Developer / PM* |

@@ -8,7 +8,6 @@ from app.models.user import User
 from app.repositories.role_repository import RoleRepository
 from app.repositories.user_repository import UserRepository
 from app.security.rbac import get_post_login_redirect
-from app.security.password_policy import password_requirements_hint, validate_password_strength
 import re
 import requests
 import os
@@ -32,24 +31,15 @@ def _validate_phone(phone: str) -> str | None:
     return None
 
 
-def _validate_registration(
-    username,
-    email,
-    password,
-    phone='',
-    password_confirm='',
-) -> str | None:
+def _validate_registration(username, email, password, phone='') -> str | None:
     if not username or not email or not password:
         return 'All fields are required.'
     if len(username) < 3:
         return 'Username must be at least 3 characters.'
     if '@' not in email or '.' not in email.split('@')[-1]:
         return 'Please enter a valid email address.'
-    pwd_error = validate_password_strength(password, username=username, email=email)
-    if pwd_error:
-        return pwd_error
-    if password != (password_confirm or ''):
-        return 'Passwords do not match.'
+    if len(password) < 8:
+        return 'Password must be at least 8 characters.'
     phone_error = _validate_phone(phone)
     if phone_error:
         return phone_error
@@ -73,8 +63,8 @@ def _firebase_register(email, password):
         msg = data['error'].get('message', 'Registration failed.')
         if msg == 'EMAIL_EXISTS':
             return None, None, 'Email already registered.'
-        if 'WEAK_PASSWORD' in msg:
-            return None, None, password_requirements_hint()
+        if msg == 'WEAK_PASSWORD : Password should be at least 6 characters':
+            return None, None, 'Password must be at least 8 characters.'
         return None, None, msg
 
     id_token = data['idToken']
@@ -167,15 +157,12 @@ def register():
         username = request.form.get('username', '').strip()
         email    = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
-        password_confirm = request.form.get('password_confirm', '')
         phone    = request.form.get('phone', '').strip()
         address  = request.form.get('address', '').strip()
         referral_code = request.form.get('referral_code', '').strip()
         dob_raw = request.form.get('date_of_birth', '').strip()
 
-        error = _validate_registration(
-            username, email, password, phone, password_confirm
-        )
+        error = _validate_registration(username, email, password, phone)
         if error:
             return jsonify({'status': 'error', 'message': error}), 400
 

@@ -17,12 +17,12 @@
     <form id="updateProfileForm">
       <div class="form-field">
         <label>Username</label>
-        <input type="text" name="username" id="profileUsername" value="{{ current_user.username }}" class="edit-input" placeholder="Your username" required autocomplete="username">
+        <input type="text" name="username" value="{{ current_user.username }}" class="edit-input" placeholder="Your username" required autocomplete="username">
       </div>
 
       <div class="form-field">
         <label>Email Address</label>
-        <input type="email" name="email" id="profileEmail" value="{{ current_user.email }}" class="edit-input" placeholder="your@email.com" required autocomplete="email">
+        <input type="email" name="email" value="{{ current_user.email }}" class="edit-input" placeholder="your@email.com" required autocomplete="email">
       </div>
 
       <div class="form-field">
@@ -46,25 +46,10 @@
       <div class="form-field">
         <label>New Password <span class="label-hint">(leave blank to keep current)</span></label>
         <div class="pwd-wrap">
-          <input type="password" name="password" id="passwordInput" class="edit-input" placeholder="Strong password" autocomplete="new-password" maxlength="128">
+          <input type="password" name="password" id="passwordInput" class="edit-input" placeholder="Minimum 8 characters" autocomplete="new-password">
           <button type="button" onclick="togglePwd()" id="pwdToggle" class="pwd-toggle" aria-label="Show password">
             <i class="fas fa-eye" id="eyeIcon"></i>
           </button>
-        </div>
-        <ul class="pwd-checklist" id="pwdRules" style="list-style:none;margin:8px 0 0;padding:0;font-size:11px;color:var(--cl);">
-          <li data-rule="length">8–128 characters, no spaces</li>
-          <li data-rule="upper">One uppercase letter</li>
-          <li data-rule="lower">One lowercase letter</li>
-          <li data-rule="digit">One number</li>
-          <li data-rule="special">One special character</li>
-          <li data-rule="match">Passwords match</li>
-        </ul>
-      </div>
-
-      <div class="form-field" id="confirmPwdField">
-        <label>Confirm New Password</label>
-        <div class="pwd-wrap">
-          <input type="password" name="password_confirm" id="passwordConfirmInput" class="edit-input" placeholder="Re-enter new password" autocomplete="new-password" maxlength="128">
         </div>
       </div>
 
@@ -102,9 +87,6 @@
 .save-btn{width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:15px;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;touch-action:manipulation}
 .save-btn:disabled{opacity:.7;cursor:not-allowed}
 .cancel-link{display:block;text-align:center;margin-top:16px;color:var(--cl);font-size:14px;font-weight:600;text-decoration:none;padding:8px}
-.pwd-checklist li.pwd-ok{color:#16a34a}
-.pwd-checklist li::before{content:'○ '}
-.pwd-checklist li.pwd-ok::before{content:'✓ '}
 @media(max-width:768px){
   .profile-edit-wrap{padding:16px 12px}
   .profile-edit-card{padding:24px 18px;border-radius:20px}
@@ -114,7 +96,6 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/account-api.js') }}"></script>
-<script src="{{ url_for('static', filename='js/password_policy.js') }}"></script>
 <script>
 function togglePwd() {
   const inp = document.getElementById('passwordInput');
@@ -146,44 +127,10 @@ function showRetry() {
 const UPDATE_URL = "{{ url_for('profile.update_profile') }}";
 const PROFILE_URL = "{{ url_for('profile.view_profile') }}";
 
-function toggleConfirmPwdField() {
-  const pwd = document.getElementById('passwordInput').value;
-  const field = document.getElementById('confirmPwdField');
-  field.style.display = pwd.length ? 'block' : 'none';
-}
-
-document.getElementById('passwordInput').addEventListener('input', toggleConfirmPwdField);
-toggleConfirmPwdField();
-
-AuraPasswordPolicy.bindPasswordChecker({
-  passwordSelector: '#passwordInput',
-  confirmSelector: '#passwordConfirmInput',
-  checklistSelector: '#pwdRules',
-  usernameSelector: '#profileUsername',
-  emailSelector: '#profileEmail',
-});
-
 async function submitProfileForm() {
   const form = document.getElementById('updateProfileForm');
   const btn = document.getElementById('saveBtn');
   const originalHtml = btn.innerHTML;
-
-  const pwd = form.password.value;
-  const pwdConfirm = form.password_confirm.value;
-  const username = form.username.value.trim();
-  const email = form.email.value.trim();
-
-  if (pwd) {
-    const check = AuraPasswordPolicy.validatePassword(pwd, username, email);
-    if (!check.ok) {
-      showFeedback(check.message, 'error');
-      return;
-    }
-    if (pwd !== pwdConfirm) {
-      showFeedback('Passwords do not match.', 'error');
-      return;
-    }
-  }
 
   hideRetry();
   showFeedback('Saving your changes…', 'loading');

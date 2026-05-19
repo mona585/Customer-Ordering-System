@@ -3,7 +3,6 @@ from datetime import datetime
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 from werkzeug.security import generate_password_hash
-from app.security.password_policy import validate_password_strength
 
 from app.extensions import csrf
 from app.repositories.referral_repository import ReferralRepository
@@ -70,7 +69,6 @@ def update_profile():
     phone = request.form.get("phone", "").strip() or None
     address = request.form.get("address", "").strip() or None
     password = request.form.get("password", "").strip() or None
-    password_confirm = request.form.get("password_confirm", "").strip()
     dob_raw = request.form.get("date_of_birth", "").strip() or None
 
     if not username or len(username) < 3:
